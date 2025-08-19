@@ -52,10 +52,19 @@
     <div id="main-app" class="hidden max-w-4xl mx-auto p-2 sm:p-4 lg:p-8">
 
         <!-- App Header -->
-        <header class="flex justify-center items-center mb-4 px-2">
+        <header class="flex justify-between items-center mb-4 px-2">
+            <!-- Sign Out Button (left) -->
+            <div class="flex items-center">
+                <button id="header-signout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200">
+                    Sign Out
+                </button>
+            </div>
+
+            <!-- Title (center) -->
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Darts Scorer</h1>
-            <!-- Hamburger button for mobile -->
-            <div class="absolute right-2 md:hidden">
+
+            <!-- Hamburger button (right) for mobile -->
+            <div class="md:hidden">
                 <button id="hamburger-btn" class="p-2">
                     <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
@@ -396,7 +405,7 @@
                     </div>
                 </div>
 
-                <!-- NEW: My Profile Tab -->
+                <!-- My Profile Tab -->
                 <div id="tab-content-my-profile" class="hidden">
                     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">My Profile</h2>
                     <div class="space-y-6">
@@ -567,6 +576,7 @@
         // --- DOM ELEMENTS ---
         const ui = {
             tabs: { match: document.getElementById('tab-btn-match'), live: document.getElementById('tab-btn-live'), previous: document.getElementById('tab-btn-previous'), fines: document.getElementById('tab-btn-fines'), stats: document.getElementById('tab-btn-stats'), h2h: document.getElementById('tab-btn-h2h'), 'my-profile': document.getElementById('tab-btn-my-profile'), setup: document.getElementById('tab-btn-setup'), admin: document.getElementById('tab-btn-admin') },
+            headerSignoutBtn: document.getElementById('header-signout-btn'),
             content: { match: document.getElementById('tab-content-match'), live: document.getElementById('tab-content-live'), previous: document.getElementById('tab-content-previous'), fines: document.getElementById('tab-content-fines'), stats: document.getElementById('tab-content-stats'), h2h: document.getElementById('tab-content-h2h'), 'my-profile': document.getElementById('tab-content-my-profile'), setup: document.getElementById('tab-content-setup'), admin: document.getElementById('tab-content-admin') },
             toast: { element: document.getElementById('toast-notification'), message: document.getElementById('toast-message') },
             mainApp: document.getElementById('main-app'),
@@ -672,6 +682,11 @@
         }
 
         function renderAuth() {
+            if (state.isLoggedIn) {
+                ui.headerSignoutBtn.classList.remove('hidden');
+            } else {
+                ui.headerSignoutBtn.classList.add('hidden');
+            }
             ui.adminContentArea.innerHTML = '';
 
             if (state.isLoggedIn) {
@@ -2349,7 +2364,8 @@
             });
             ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
         }
-
+        ui.headerSignoutBtn.addEventListener('click', handleLogout);
+        ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
         init();
     </script>
 </body>
