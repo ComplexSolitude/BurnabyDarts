@@ -1261,38 +1261,19 @@
         }
         
         function renderPlayerCard() {
-             if (!state.playerCard.isOpen) {
-                 ui.playerCardModal.overlay.classList.add('hidden');
-                 ui.playerCardModal.overlay.classList.remove('flex');
-                 return;
-             }
-            
-             ui.playerCardModal.content.innerHTML = generatePlayerCardHTML(state.playerCard.playerId, state.playerCard.selectedSeasonId);
-            
-             ui.playerCardModal.overlay.classList.remove('hidden');
-             ui.playerCardModal.overlay.classList.add('flex');
-            
-             const singlesTab = ui.playerCardModal.content.querySelector('#profile-tab-singles');
-             const doublesTab = ui.playerCardModal.content.querySelector('#profile-tab-doubles');
-             const singlesContent = ui.playerCardModal.content.querySelector('#profile-content-singles');
-             const doublesContent = ui.playerCardModal.content.querySelector('#profile-content-doubles');
+            if (!state.playerCard.isOpen) {
+                ui.playerCardModal.overlay.classList.add('hidden');
+                ui.playerCardModal.overlay.classList.remove('flex');
+                return;
+            }
 
-             singlesTab.addEventListener('click', () => {
-                 singlesTab.classList.add('text-emerald-600', 'border-emerald-500');
-                 singlesTab.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                 doublesTab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                 doublesTab.classList.remove('text-emerald-600', 'border-emerald-500');
-                 singlesContent.classList.remove('hidden');
-                 doublesContent.classList.add('hidden');
-             });
-             doublesTab.addEventListener('click', () => {
-                 doublesTab.classList.add('text-emerald-600', 'border-emerald-500');
-                 doublesTab.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                 singlesTab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                 singlesTab.classList.remove('text-emerald-600', 'border-emerald-500');
-                 doublesContent.classList.remove('hidden');
-                 singlesContent.classList.add('hidden');
-             });
+            ui.playerCardModal.content.innerHTML = generatePlayerCardHTML(state.playerCard.playerId, state.playerCard.selectedSeasonId);
+
+            ui.playerCardModal.overlay.classList.remove('hidden');
+            ui.playerCardModal.overlay.classList.add('flex');
+
+            // Set up tab switching for the player card modal
+            setupProfileTabs(ui.playerCardModal.content);
         }
 
         function showToast(message, isError = false) {
@@ -1918,10 +1899,36 @@
             `;
         }
 
+         function setupProfileTabs(container) {
+            const singlesTab = container.querySelector('#profile-tab-singles');
+            const doublesTab = container.querySelector('#profile-tab-doubles');
+            const singlesContent = container.querySelector('#profile-content-singles');
+            const doublesContent = container.querySelector('#profile-content-doubles');
+
+            if (!singlesTab || !doublesTab || !singlesContent || !doublesContent) return;
+
+            singlesTab.addEventListener('click', () => {
+                singlesTab.classList.add('text-emerald-600', 'border-emerald-500');
+                singlesTab.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                doublesTab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                doublesTab.classList.remove('text-emerald-600', 'border-emerald-500');
+                singlesContent.classList.remove('hidden');
+                doublesContent.classList.add('hidden');
+            });
+
+            doublesTab.addEventListener('click', () => {
+                doublesTab.classList.add('text-emerald-600', 'border-emerald-500');
+                doublesTab.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                singlesTab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                singlesTab.classList.remove('text-emerald-600', 'border-emerald-500');
+                doublesContent.classList.remove('hidden');
+                singlesContent.classList.add('hidden');
+            });
+        }
+
         function renderMyProfile() {
             const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
             ui.myProfile.playerSelect.innerHTML = `<option value="">Select a player...</option>${playerOptions}`;
-            
             if (state.myProfile.selectedPlayerId) {
                 ui.myProfile.playerSelect.value = state.myProfile.selectedPlayerId;
                 const player = state.players.find(p => p.id === state.myProfile.selectedPlayerId);
@@ -1930,18 +1937,20 @@
                     ui.myProfile.nicknameInput.value = player.nickname || '';
                     ui.myProfile.editArea.classList.remove('hidden');
                     ui.myProfile.statsArea.classList.remove('hidden');
-                    
+
                     const cardHTML = generatePlayerCardHTML(player.id, 'all-time');
                     ui.myProfile.statsArea.innerHTML = cardHTML;
-                    
+
                     ui.myProfile.statsArea.querySelector('#player-card-season-select')?.remove();
+
+                    // Set up tab switching for the profile stats
+                    setupProfileTabs(ui.myProfile.statsArea);
                 }
             } else {
                 ui.myProfile.editArea.classList.add('hidden');
                 ui.myProfile.statsArea.classList.add('hidden');
             }
         }
-
         async function handleUpdateProfile() {
             const playerId = state.myProfile.selectedPlayerId;
             if (!playerId || state.userRole === 'viewer') {
