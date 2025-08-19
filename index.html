@@ -773,7 +773,7 @@
                     playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg';
                     playerEl.innerHTML = `
                         <span class="font-medium dark:text-white">${player.name}</span>
-                        ${state.userRole === 'admin' || state.userRole === 'member' ? `<button data-player-id="${player.id}" class="delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold">Remove</button>` : ''}
+                        ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold">Remove</button>` : ''}
                     `;
                     ui.playerRoster.appendChild(playerEl);
                 });
