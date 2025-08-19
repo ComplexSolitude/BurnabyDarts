@@ -16,6 +16,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com;">
+    <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <style>
         body { font-family: 'Inter', sans-serif; }
         #toast-notification {
@@ -25,6 +31,12 @@
             transition: opacity 0.3s ease;
         }
     </style>
+    <!-- HTTPS Redirect -->
+    <script>
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        location.replace('https:' + window.location.href.substring(window.location.protocol.length));
+    }
+    </script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
@@ -597,6 +609,65 @@
             rateLimiter.checkAndBlock(operation, 50, 60000); // 50 requests per minute
             return await firebaseFunction();
         };
+
+        // Input validation function
+        function validateInput(input, maxLength = 100) {
+            if (typeof input !== 'string') {
+                throw new Error('Input must be a string');
+            }
+
+            if (input.length > maxLength) {
+                throw new Error(`Input too long (max ${maxLength} characters)`);
+            }
+
+            // Check for potentially malicious content
+            const dangerousPatterns = [
+                /<script/i,
+                /javascript:/i,
+                /data:/i,
+                /vbscript:/i,
+                /onload=/i,
+                /onerror=/i
+            ];
+
+            for (const pattern of dangerousPatterns) {
+                if (pattern.test(input)) {
+                    throw new Error('Invalid characters detected');
+                }
+            }
+
+            return input.trim();
+        }
+
+        // Storage validation function
+        function validateStoredData() {
+            const allowedRoles = ['viewer', 'member', 'admin'];
+            const storedRole = localStorage.getItem('userRole');
+
+            if (storedRole && !allowedRoles.includes(storedRole)) {
+                console.warn('Invalid role in storage, clearing...');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+                return false;
+            }
+
+            // Validate login timestamp
+            const loginTimestamp = Number(localStorage.getItem('loginTimestamp'));
+            if (loginTimestamp && (Date.now() - loginTimestamp > SESSION_DURATION_MS)) {
+                console.warn('Session expired, clearing storage...');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+                return false;
+            }
+
+            return true;
+        }
 
 
         // --- CONSTANTS ---
@@ -1661,12 +1732,13 @@
             closeMobileMenu();
         }
         async function addPlayer() {
-            const name = ui.newPlayerInput.value.trim();
-            if (!name) {
-                showToast("Player name cannot be empty.", true);
-                return;
-            }
             try {
+                const name = validateInput(ui.newPlayerInput.value, 50); // ✅ ADD validation
+                if (!name) {
+                    showToast("Player name cannot be empty.", true);
+                    return;
+                }
+
                 await safeFirebaseCall('addPlayer', async () => {
                     return await addDoc(collection(state.db, PLAYERS_COLLECTION), {
                         name: name,
@@ -1674,10 +1746,13 @@
                         stats: {}
                     });
                 });
+
                 showToast(`${name} added to the roster.`);
                 ui.newPlayerInput.value = '';
             } catch (error) {
-                if (error.message.includes('Rate limit')) {
+                if (error.message.includes('Invalid characters') || error.message.includes('Input too long')) {
+                    showToast(error.message, true);
+                } else if (error.message.includes('Rate limit')) {
                     showToast(error.message, true);
                 } else {
                     console.error("Error adding player: ", error);
@@ -2202,6 +2277,9 @@
                 ui.themeIconsMobile.sun.classList.remove('hidden');
                 ui.themeIconsMobile.moon.classList.add('hidden');
             }
+
+            // Validate storage before using it
+            validateStoredData();
 
             const savedRole = localStorage.getItem('userRole');
             const savedLogin = localStorage.getItem('isLoggedIn') === 'true';
