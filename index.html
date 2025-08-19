@@ -537,7 +537,8 @@
             signInAnonymously,
             signInWithPopup,
             GoogleAuthProvider,
-            signOut as firebaseSignOut
+            signOut as firebaseSignOut,
+            onAuthStateChanged
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         const provider = new GoogleAuthProvider();
@@ -2349,42 +2350,69 @@
                  ui.connectionStatus.classList.remove('hidden');
             };
 
-            onSnapshot(query(collection(state.db, SEASONS_COLLECTION)), (snapshot) => {
-                state.seasons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                state.seasons.sort((a,b) => a.name.localeCompare(b.name));
-                const activeSeason = state.seasons.find(s => s.status === 'active');
-                state.activeSeasonId = activeSeason ? activeSeason.id : null;
-                render();
-            }, (error) => handleError(error, 'seasons'));
+            // Wait for auth state before setting up Firestore listeners
+            const unsubscribe = onAuthStateChanged(state.auth, async (user) => {
+                unsubscribe(); // Only run this once
 
-            onSnapshot(query(collection(state.db, PLAYERS_COLLECTION)), (snapshot) => {
-                ui.connectionStatus.classList.add('hidden');
-                state.players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                state.players.sort((a, b) => a.name.localeCompare(b.name));
-                render();
-            }, (error) => handleError(error, 'players'));
-
-            onSnapshot(query(collection(state.db, FIXTURES_COLLECTION)), (snapshot) => {
-                ui.connectionStatus.classList.add('hidden');
-                const allFixtures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                allFixtures.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-
-                const activeFixture = allFixtures.find(f => f.status === 'live');
-
-                if (activeFixture) {
-                     if (state.fixture.id !== activeFixture.id) {
-                          state.fixture = activeFixture;
-                          state.currentGameIndex = 0;
-                     } else {
-                          state.fixture.games = activeFixture.games;
-                     }
-                } else {
-                    state.fixture = { id: null, games: [] };
+                if (user) {
+                    state.userId = user.uid;
+                    // Check if this user has a role in Firestore
+                    try {
+                        const userDoc = await getDoc(doc(state.db, 'users', user.uid));
+                        if (userDoc.exists()) {
+                            const userData = userDoc.data();
+                            state.userRole = userData.role;
+                            state.userEmail = userData.email;
+                            state.userPlayerId = userData.playerId;
+                            state.isLoggedIn = true;
+                        }
+                    } catch (error) {
+                        console.log('No user document yet');
+                    }
                 }
 
-                state.previousFixtures = allFixtures.filter(f => f.status === 'finished');
-                render();
-            }, (error) => handleError(error, 'fixtures'));
+                // NOW set up Firestore listeners after auth is ready
+                setupFirestoreListeners();
+            });
+
+            function setupFirestoreListeners() {
+                onSnapshot(query(collection(state.db, SEASONS_COLLECTION)), (snapshot) => {
+                    state.seasons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    state.seasons.sort((a,b) => a.name.localeCompare(b.name));
+                    const activeSeason = state.seasons.find(s => s.status === 'active');
+                    state.activeSeasonId = activeSeason ? activeSeason.id : null;
+                    render();
+                }, (error) => handleError(error, 'seasons'));
+
+                onSnapshot(query(collection(state.db, PLAYERS_COLLECTION)), (snapshot) => {
+                    ui.connectionStatus.classList.add('hidden');
+                    state.players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    state.players.sort((a, b) => a.name.localeCompare(b.name));
+                    render();
+                }, (error) => handleError(error, 'players'));
+
+                onSnapshot(query(collection(state.db, FIXTURES_COLLECTION)), (snapshot) => {
+                    ui.connectionStatus.classList.add('hidden');
+                    const allFixtures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allFixtures.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+
+                    const activeFixture = allFixtures.find(f => f.status === 'live');
+
+                    if (activeFixture) {
+                         if (state.fixture.id !== activeFixture.id) {
+                              state.fixture = activeFixture;
+                              state.currentGameIndex = 0;
+                         } else {
+                              state.fixture.games = activeFixture.games;
+                         }
+                    } else {
+                        state.fixture = { id: null, games: [] };
+                    }
+
+                    state.previousFixtures = allFixtures.filter(f => f.status === 'finished');
+                    render();
+                }, (error) => handleError(error, 'fixtures'));
+            }
 
             ui.themeToggleBtnMobile.addEventListener('click', handleThemeToggle);
 
