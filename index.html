@@ -1411,19 +1411,19 @@
                 snapshot.docs.forEach(doc => {
                     const userData = doc.data();
                     const userItem = document.createElement('div');
-                    userItem.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-600 p-3 rounded-lg';
+                    userItem.className = 'flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 dark:bg-gray-600 p-3 rounded-lg space-y-2 sm:space-y-0';
                     userItem.innerHTML = `
-                        <div>
-                            <p class="font-medium dark:text-white">${userData.name || userData.email}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">${userData.email}</p>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-medium dark:text-white truncate">${userData.name || userData.email}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">${userData.email}</p>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <select data-user-id="${doc.id}" class="user-role-select px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-sm">
+                        <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                            <select data-user-id="${doc.id}" class="user-role-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
                                 <option value="viewer" ${userData.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                                 <option value="member" ${userData.role === 'member' ? 'selected' : ''}>Member</option>
                                 <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
                             </select>
-                            <select data-user-id="${doc.id}" class="user-player-select px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-sm">
+                            <select data-user-id="${doc.id}" class="user-player-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
                                 <option value="">No Player</option>
                                 ${state.players.map(p => `<option value="${p.id}" ${userData.playerId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
                             </select>
