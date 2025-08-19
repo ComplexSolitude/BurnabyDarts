@@ -521,6 +521,10 @@
             signOut as firebaseSignOut
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+        const provider = new GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+
         // --- APPLICATION STATE ---
         const state = {
             db: null,
@@ -2022,9 +2026,6 @@
             const app = initializeApp(firebaseConfig);
             state.db = getFirestore(app);
             state.auth = getAuth(app);
-            const provider = new GoogleAuthProvider();
-            provider.addScope('email');
-            provider.addScope('profile');
 
             ui.connectionStatus.classList.remove('hidden');
 
