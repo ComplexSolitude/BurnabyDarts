@@ -1546,6 +1546,7 @@
             state.logoutTimer = setTimeout(handleLogout, duration);
         }
         async function loadUsers() {
+            if (!state.db) return;
             const usersCollection = collection(state.db, 'users');
             onSnapshot(usersCollection, (snapshot) => {
                 const usersList = document.getElementById('users-list');
