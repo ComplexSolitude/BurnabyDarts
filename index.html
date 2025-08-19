@@ -922,7 +922,7 @@
             ui.leaderboardBody.innerHTML = '';
             const playersWithStats = state.players.map(p => ({
                 ...p,
-                displayStats: getPlayerStats(p, state.selectedStatsSeasonId, 'combined')
+                displayStats: getPlayerStats(p, state.selectedStatsSeasonId, 'singles')
             }));
 
             playersWithStats.sort((a,b) => b.displayStats.gamesWon - a.displayStats.gamesWon || b.displayStats.legsWon - a.displayStats.legsWon);
