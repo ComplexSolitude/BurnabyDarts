@@ -555,6 +555,7 @@
             userRole: null, // null, 'viewer', 'member', 'admin'
             userPlayerId: null, // Link to player profile
             isLoggedIn: false,
+            signingIn: false,
             activeTab: 'match',
             players: [],
             seasons: [],
@@ -1432,6 +1433,10 @@
 
 
         async function handleGoogleSignIn() {
+            // Prevent multiple simultaneous sign-in attempts
+            if (state.signingIn) return;
+            state.signingIn = true;
+
             try {
                 const result = await signInWithPopup(state.auth, provider);
                 const user = result.user;
@@ -1481,9 +1486,13 @@
                 console.error('Google Sign-In error:', error);
                 if (error.code === 'auth/popup-closed-by-user') {
                     showToast('Sign-in cancelled.', true);
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    showToast('Sign-in already in progress.', true);
                 } else {
                     showToast('Sign-in failed. Please try again.', true);
                 }
+            } finally {
+                state.signingIn = false;
             }
         }
 
