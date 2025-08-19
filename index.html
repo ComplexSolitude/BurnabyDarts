@@ -566,6 +566,39 @@
             }
         };
 
+        const rateLimiter = {
+            requests: new Map(),
+
+            isAllowed(operation = 'general', limit = 100, windowMs = 60000) {
+                const userId = state.userId || 'anonymous';
+                const key = `${userId}-${operation}`;
+                const now = Date.now();
+
+                const userRequests = this.requests.get(key) || [];
+                const recentRequests = userRequests.filter(time => now - time < windowMs);
+
+                if (recentRequests.length >= limit) {
+                    return false;
+                }
+
+                this.requests.set(key, [...recentRequests, now]);
+                return true;
+            },
+
+            checkAndBlock(operation, limit, windowMs) {
+                if (!this.isAllowed(operation, limit, windowMs)) {
+                    throw new Error(`Rate limit exceeded for ${operation}. Please wait before trying again.`);
+                }
+            }
+        };
+
+        // Wrapper for Firebase operations
+        const safeFirebaseCall = async (operation, firebaseFunction) => {
+            rateLimiter.checkAndBlock(operation, 50, 60000); // 50 requests per minute
+            return await firebaseFunction();
+        };
+
+
         // --- CONSTANTS ---
         const SESSION_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
         const GAME_TITLES = ["Singles 1", "Singles 2", "Singles 3", "Singles 4", "Singles 5", "Doubles 1", "Doubles 2"];
@@ -716,6 +749,20 @@
                     userManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
                     userManagementDiv.innerHTML = `
                         <h3 class="text-lg font-semibold mb-4 dark:text-white">User Management</h3>
+
+                        <!-- Security Warning -->
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                            <div class="flex">
+                                <svg class="w-5 h-5 text-yellow-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Security Notice</h4>
+                                    <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">Never give admin access to unknown users. All role changes are logged.</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="users-list" class="space-y-2 mb-4"></div>
                     `;
                     loggedInContainer.appendChild(userManagementDiv);
@@ -1473,9 +1520,24 @@
 
         async function updateUserRole(userId, newRole) {
             try {
-                await updateDoc(doc(state.db, 'users', userId), {
-                    role: newRole,
-                    updatedAt: serverTimestamp()
+                // Add audit logging
+                await safeFirebaseCall('auditLog', async () => {
+                    return await addDoc(collection(state.db, 'audit_logs'), {
+                        action: 'role_change',
+                        targetUserId: userId,
+                        newRole: newRole,
+                        adminUserId: state.userId,
+                        adminEmail: state.userEmail,
+                        timestamp: serverTimestamp(),
+                        userAgent: navigator.userAgent
+                    });
+                });
+
+                await safeFirebaseCall('updateUserRole', async () => {
+                    return await updateDoc(doc(state.db, 'users', userId), {
+                        role: newRole,
+                        updatedAt: serverTimestamp()
+                    });
                 });
 
                 // If updating current user's role, update local state
@@ -1487,15 +1549,34 @@
 
                 showToast('User role updated successfully.');
             } catch (error) {
-                console.error('Error updating user role:', error);
-                showToast('Failed to update user role.', true);
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, true);
+                } else {
+                    console.error('Error updating user role:', error);
+                    showToast('Failed to update user role.', true);
+                }
             }
         }
         async function updateUserPlayer(userId, newPlayerId) {
             try {
-                await updateDoc(doc(state.db, 'users', userId), {
-                    playerId: newPlayerId,
-                    updatedAt: serverTimestamp()
+                // Add audit logging for player links
+                await safeFirebaseCall('auditLog', async () => {
+                    return await addDoc(collection(state.db, 'audit_logs'), {
+                        action: 'player_link_change',
+                        targetUserId: userId,
+                        newPlayerId: newPlayerId,
+                        adminUserId: state.userId,
+                        adminEmail: state.userEmail,
+                        timestamp: serverTimestamp(),
+                        userAgent: navigator.userAgent
+                    });
+                });
+
+                await safeFirebaseCall('updateUserPlayer', async () => {
+                    return await updateDoc(doc(state.db, 'users', userId), {
+                        playerId: newPlayerId,
+                        updatedAt: serverTimestamp()
+                    });
                 });
 
                 // If updating current user's player link, update local state
@@ -1506,8 +1587,12 @@
 
                 showToast('User player link updated successfully.');
             } catch (error) {
-                console.error('Error updating user player link:', error);
-                showToast('Failed to update user player link.', true);
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, true);
+                } else {
+                    console.error('Error updating user player link:', error);
+                    showToast('Failed to update user player link.', true);
+                }
             }
         }
 
@@ -1582,16 +1667,22 @@
                 return;
             }
             try {
-                await addDoc(collection(state.db, PLAYERS_COLLECTION), {
-                    name: name,
-                    nickname: '',
-                    stats: {}
+                await safeFirebaseCall('addPlayer', async () => {
+                    return await addDoc(collection(state.db, PLAYERS_COLLECTION), {
+                        name: name,
+                        nickname: '',
+                        stats: {}
+                    });
                 });
                 showToast(`${name} added to the roster.`);
                 ui.newPlayerInput.value = '';
             } catch (error) {
-                console.error("Error adding player: ", error);
-                showToast("Could not add player.", true);
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, true);
+                } else {
+                    console.error("Error adding player: ", error);
+                    showToast("Could not add player.", true);
+                }
             }
         }
         function deletePlayer(playerId) {
@@ -1688,12 +1779,14 @@
             }
 
             try {
-                await addDoc(collection(state.db, FIXTURES_COLLECTION), {
-                    seasonId: state.activeSeasonId,
-                    oppositionName: oppositionName,
-                    games: games,
-                    status: 'live',
-                    createdAt: createdAt
+                await safeFirebaseCall('createFixture', async () => {
+                    return await addDoc(collection(state.db, FIXTURES_COLLECTION), {
+                        seasonId: state.activeSeasonId,
+                        oppositionName: oppositionName,
+                        games: games,
+                        status: 'live',
+                        createdAt: createdAt
+                    });
                 });
                 showToast("Fixture created! Let's play darts!");
                 ui.oppositionNameInput.value = '';
@@ -1709,12 +1802,18 @@
             if (!state.fixture.id) return;
             const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
             try {
-                await updateDoc(fixtureRef, {
-                    games: state.fixture.games
+                await safeFirebaseCall('updateGame', async () => {
+                    return await updateDoc(fixtureRef, {
+                        games: state.fixture.games
+                    });
                 });
             } catch (error) {
-                console.error("Error updating game data:", error);
-                showToast("Could not save latest score, check connection.", true);
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, true);
+                } else {
+                    console.error("Error updating game data:", error);
+                    showToast("Could not save latest score, check connection.", true);
+                }
             }
         }
 
@@ -2226,10 +2325,18 @@
                 const name = ui.newSeasonInput.value.trim();
                 if (!name) return showToast("Season name cannot be empty.", true);
                 try {
-                    await addDoc(collection(state.db, SEASONS_COLLECTION), { name, status: 'archived' });
+                    await safeFirebaseCall('addSeason', async () => {
+                        return await addDoc(collection(state.db, SEASONS_COLLECTION), { name, status: 'archived' });
+                    });
                     showToast(`Season "${name}" added.`);
                     ui.newSeasonInput.value = '';
-                } catch(e) { showToast("Could not add season.", true); }
+                } catch(e) {
+                    if (e.message.includes('Rate limit')) {
+                        showToast(e.message, true);
+                    } else {
+                        showToast("Could not add season.", true);
+                    }
+                }
             });
             ui.seasonsList.addEventListener('click', async (e) => {
                 const setActiveBtn = e.target.closest('.set-active-season-btn');
