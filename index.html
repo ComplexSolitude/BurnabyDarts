@@ -1208,6 +1208,13 @@
                 ? Object.entries(partners).sort((a,b) => b[1] - a[1]).map(([name, count]) => `<span class="bg-gray-200 dark:bg-gray-600 text-sm font-medium px-2 py-1 rounded">${name} (${count})</span>`).join(' ')
                 : '<p class="text-sm text-gray-500 dark:text-gray-400">No doubles games played.</p>';
 
+            console.log('=== DEBUG PLAYER CARD ===');
+            console.log('Player:', player.name);
+            console.log('Season ID:', seasonId);
+            console.log('Raw player stats:', player.stats);
+            console.log('Singles stats:', singlesStats);
+            console.log('Doubles stats:', doublesStats);
+
             return `
                 <div class="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
                     <h3 class="text-2xl font-bold dark:text-white">${player.name} ${player.nickname ? `"${player.nickname}"` : ''}</h3>
