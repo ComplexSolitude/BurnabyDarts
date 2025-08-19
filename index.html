@@ -682,8 +682,13 @@
         }
 
         function renderAuth() {
+            // Show/hide header buttons based on login status
             if (state.isLoggedIn) {
                 ui.headerSignoutBtn.classList.remove('hidden');
+                ui.headerSignoutBtn.textContent = 'Sign Out';
+            } else if (state.userRole === 'viewer') {
+                ui.headerSignoutBtn.classList.remove('hidden');
+                ui.headerSignoutBtn.textContent = 'Sign In';
             } else {
                 ui.headerSignoutBtn.classList.add('hidden');
             }
@@ -1365,33 +1370,48 @@
             }
         }
 
+        async function handleHeaderButtonClick() {
+            if (state.isLoggedIn) {
+                // Sign out functionality
+                try {
+                    await firebaseSignOut(state.auth);
+                } catch (error) {
+                    console.error('Sign-out error:', error);
+                }
+
+                if (state.logoutTimer) {
+                    clearTimeout(state.logoutTimer);
+                    state.logoutTimer = null;
+                }
+
+                state.isLoggedIn = false;
+                state.userRole = null;
+                state.userEmail = null;
+                state.userName = null;
+                state.userPlayerId = null;
+
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+
+                showToast('You have been logged out.');
+                ui.mainApp.classList.add('hidden');
+                ui.roleSelectionOverlay.classList.remove('hidden');
+                render();
+            } else if (state.userRole === 'viewer') {
+                // Sign in functionality - go back to login screen
+                state.userRole = null;
+                localStorage.removeItem('userRole');
+                ui.mainApp.classList.add('hidden');
+                ui.roleSelectionOverlay.classList.remove('hidden');
+                render();
+            }
+        }
+
         async function handleLogout() {
-            try {
-                await firebaseSignOut(state.auth);
-            } catch (error) {
-                console.error('Sign-out error:', error);
-            }
-
-            if (state.logoutTimer) {
-                clearTimeout(state.logoutTimer);
-                state.logoutTimer = null;
-            }
-
-            state.isLoggedIn = false;
-            state.userRole = null;
-            state.userEmail = null;
-            state.userName = null;
-            state.userPlayerId = null;
-
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('loginTimestamp');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userId');
-
-            showToast('You have been logged out.');
-            ui.mainApp.classList.add('hidden');
-            ui.roleSelectionOverlay.classList.remove('hidden');
+            return handleHeaderButtonClick();
         }
 
         function startLogoutTimer(duration = SESSION_DURATION_MS) {
@@ -2364,7 +2384,7 @@
             });
             ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
         }
-        ui.headerSignoutBtn.addEventListener('click', handleLogout);
+        ui.headerSignoutBtn.addEventListener('click', handleHeaderButtonClick);
         ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
         init();
     </script>
