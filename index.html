@@ -533,6 +533,7 @@
             userEmail: null,
             userName: null,
             userRole: null, // null, 'viewer', 'member', 'admin'
+            userPlayerId: null, // Link to player profile
             isLoggedIn: false,
             activeTab: 'match',
             players: [],
@@ -1303,16 +1304,19 @@
                 const userDoc = await getDoc(doc(state.db, 'users', user.uid));
 
                 if (userDoc.exists()) {
-                    // Existing user - use their assigned role
+                    // Existing user - use their assigned role and player link
                     const userData = userDoc.data();
                     state.userRole = userData.role || 'member'; // Default to member
+                    state.userPlayerId = userData.playerId || null; // Get linked player ID
                 } else {
                     // New user - default to member role and create user document
                     state.userRole = 'member';
+                    state.userPlayerId = null;
                     await setDoc(doc(state.db, 'users', user.uid), {
                         email: email,
                         name: user.displayName,
                         role: 'member',
+                        playerId: null, // No player linked initially
                         createdAt: serverTimestamp()
                     });
                 }
@@ -1362,6 +1366,7 @@
             state.userRole = null;
             state.userEmail = null;
             state.userName = null;
+            state.userPlayerId = null;
 
             localStorage.removeItem('userRole');
             localStorage.removeItem('isLoggedIn');
@@ -1403,17 +1408,29 @@
                                 <option value="member" ${userData.role === 'member' ? 'selected' : ''}>Member</option>
                                 <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
                             </select>
+                            <select data-user-id="${doc.id}" class="user-player-select px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-sm">
+                                <option value="">No Player</option>
+                                ${state.players.map(p => `<option value="${p.id}" ${userData.playerId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                            </select>
                         </div>
                     `;
                     usersList.appendChild(userItem);
                 });
 
-                // Add event listeners for role changes
+                // Add event listeners for role and player changes
                 document.querySelectorAll('.user-role-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const userId = e.target.dataset.userId;
                         const newRole = e.target.value;
                         await updateUserRole(userId, newRole);
+                    });
+                });
+
+                document.querySelectorAll('.user-player-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const userId = e.target.dataset.userId;
+                        const newPlayerId = e.target.value || null;
+                        await updateUserPlayer(userId, newPlayerId);
                     });
                 });
             });
@@ -1439,6 +1456,26 @@
                 showToast('Failed to update user role.', true);
             }
         }
+        async function updateUserPlayer(userId, newPlayerId) {
+            try {
+                await updateDoc(doc(state.db, 'users', userId), {
+                    playerId: newPlayerId,
+                    updatedAt: serverTimestamp()
+                });
+
+                // If updating current user's player link, update local state
+                if (userId === state.userId) {
+                    state.userPlayerId = newPlayerId;
+                    render();
+                }
+
+                showToast('User player link updated successfully.');
+            } catch (error) {
+                console.error('Error updating user player link:', error);
+                showToast('Failed to update user player link.', true);
+            }
+        }
+
 
 
         function openConfirmModal(title, text, action, data) {
@@ -1934,8 +1971,35 @@
         }
 
         function renderMyProfile() {
+            // If user is logged in and has a linked player ID, show their profile automatically
+            if (state.isLoggedIn && state.userPlayerId) {
+                state.myProfile.selectedPlayerId = state.userPlayerId;
+                const player = state.players.find(p => p.id === state.userPlayerId);
+                if (player) {
+                    // Hide the player selector since we already know who they are
+                    ui.myProfile.playerSelect.parentElement.classList.add('hidden');
+
+                    ui.myProfile.nameInput.value = player.name;
+                    ui.myProfile.nicknameInput.value = player.nickname || '';
+                    ui.myProfile.editArea.classList.remove('hidden');
+                    ui.myProfile.statsArea.classList.remove('hidden');
+
+                    const cardHTML = generatePlayerCardHTML(player.id, 'all-time');
+                    ui.myProfile.statsArea.innerHTML = cardHTML;
+
+                    ui.myProfile.statsArea.querySelector('#player-card-season-select')?.remove();
+
+                    // Set up tab switching for the profile stats
+                    setupProfileTabs(ui.myProfile.statsArea);
+                    return;
+                }
+            }
+
+            // Fallback: Show player selector for manual selection (for users without linked profiles)
+            ui.myProfile.playerSelect.parentElement.classList.remove('hidden');
             const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
             ui.myProfile.playerSelect.innerHTML = `<option value="">Select a player...</option>${playerOptions}`;
+
             if (state.myProfile.selectedPlayerId) {
                 ui.myProfile.playerSelect.value = state.myProfile.selectedPlayerId;
                 const player = state.players.find(p => p.id === state.myProfile.selectedPlayerId);
@@ -2260,8 +2324,27 @@
             });
             
             // My Profile Listeners
-            ui.myProfile.playerSelect.addEventListener('change', (e) => {
-                state.myProfile.selectedPlayerId = e.target.value;
+            ui.myProfile.playerSelect.addEventListener('change', async (e) => {
+                const newPlayerId = e.target.value;
+
+                // If user is logged in, update their player link in the database
+                if (state.isLoggedIn && state.userId) {
+                    try {
+                        await updateDoc(doc(state.db, 'users', state.userId), {
+                            playerId: newPlayerId || null,
+                            updatedAt: serverTimestamp()
+                        });
+                        state.userPlayerId = newPlayerId || null;
+                        showToast('Player profile linked successfully!');
+                    } catch (error) {
+                        console.error('Error linking player profile:', error);
+                        showToast('Failed to link player profile.', true);
+                    }
+                } else {
+                    // Fallback for manual selection
+                    state.myProfile.selectedPlayerId = newPlayerId;
+                }
+
                 renderMyProfile();
             });
             ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
