@@ -2803,6 +2803,8 @@
             ui.liveMatchContent.addEventListener('click', (e) => {
                 const statBtn = e.target.closest('.stat-btn');
                 if (statBtn) {
+                     e.preventDefault();
+                     e.stopPropagation();
                      const playerIndex = statBtn.hasAttribute('data-player-index') ? parseInt(statBtn.dataset.playerIndex) : 0;
                      updateStat(statBtn.dataset.stat, parseInt(statBtn.dataset.op), playerIndex);
                 }
