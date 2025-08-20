@@ -1339,10 +1339,13 @@
             ui.statValueSpans.fines.textContent = `£${((game.fines || 0) / 100).toFixed(2)}`;
             
             if (isDoubles) {
-                const p1HighCheckoutInput = document.getElementById('p1-high-checkout-input');
-                const p2HighCheckoutInput = document.getElementById('p2-high-checkout-input');
-                if (p1HighCheckoutInput) p1HighCheckoutInput.value = p1Scores.highCheckout || '';
-                if (p2HighCheckoutInput) p2HighCheckoutInput.value = p2Scores.highCheckout || '';
+                // Use setTimeout to ensure DOM elements are rendered
+                setTimeout(() => {
+                    const p1HighCheckoutInput = document.getElementById('p1-high-checkout-input');
+                    const p2HighCheckoutInput = document.getElementById('p2-high-checkout-input');
+                    if (p1HighCheckoutInput) p1HighCheckoutInput.value = p1Scores.highCheckout || '';
+                    if (p2HighCheckoutInput) p2HighCheckoutInput.value = p2Scores.highCheckout || '';
+                }, 0);
             } else {
                 ui.highCheckoutInput.value = game.highCheckout || '';
             }
@@ -1356,8 +1359,13 @@
                 if (p2Input) p2Input.value = p2Scores.highCheckout || '';
             }
 
-            const p1Scores = game.playerScores?.[0] || {};
-            const p2Scores = game.playerScores?.[1] || {};
+            // Ensure playerScores exists
+            if (!game.playerScores) {
+                game.playerScores = isDoubles ? [{}, {}] : [{}];
+            }
+            
+            const p1Scores = game.playerScores[0] || {};
+            const p2Scores = game.playerScores[1] || {};
 
             if (isDoubles) {
                 ui.statValueSpans.p1_scores100.textContent = p1Scores.scores100 || 0;
@@ -1381,7 +1389,7 @@
             const isFinalGame = state.fixture.games && state.fixture.games.length > 0 && state.currentGameIndex === state.fixture.games.length - 1;
             const finishMatchBtn = document.getElementById('finish-match-btn');
 
-            if (isFinalGame && (state.userRole === 'scorer' || state.userRole === 'member' || state.userRole === 'admin')) {
+            if (isFinalGame && (state.isLoggedIn || state.userRole === 'member')) {
                 finishMatchBtn.classList.remove('hidden');
             } else {
                 finishMatchBtn.classList.add('hidden');
@@ -2146,12 +2154,24 @@
                 }
             }
 
-            if (!game.playerScores) game.playerScores = [{}, {}];
+            // Ensure playerScores array exists for doubles games
+            const isDoubles = game.playerIds.length > 1;
+            if (isDoubles && !game.playerScores) {
+                game.playerScores = [{}, {}];
+            }
 
             if(stat.startsWith('scores') || stat === 'sillyThings') {
-                const playerScores = game.playerScores[playerIndex] || {};
-                playerScores[stat] = Math.max(0, (playerScores[stat] || 0) + value);
-                game.playerScores[playerIndex] = playerScores;
+                if (isDoubles) {
+                    const playerScores = game.playerScores[playerIndex] || {};
+                    playerScores[stat] = Math.max(0, (playerScores[stat] || 0) + value);
+                    game.playerScores[playerIndex] = playerScores;
+                } else {
+                    // For singles, store in playerScores[0] for consistency
+                    if (!game.playerScores) game.playerScores = [{}];
+                    const playerScores = game.playerScores[0] || {};
+                    playerScores[stat] = Math.max(0, (playerScores[stat] || 0) + value);
+                    game.playerScores[0] = playerScores;
+                }
             } else {
                  game[stat] = Math.max(0, (game[stat] || 0) + value);
             }
@@ -2805,9 +2825,9 @@
             ui.prevGameBtn.addEventListener('click', () => { if (state.currentGameIndex > 0) { state.currentGameIndex--; render(); } });
             ui.nextGameBtn.addEventListener('click', () => { if (state.currentGameIndex < state.fixture.games.length - 1) { state.currentGameIndex++; render(); } });
 
-            ui.liveMatchContent.addEventListener('click', (e) => {
+            document.addEventListener('click', (e) => {
                 const statBtn = e.target.closest('.stat-btn');
-                if (statBtn) {
+                if (statBtn && ui.liveMatchContent.contains(statBtn)) {
                      const playerIndex = statBtn.hasAttribute('data-player-index') ? parseInt(statBtn.dataset.playerIndex) : 0;
                      updateStat(statBtn.dataset.stat, parseInt(statBtn.dataset.op), playerIndex);
                 }
@@ -2871,11 +2891,12 @@
                     updateGameData();
                 }
             });
-            // Add event listeners for doubles high checkout inputs
+            // Add event listeners for doubles high checkout inputs (replace the above with this in init())
             document.addEventListener('input', (e) => {
                 if (e.target.id === 'p1-high-checkout-input' || e.target.id === 'p2-high-checkout-input') {
                     const game = state.fixture.games[state.currentGameIndex];
-                    if (game && game.playerScores) {
+                    if (game) {
+                        if (!game.playerScores) game.playerScores = [{}, {}];
                         const playerIndex = e.target.id === 'p1-high-checkout-input' ? 0 : 1;
                         const playerScores = game.playerScores[playerIndex] || {};
                         playerScores.highCheckout = parseInt(e.target.value) || 0;
