@@ -299,7 +299,7 @@
                                     <!-- Player 1 -->
                                     <div class="border border-gray-200 dark:border-gray-700 p-3 sm:p-4 rounded-2xl">
                                         <h4 id="doubles-p1-name" class="text-lg font-semibold text-center mb-3 dark:text-white"></h4>
-                                        <div class="flex flex-wrap justify-center gap-2">
+                                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                             <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
                                                 <label class="text-xs font-medium text-gray-600 dark:text-gray-300">100+</label>
                                                 <div class="flex items-center justify-center space-x-2 mt-1">
@@ -343,7 +343,7 @@
                                     <!-- Player 2 -->
                                     <div class="border border-gray-200 dark:border-gray-700 p-3 sm:p-4 rounded-2xl">
                                         <h4 id="doubles-p2-name" class="text-lg font-semibold text-center mb-3 dark:text-white"></h4>
-                                        <div class="flex flex-wrap justify-center gap-2">
+                                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                             <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
                                                 <label class="text-xs font-medium text-gray-600 dark:text-gray-300">100+</label>
                                                 <div class="flex items-center justify-center space-x-2 mt-1">
@@ -1347,6 +1347,13 @@
 
             const p1Scores = game.playerScores?.[0] || {};
             const p2Scores = game.playerScores?.[1] || {};
+
+            if (isDoubles) {
+                const p1Input = document.getElementById('p1-high-checkout-input');
+                const p2Input = document.getElementById('p2-high-checkout-input');
+                if (p1Input) p1Input.value = p1Scores.highCheckout || '';
+                if (p2Input) p2Input.value = p2Scores.highCheckout || '';
+            }
 
             if (isDoubles) {
                 ui.statValueSpans.p1_scores100.textContent = p1Scores.scores100 || 0;
