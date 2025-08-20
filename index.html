@@ -381,12 +381,15 @@
                             </div>
                             <div id="fines-panel" class="mb-8 border-t dark:border-gray-700 pt-6">
                                 <h4 class="text-lg font-semibold text-center mb-3 dark:text-white">Game Incidents</h4>
-                                <div class="flex justify-center flex-wrap gap-2">
+                                <div class="flex justify-center flex-wrap gap-2 mb-4">
                                     <button id="fine-btn-26" class="bg-red-500 text-white py-2 px-3 rounded-xl hover:bg-red-600 transition-colors duration-200 text-sm">26 (26p)</button>
                                     <button id="fine-btn-miss" class="bg-red-500 text-white py-2 px-3 rounded-xl hover:bg-red-600 transition-colors duration-200 text-sm">Miss Board (50p)</button>
                                     <button id="fine-btn-low-score" class="bg-red-500 text-white py-2 px-3 rounded-xl hover:bg-red-600 transition-colors duration-200 text-sm">Score &lt; 10</button>
                                 </div>
-                                <p class="text-center text-gray-600 dark:text-gray-400 mt-4">Current Fines: <span id="stat-fines" class="font-bold">£0.00</span></p>
+                                <div id="fines-list-current-game" class="mb-4 max-h-32 overflow-y-auto">
+                                    <!-- Individual fines will be populated here -->
+                                </div>
+                                <p class="text-center text-gray-600 dark:text-gray-400">Total Fines: <span id="stat-fines" class="font-bold">£0.00</span></p>
                             </div>
                             <div id="game-action-buttons" class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
                                 <button id="finish-match-btn" class="w-full bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-semibold text-lg hidden">Finish Game & Save Stats</button>
@@ -765,6 +768,7 @@
             doublesPlayerNames: { p1: document.getElementById('doubles-p1-name'), p2: document.getElementById('doubles-p2-name') },
             highCheckoutInput: document.getElementById('high-checkout-input'),
             finesPanel: document.getElementById('fines-panel'),
+            finesListCurrentGame: document.getElementById('fines-list-current-game'),
             gameActionButtons: document.getElementById('game-action-buttons'),
             leaderboardBody: document.getElementById('leaderboard-body'),
             currentMatchResults: document.getElementById('current-match-results'),
@@ -1317,6 +1321,8 @@
             ui.statValueSpans.legsWon.textContent = game.legsWon || 0;
             ui.statValueSpans.legsLost.textContent = game.legsLost || 0;
             ui.statValueSpans.fines.textContent = `£${((game.fines || 0) / 100).toFixed(2)}`;
+            // Render individual fines list
+            renderCurrentGameFines(game);
             ui.highCheckoutInput.value = game.highCheckout || '';
 
             const p1Scores = game.playerScores?.[0] || {};
@@ -1449,6 +1455,71 @@
                     </div>
                 </div>
             `;
+        }
+        function renderCurrentGameFines(game) {
+            if (!ui.finesListCurrentGame) return;
+            
+            ui.finesListCurrentGame.innerHTML = '';
+            
+            if (!game.finesList || game.finesList.length === 0) {
+                ui.finesListCurrentGame.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400">No fines this game</p>';
+                return;
+            }
+            
+            // Group fines by category
+            const fineGroups = {
+                'Score of 26': [],
+                'Missed Board': [],
+                'Low Scores': []
+            };
+            
+            game.finesList.forEach(fine => {
+                if (fine.reason === 'Score of 26') {
+                    fineGroups['Score of 26'].push(fine);
+                } else if (fine.reason === 'Missed Board') {
+                    fineGroups['Missed Board'].push(fine);
+                } else if (fine.reason.startsWith('Score of ')) {
+                    fineGroups['Low Scores'].push(fine);
+                }
+            });
+            
+            // Render each group that has fines
+            Object.entries(fineGroups).forEach(([groupName, fines]) => {
+                if (fines.length === 0) return;
+                
+                // Group header
+                const headerEl = document.createElement('div');
+                headerEl.className = 'text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1 mt-2 first:mt-0';
+                
+                const groupTotal = fines.reduce((sum, fine) => sum + fine.amount, 0);
+                const count = fines.length;
+                
+                headerEl.innerHTML = `${groupName} (${count}) - £${(groupTotal/100).toFixed(2)}`;
+                ui.finesListCurrentGame.appendChild(headerEl);
+                
+                // Individual fines in this group
+                fines.forEach(fine => {
+                    const fineEl = document.createElement('div');
+                    fineEl.className = 'flex items-center justify-between bg-red-50 dark:bg-red-900/20 p-2 rounded-lg text-sm mb-1';
+                    
+                    // For low scores, show the actual score; for others, show count
+                    let displayText = fine.reason;
+                    if (groupName === 'Low Scores') {
+                        displayText = fine.reason; // "Score of 3", "Score of 7", etc.
+                    } else {
+                        displayText = `${groupName}`; // Just "Score of 26" or "Missed Board"
+                    }
+                    
+                    fineEl.innerHTML = `
+                        <span class="text-red-700 dark:text-red-300">${displayText}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-red-600 dark:text-red-400">£${(fine.amount/100).toFixed(2)}</span>
+                            ${state.userRole !== 'viewer' ? `<button data-fine-id="${fine.id}" class="remove-fine-btn text-red-500 hover:text-red-700 text-xs bg-white dark:bg-gray-700 px-2 py-1 rounded border">✕</button>` : ''}
+                        </div>
+                    `;
+                    ui.finesListCurrentGame.appendChild(fineEl);
+                });
+            });
         }
         
         function renderPlayerCard() {
@@ -1976,7 +2047,7 @@
                     scores180: 0,
                     sillyThings: 0,
                 }));
-
+                
                 games.push({
                     title: title,
                     type: isDoubles ? 'doubles' : 'singles', // Add game type
@@ -1985,6 +2056,7 @@
                     legsLost: 0,
                     highCheckout: 0,
                     fines: 0,
+                    finesList: [], // Track individual fines with details
                     playerScores: playerScores
                 });
             }
@@ -2057,6 +2129,20 @@
         function addFine(amount, reason) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game) return;
+            
+            // Initialize finesList if it doesn't exist
+            if (!game.finesList) game.finesList = [];
+            
+            // Add the individual fine with a unique ID
+            const fineId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            game.finesList.push({
+                id: fineId,
+                amount: amount,
+                reason: reason,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Update total fines
             game.fines = (game.fines || 0) + amount;
             showToast(`Fine added: ${reason} (+£${(amount/100).toFixed(2)})`);
             render();
@@ -2240,6 +2326,24 @@
             } else {
                 showToast("Please enter a score between 1 and 9.", true);
             }
+        }
+        
+        function removeFine(fineId) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game || !game.finesList) return;
+            
+            const fineIndex = game.finesList.findIndex(f => f.id === fineId);
+            if (fineIndex === -1) return;
+            
+            const removedFine = game.finesList[fineIndex];
+            game.finesList.splice(fineIndex, 1);
+            
+            // Update total fines
+            game.fines = Math.max(0, (game.fines || 0) - removedFine.amount);
+            
+            showToast(`Fine removed: ${removedFine.reason} (-£${(removedFine.amount/100).toFixed(2)})`);
+            render();
+            updateGameData();
         }
 
         function openDotdModal() {
@@ -2734,8 +2838,12 @@
             ui.lowScoreModal.cancel.addEventListener('click', closeLowScoreModal);
             ui.lowScoreModal.submit.addEventListener('click', submitLowScoreFine);
             ui.lowScoreModal.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitLowScoreFine(); });
-
-
+            ui.finesPanel.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.remove-fine-btn');
+                if (removeBtn) {
+                    removeFine(removeBtn.dataset.fineId);
+                }
+            });
             ui.gameActionButtons.addEventListener('click', (e) => {
                 if (e.target.id === 'finish-match-btn') openDotdModal();
             });
