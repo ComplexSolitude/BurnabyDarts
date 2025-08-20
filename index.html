@@ -2307,8 +2307,8 @@
             ui.connectionStatus.classList.remove('hidden');
 
             try {
-                const userCredential = await signInAnonymously(state.auth);
-                state.userId = userCredential.user.uid;
+                // const userCredential = await signInAnonymously(state.auth);
+                //state.userId = userCredential.user.uid;
                 console.log("Authentication successful. UID:", state.userId);
             } catch (error) {
                 console.error("Firebase Authentication Failed:", error);
