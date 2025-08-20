@@ -25,8 +25,20 @@
         #toast-notification {
             transition: transform 0.5s ease-in-out;
         }
-        .modal-overlay {
+         .modal-overlay {
             transition: opacity 0.3s ease;
+        }
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
     <!-- HTTPS Redirect -->
@@ -38,6 +50,13 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-60 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
+            <div class="spinner mx-auto mb-4"></div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Signing you in...</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Please wait a moment</p>
+        </div>
+    </div>
     <!-- Role Selection Overlay -->
     <div id="role-selection-overlay" class="fixed inset-0 bg-gray-800 z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm text-center">
@@ -52,7 +71,7 @@
                         <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                         <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Sign in with Google
+                    <span id="signin-btn-text">Sign in with Google</span>
                 </button>
             </div>
         </div>
@@ -1437,6 +1456,16 @@
             if (state.signingIn) return;
             state.signingIn = true;
 
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const signInBtn = document.getElementById('google-signin-btn');
+            const signInText = document.getElementById('signin-btn-text');
+            
+            loadingOverlay.classList.remove('hidden');
+            signInBtn.disabled = true;
+            signInText.textContent = 'Signing in...';
+            signInBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            
+
             try {
                 const result = await signInWithPopup(state.auth, provider);
                 const user = result.user;
@@ -1476,6 +1505,15 @@
                 localStorage.setItem('userId', user.uid);
 
                 startLogoutTimer();
+                // Small delay to ensure smooth transition
+                setTimeout(() => {
+                    loadingOverlay.classList.add('hidden');
+                    ui.roleSelectionOverlay.classList.add('hidden');
+                    ui.mainApp.classList.remove('hidden');
+                    
+                    showToast(`Welcome ${user.displayName || email}!`);
+                    render();
+                }, 500);
                 showToast(`Welcome ${user.displayName || email}!`);
 
                 ui.roleSelectionOverlay.classList.add('hidden');
@@ -1484,6 +1522,11 @@
 
             } catch (error) {
                 console.error('Google Sign-In error:', error);
+                // Hide loading on error
+                loadingOverlay.classList.add('hidden');
+                signInBtn.disabled = false;
+                signInText.textContent = 'Sign in with Google';
+                signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
                 if (error.code === 'auth/popup-closed-by-user') {
                     showToast('Sign-in cancelled.', true);
                 } else if (error.code === 'auth/cancelled-popup-request') {
