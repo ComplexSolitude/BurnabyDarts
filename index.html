@@ -333,9 +333,9 @@
                                                 </div>
                                             </div>
                                             <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">H/C</label>
+                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Highest Checkout</label>
                                                 <div class="flex items-center justify-center mt-1">
-                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-16 text-center text-sm p-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
+                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-20 text-center text-base p-2 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
                                                 </div>
                                             </div>
                                         </div>
@@ -377,9 +377,9 @@
                                                 </div>
                                             </div>
                                             <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">H/C</label>
+                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Highest Checkout</label>
                                                 <div class="flex items-center justify-center mt-1">
-                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-16 text-center text-sm p-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
+                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-20 text-center text-base p-2 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
                                                 </div>
                                             </div>
                                         </div>
@@ -1318,6 +1318,7 @@
             ui.singlesScoringPanel.classList.toggle('hidden', isDoubles);
             ui.doublesScoringPanel.classList.toggle('hidden', !isDoubles);
             ui.finesPanel.classList.toggle('hidden', isDoubles);
+            ui.highCheckoutInput.parentElement.classList.toggle('hidden', isDoubles);
 
             const playerNames = game.playerIds.map(id => {
                 const player = state.players.find(p => p.id === id);
