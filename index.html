@@ -541,7 +541,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast-notification" class="fixed top-5 right-5 bg-emerald-500 text-white py-3 px-5 rounded-xl shadow-lg transform translate-x-[150%]" role="alert">
+    <div id="toast-notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 -translate-y-full bg-emerald-500 text-white py-3 px-5 rounded-xl shadow-lg transition-transform duration-500 z-50" role="alert">
         <span id="toast-message"></span>
     </div>
 
@@ -1459,10 +1459,14 @@
 
         function showToast(message, isError = false) {
             ui.toast.message.textContent = message;
-            ui.toast.element.className = `fixed top-5 right-5 text-white py-3 px-5 rounded-xl shadow-lg transform transition-transform duration-500 ${isError ? 'bg-red-500' : 'bg-emerald-500'}`;
-            ui.toast.element.classList.remove('translate-x-[150%]');
+            ui.toast.element.className = `fixed top-5 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-white py-3 px-5 rounded-xl shadow-lg transition-transform duration-500 z-50 ${isError ? 'bg-red-500' : 'bg-emerald-500'}`;
+            
+            // Show the toast by removing the upward translation
+            ui.toast.element.classList.remove('-translate-y-full');
+            
+            // Hide after 3 seconds by adding the upward translation back
             setTimeout(() => {
-                ui.toast.element.classList.add('translate-x-[150%]');
+                ui.toast.element.classList.add('-translate-y-full');
             }, 3000);
         }
 
