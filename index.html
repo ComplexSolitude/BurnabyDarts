@@ -332,12 +332,6 @@
                                                     <button data-stat="sillyThings" data-op="1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
                                                 </div>
                                             </div>
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">H/C</label>
-                                                <div class="flex items-center justify-center mt-1">
-                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-16 text-center text-sm p-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                     <!-- Player 2 -->
@@ -374,12 +368,6 @@
                                                     <button data-stat="sillyThings" data-op="-1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
                                                     <span id="stat-p2-sillyThings" class="text-2xl font-bold dark:text-white">0</span>
                                                     <button data-stat="sillyThings" data-op="1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">H/C</label>
-                                                <div class="flex items-center justify-center mt-1">
-                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-16 text-center text-sm p-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
                                                 </div>
                                             </div>
                                         </div>
@@ -1086,7 +1074,6 @@
                     }
                 }
                 aggregated.singles.highCheckout = Math.max(aggregated.singles.highCheckout, singlesData.highCheckout || 0);
-                aggregated.doubles.highCheckout = Math.max(aggregated.doubles.highCheckout, doublesData.highCheckout || 0);
                 // Doubles doesn't have a high checkout in this app's logic, so we don't need to calculate it.
             }
 
@@ -1103,7 +1090,7 @@
                     scores100: aggregated.singles.scores100 + aggregated.doubles.scores100,
                     scores140: aggregated.singles.scores140 + aggregated.doubles.scores140,
                     scores180: aggregated.singles.scores180 + aggregated.doubles.scores180,
-                    highCheckout: Math.max(aggregated.singles.highCheckout, aggregated.doubles.highCheckout),
+                    highCheckout: aggregated.singles.highCheckout, // From singles only
                     outstandingFines: aggregated.singles.outstandingFines, // From singles only
                     totalFines: aggregated.singles.totalFines, // From singles only
                 };
@@ -1337,12 +1324,6 @@
             // Render individual fines list
             renderCurrentGameFines(game);
             ui.highCheckoutInput.value = game.highCheckout || '';
-            if(isDoubles) {
-                const p1Input = document.getElementById('p1-high-checkout-input');
-                const p2Input = document.getElementById('p2-high-checkout-input');
-                if (p1Input) p1Input.value = p1Scores.highCheckout || '';
-                if (p2Input) p2Input.value = p2Scores.highCheckout || '';
-            }
 
             const p1Scores = game.playerScores?.[0] || {};
             const p2Scores = game.playerScores?.[1] || {};
@@ -1467,7 +1448,6 @@
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">100+</p><p class="text-2xl font-bold dark:text-white">${doublesStats.scores100}</p></div>
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">140+</p><p class="text-2xl font-bold dark:text-white">${doublesStats.scores140}</p></div>
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">180s</p><p class="text-2xl font-bold dark:text-white">${doublesStats.scores180}</p></div>
-                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">High Checkout</p><p class="text-2xl font-bold dark:text-white">${doublesStats.highCheckout}</p></div>
                     </div>
                     <div class="mt-4">
                         <h4 class="text-md font-semibold dark:text-white mb-2">Partners:</h4>
@@ -2276,12 +2256,6 @@
                                 if (game.highCheckout > (singlesSeasonStats.highCheckout || 0)) {
                                     singlesSeasonStats.highCheckout = game.highCheckout;
                                 }
-                            } else if (gameType === 'doubles') {
-                                // For doubles, check individual player high checkouts
-                                const playerHighCheckout = pScores.highCheckout || 0;
-                                if (playerHighCheckout > (seasonStats.highCheckout || 0)) {
-                                    seasonStats.highCheckout = playerHighCheckout;
-                                }
                             }
                         });
 
@@ -2856,17 +2830,6 @@
                 if (game) {
                     game.highCheckout = parseInt(e.target.value) || 0;
                     updateGameData();
-                }
-            });
-            ui.liveMatchContent.addEventListener('input', (e) => {
-                if (e.target.classList.contains('player-high-checkout-input')) {
-                    const game = state.fixture.games[state.currentGameIndex];
-                    if (game && game.playerScores) {
-                        const playerIndex = parseInt(e.target.dataset.playerIndex);
-                        if (!game.playerScores[playerIndex]) game.playerScores[playerIndex] = {};
-                        game.playerScores[playerIndex].highCheckout = parseInt(e.target.value) || 0;
-                        updateGameData();
-                    }
                 }
             });
             ui.fineBtn26.addEventListener('click', () => addFine(26, 'Score of 26'));
