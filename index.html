@@ -333,9 +333,9 @@
                                                 </div>
                                             </div>
                                             <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Highest Checkout</label>
+                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">H/C</label>
                                                 <div class="flex items-center justify-center mt-1">
-                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-20 text-center text-base p-2 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
+                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-16 text-center text-sm p-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
                                                 </div>
                                             </div>
                                         </div>
@@ -377,9 +377,9 @@
                                                 </div>
                                             </div>
                                             <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Highest Checkout</label>
+                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">H/C</label>
                                                 <div class="flex items-center justify-center mt-1">
-                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-20 text-center text-base p-2 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
+                                                    <input type="number" id="p1-high-checkout-input" data-player-index="0" class="player-high-checkout-input w-16 text-center text-sm p-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="0">
                                                 </div>
                                             </div>
                                         </div>
@@ -1318,7 +1318,6 @@
             ui.singlesScoringPanel.classList.toggle('hidden', isDoubles);
             ui.doublesScoringPanel.classList.toggle('hidden', !isDoubles);
             ui.finesPanel.classList.toggle('hidden', isDoubles);
-            ui.highCheckoutInput.parentElement.classList.toggle('hidden', isDoubles);
 
             const playerNames = game.playerIds.map(id => {
                 const player = state.players.find(p => p.id === id);
@@ -1347,13 +1346,6 @@
 
             const p1Scores = game.playerScores?.[0] || {};
             const p2Scores = game.playerScores?.[1] || {};
-
-            if (isDoubles) {
-                const p1Input = document.getElementById('p1-high-checkout-input');
-                const p2Input = document.getElementById('p2-high-checkout-input');
-                if (p1Input) p1Input.value = p1Scores.highCheckout || '';
-                if (p2Input) p2Input.value = p2Scores.highCheckout || '';
-            }
 
             if (isDoubles) {
                 ui.statValueSpans.p1_scores100.textContent = p1Scores.scores100 || 0;
@@ -2803,8 +2795,6 @@
             ui.liveMatchContent.addEventListener('click', (e) => {
                 const statBtn = e.target.closest('.stat-btn');
                 if (statBtn) {
-                     e.preventDefault();
-                     e.stopPropagation();
                      const playerIndex = statBtn.hasAttribute('data-player-index') ? parseInt(statBtn.dataset.playerIndex) : 0;
                      updateStat(statBtn.dataset.stat, parseInt(statBtn.dataset.op), playerIndex);
                 }
