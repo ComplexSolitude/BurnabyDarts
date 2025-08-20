@@ -1676,13 +1676,21 @@
 
         async function updateUserRole(userId, newRole) {
             try {
-                // Add audit logging
+                // Get the target user's document to capture their name and old role
+                const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
+                const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
+                
+                // Add enhanced audit logging
                 await safeFirebaseCall('auditLog', async () => {
                     return await addDoc(collection(state.db, 'audit_logs'), {
                         action: 'role_change',
                         targetUserId: userId,
+                        targetUserName: targetUserData.name || 'Unknown',
+                        targetUserEmail: targetUserData.email || 'Unknown',
+                        oldRole: targetUserData.role || 'unknown',
                         newRole: newRole,
                         adminUserId: state.userId,
+                        adminUserName: state.userName || 'Unknown',
                         adminEmail: state.userEmail,
                         timestamp: serverTimestamp(),
                         userAgent: navigator.userAgent
@@ -1715,19 +1723,33 @@
         }
         async function updateUserPlayer(userId, newPlayerId) {
             try {
-                // Add audit logging for player links
+                // Get the target user's document and player information
+                const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
+                const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
+                
+                const oldPlayer = state.players.find(p => p.id === targetUserData.playerId);
+                const newPlayer = newPlayerId ? state.players.find(p => p.id === newPlayerId) : null;
+        
+                // Add enhanced audit logging for player links
                 await safeFirebaseCall('auditLog', async () => {
                     return await addDoc(collection(state.db, 'audit_logs'), {
                         action: 'player_link_change',
                         targetUserId: userId,
+                        targetUserName: targetUserData.name || 'Unknown',
+                        targetUserEmail: targetUserData.email || 'Unknown',
+                        oldPlayerId: targetUserData.playerId || null,
+                        oldPlayerName: oldPlayer?.name || null,
                         newPlayerId: newPlayerId,
+                        newPlayerName: newPlayer?.name || null,
                         adminUserId: state.userId,
+                        adminUserName: state.userName || 'Unknown',
                         adminEmail: state.userEmail,
                         timestamp: serverTimestamp(),
                         userAgent: navigator.userAgent
                     });
                 });
 
+                
                 await safeFirebaseCall('updateUserPlayer', async () => {
                     return await updateDoc(doc(state.db, 'users', userId), {
                         playerId: newPlayerId,
@@ -2036,11 +2058,49 @@
                     if (dotdPlayerId && !allPlayerIds.includes(dotdPlayerId)) {
                         allPlayerIds.push(dotdPlayerId);
                     }
-
+        
                     // 1. READS: Get all player documents first.
                     const playerRefs = allPlayerIds.map(id => doc(state.db, PLAYERS_COLLECTION, id));
                     const playerDocs = await Promise.all(playerRefs.map(ref => transaction.get(ref)));
-
+        
+                    // Create enhanced audit log for match completion
+                    const matchAuditData = {
+                        action: 'match_completed',
+                        fixtureId: state.fixture.id,
+                        oppositionName: state.fixture.oppositionName,
+                        seasonId: seasonId,
+                        seasonName: state.seasons.find(s => s.id === seasonId)?.name || 'Unknown Season',
+                        completedBy: state.userName || state.userEmail || 'Unknown',
+                        completedByUserId: state.userId,
+                        players: allPlayerIds.map(playerId => {
+                            const playerDoc = playerDocs.find(doc => doc.id === playerId);
+                            const playerData = playerDoc?.exists() ? playerDoc.data() : {};
+                            return {
+                                playerId: playerId,
+                                playerName: playerData.name || 'Unknown'
+                            };
+                        }),
+                        dotdWinner: dotdPlayerId ? {
+                            playerId: dotdPlayerId,
+                            playerName: state.players.find(p => p.id === dotdPlayerId)?.name || 'Unknown'
+                        } : null,
+                        gameResults: state.fixture.games.map(game => ({
+                            title: game.title,
+                            type: game.type,
+                            playerNames: game.playerIds.map(id => 
+                                state.players.find(p => p.id === id)?.name || 'Unknown'
+                            ),
+                            legsWon: game.legsWon || 0,
+                            legsLost: game.legsLost || 0
+                        })),
+                        timestamp: serverTimestamp(),
+                        userAgent: navigator.userAgent
+                    };
+        
+                    // Add the audit log
+                    const auditRef = doc(collection(state.db, 'audit_logs'));
+                    transaction.set(auditRef, matchAuditData);
+        
                     const playerUpdates = {};
 
                     // 2. CALCULATIONS: Prepare updates in memory.
