@@ -670,6 +670,7 @@
                 localStorage.removeItem('loginTimestamp');
                 localStorage.removeItem('userEmail');
                 localStorage.removeItem('userId');
+                resetSignInButtonState();
                 return false;
             }
 
@@ -682,6 +683,7 @@
                 localStorage.removeItem('loginTimestamp');
                 localStorage.removeItem('userEmail');
                 localStorage.removeItem('userId');
+                resetSignInButtonState();
                 return false;
             }
 
@@ -1564,7 +1566,7 @@
                 localStorage.removeItem('loginTimestamp');
                 localStorage.removeItem('userEmail');
                 localStorage.removeItem('userId');
-
+                resetSignInButtonState();
                 showToast('You have been logged out.');
                 ui.mainApp.classList.add('hidden');
                 ui.roleSelectionOverlay.classList.remove('hidden');
@@ -1588,6 +1590,22 @@
                 clearTimeout(state.logoutTimer);
             }
             state.logoutTimer = setTimeout(handleLogout, duration);
+        }
+
+        function resetSignInButtonState() {
+            const signInBtn = document.getElementById('google-signin-btn');
+            const signInText = document.getElementById('signin-btn-text');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            
+            if (signInBtn && signInText) {
+                signInBtn.disabled = false;
+                signInText.textContent = 'Sign in with Google';
+                signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+            
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+            }
         }
         async function loadUsers() {
             if (!state.db) return;
