@@ -1074,6 +1074,7 @@
                     }
                 }
                 aggregated.singles.highCheckout = Math.max(aggregated.singles.highCheckout, singlesData.highCheckout || 0);
+                aggregated.doubles.highCheckout = Math.max(aggregated.doubles.highCheckout, doublesData.highCheckout || 0);
                 // Doubles doesn't have a high checkout in this app's logic, so we don't need to calculate it.
             }
 
@@ -1090,7 +1091,7 @@
                     scores100: aggregated.singles.scores100 + aggregated.doubles.scores100,
                     scores140: aggregated.singles.scores140 + aggregated.doubles.scores140,
                     scores180: aggregated.singles.scores180 + aggregated.doubles.scores180,
-                    highCheckout: aggregated.singles.highCheckout, // From singles only
+                    highCheckout: Math.max(aggregated.singles.highCheckout, aggregated.doubles.highCheckout),
                     outstandingFines: aggregated.singles.outstandingFines, // From singles only
                     totalFines: aggregated.singles.totalFines, // From singles only
                 };
@@ -1324,6 +1325,12 @@
             // Render individual fines list
             renderCurrentGameFines(game);
             ui.highCheckoutInput.value = game.highCheckout || '';
+            if(isDoubles) {
+                const p1Input = document.getElementById('p1-high-checkout-input');
+                const p2Input = document.getElementById('p2-high-checkout-input');
+                if (p1Input) p1Input.value = p1Scores.highCheckout || '';
+                if (p2Input) p2Input.value = p2Scores.highCheckout || '';
+            }
 
             const p1Scores = game.playerScores?.[0] || {};
             const p2Scores = game.playerScores?.[1] || {};
@@ -2257,6 +2264,12 @@
                                 if (game.highCheckout > (singlesSeasonStats.highCheckout || 0)) {
                                     singlesSeasonStats.highCheckout = game.highCheckout;
                                 }
+                            } else if (gameType === 'doubles') {
+                                // For doubles, check individual player high checkouts
+                                const playerHighCheckout = pScores.highCheckout || 0;
+                                if (playerHighCheckout > (seasonStats.highCheckout || 0)) {
+                                    seasonStats.highCheckout = playerHighCheckout;
+                                }
                             }
                         });
 
@@ -2831,6 +2844,17 @@
                 if (game) {
                     game.highCheckout = parseInt(e.target.value) || 0;
                     updateGameData();
+                }
+            });
+            ui.liveMatchContent.addEventListener('input', (e) => {
+                if (e.target.classList.contains('player-high-checkout-input')) {
+                    const game = state.fixture.games[state.currentGameIndex];
+                    if (game && game.playerScores) {
+                        const playerIndex = parseInt(e.target.dataset.playerIndex);
+                        if (!game.playerScores[playerIndex]) game.playerScores[playerIndex] = {};
+                        game.playerScores[playerIndex].highCheckout = parseInt(e.target.value) || 0;
+                        updateGameData();
+                    }
                 }
             });
             ui.fineBtn26.addEventListener('click', () => addFine(26, 'Score of 26'));
