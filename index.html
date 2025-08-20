@@ -2290,30 +2290,6 @@
             // Validate storage before using it
             validateStoredData();
 
-            const savedRole = localStorage.getItem('userRole');
-            const savedLogin = localStorage.getItem('isLoggedIn') === 'true';
-            const loginTimestamp = Number(localStorage.getItem('loginTimestamp'));
-            if (savedRole) {
-                if (savedLogin && savedRole !== 'viewer' && loginTimestamp) {
-                    const elapsed = Date.now() - loginTimestamp;
-                    if (elapsed < SESSION_DURATION_MS) {
-                        state.userRole = savedRole;
-                        state.isLoggedIn = true;
-                        ui.roleSelectionOverlay.classList.add('hidden');
-                        ui.mainApp.classList.remove('hidden');
-                        startLogoutTimer(SESSION_DURATION_MS - elapsed);
-                        render();
-                    } else {
-                        handleLogout();
-                    }
-                } else if (savedRole === 'viewer') {
-                    state.userRole = 'viewer';
-                    ui.roleSelectionOverlay.classList.add('hidden');
-                    ui.mainApp.classList.remove('hidden');
-                    render();
-                }
-            }
-
             const firebaseConfig = {
                 apiKey: "AIzaSyCU66DqSCzkwaEhTLEOftEJtKbt9y4xVeI",
                 authDomain: "darts-app-9e752.firebaseapp.com",
@@ -2351,30 +2327,74 @@
             };
 
             // Wait for auth state before setting up Firestore listeners
+            // Wait for auth state and properly handle session restoration
             const unsubscribe = onAuthStateChanged(state.auth, async (user) => {
                 unsubscribe(); // Only run this once
 
                 if (user) {
                     state.userId = user.uid;
-                    // Check if this user has a role in Firestore
+                    
                     try {
+                        // Check if this user has a role in Firestore
                         const userDoc = await getDoc(doc(state.db, 'users', user.uid));
                         if (userDoc.exists()) {
                             const userData = userDoc.data();
                             state.userRole = userData.role;
                             state.userEmail = userData.email;
+                            state.userName = userData.name;
                             state.userPlayerId = userData.playerId;
                             state.isLoggedIn = true;
+                            
+                            // Update localStorage with fresh data
+                            localStorage.setItem('userRole', userData.role);
+                            localStorage.setItem('isLoggedIn', 'true');
+                            localStorage.setItem('userEmail', userData.email);
+                            localStorage.setItem('userId', user.uid);
+                            
+                            // Start logout timer
+                            startLogoutTimer();
                         }
                     } catch (error) {
-                        console.log('No user document yet');
+                        console.log('Error fetching user document:', error);
+                        // If we can't get user data, clear everything
+                        state.isLoggedIn = false;
+                        state.userRole = null;
+                        localStorage.removeItem('userRole');
+                        localStorage.removeItem('isLoggedIn');
+                        localStorage.removeItem('loginTimestamp');
+                        localStorage.removeItem('userEmail');
+                        localStorage.removeItem('userId');
+                    }
+                } else {
+                    // Not authenticated - check if we should show viewer mode
+                    const savedRole = localStorage.getItem('userRole');
+                    if (savedRole === 'viewer') {
+                        state.userRole = 'viewer';
+                        state.isLoggedIn = false;
+                    } else {
+                        // Clear everything if not authenticated and not viewer
+                        state.isLoggedIn = false;
+                        state.userRole = null;
+                        localStorage.removeItem('userRole');
+                        localStorage.removeItem('isLoggedIn');
+                        localStorage.removeItem('loginTimestamp');
+                        localStorage.removeItem('userEmail');
+                        localStorage.removeItem('userId');
                     }
                 }
 
-                // NOW set up Firestore listeners after auth is ready
-                setupFirestoreListeners();
-            });
+                // NOW set up UI and Firestore listeners after auth is fully resolved
+                if (state.isLoggedIn || state.userRole === 'viewer') {
+                    ui.roleSelectionOverlay.classList.add('hidden');
+                    ui.mainApp.classList.remove('hidden');
+                } else {
+                    ui.roleSelectionOverlay.classList.remove('hidden');
+                    ui.mainApp.classList.add('hidden');
+                }
 
+                setupFirestoreListeners();
+                render();
+            });
             function setupFirestoreListeners() {
                 onSnapshot(query(collection(state.db, SEASONS_COLLECTION)), (snapshot) => {
                     state.seasons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
