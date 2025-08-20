@@ -1448,16 +1448,16 @@
                 if (userDoc.exists()) {
                     // Existing user - use their assigned role and player link
                     const userData = userDoc.data();
-                    state.userRole = userData.role || 'member'; // Default to member
+                    state.userRole = userData.role || 'viewer'; // Default to member
                     state.userPlayerId = userData.playerId || null; // Get linked player ID
                 } else {
                     // New user - default to member role and create user document
-                    state.userRole = 'member';
+                    state.userRole = 'viewer';
                     state.userPlayerId = null;
                     await setDoc(doc(state.db, 'users', user.uid), {
                         email: email,
                         name: user.displayName,
-                        role: 'member',
+                        role: 'viewer',
                         playerId: null, // No player linked initially
                         createdAt: serverTimestamp()
                     });
