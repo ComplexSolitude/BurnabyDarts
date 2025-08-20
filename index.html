@@ -22,8 +22,18 @@
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        #toast-notification {
-            transition: transform 0.5s ease-in-out;
+       #toast-notification {
+            transition: all 0.5s ease-in-out;
+        }
+        
+        .toast-hidden {
+            transform: translateX(-50%) translateY(-100%) !important;
+            opacity: 0 !important;
+        }
+        
+        .toast-visible {
+            transform: translateX(-50%) translateY(1.25rem) !important;
+            opacity: 1 !important;
         }
          .modal-overlay {
             transition: opacity 0.3s ease;
@@ -541,7 +551,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast-notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 -translate-y-full bg-emerald-500 text-white py-3 px-5 rounded-xl shadow-lg transition-transform duration-500 z-50" role="alert">
+    <div id="toast-notification" class="fixed top-0 left-1/2 bg-emerald-500 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden" role="alert">
         <span id="toast-message"></span>
     </div>
 
@@ -1459,14 +1469,19 @@
 
         function showToast(message, isError = false) {
             ui.toast.message.textContent = message;
-            ui.toast.element.className = `fixed top-5 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-white py-3 px-5 rounded-xl shadow-lg transition-transform duration-500 z-50 ${isError ? 'bg-red-500' : 'bg-emerald-500'}`;
             
-            // Show the toast by removing the upward translation
-            ui.toast.element.classList.remove('-translate-y-full');
+            // Update the background color
+            ui.toast.element.classList.remove('bg-emerald-500', 'bg-red-500');
+            ui.toast.element.classList.add(isError ? 'bg-red-500' : 'bg-emerald-500');
             
-            // Hide after 3 seconds by adding the upward translation back
+            // Show the toast
+            ui.toast.element.classList.remove('toast-hidden');
+            ui.toast.element.classList.add('toast-visible');
+            
+            // Hide after 3 seconds
             setTimeout(() => {
-                ui.toast.element.classList.add('-translate-y-full');
+                ui.toast.element.classList.remove('toast-visible');
+                ui.toast.element.classList.add('toast-hidden');
             }, 3000);
         }
 
