@@ -641,7 +641,7 @@
 
         // Storage validation function
         function validateStoredData() {
-            const allowedRoles = ['viewer', 'member', 'admin'];
+            const allowedRoles = ['viewer', 'scorer', 'member', 'admin'];
             const storedRole = localStorage.getItem('userRole');
 
             if (storedRole && !allowedRoles.includes(storedRole)) {
@@ -917,7 +917,7 @@
                     ui.playerRoster.appendChild(playerEl);
                 });
             }
-            ui.addPlayerForm.classList.toggle('hidden', state.userRole === 'viewer');
+            ui.addPlayerForm.classList.toggle('hidden', state.userRole === 'viewer' || state.userRole === 'scorer');
         }
 
         function renderSeasonManagement() {
@@ -940,7 +940,7 @@
                 });
                 ui.activeSeasonDisplay.textContent = activeSeasonName;
             }
-            ui.addSeasonForm.classList.toggle('hidden', state.userRole === 'viewer');
+            ui.addSeasonForm.classList.toggle('hidden', state.userRole === 'viewer' || state.userRole === 'scorer');
         }
 
         function renderFixturePlayerSelectors() {
@@ -988,11 +988,11 @@
 
 
         function renderFixtureSetup() {
-            const isViewer = state.userRole === 'viewer';
+            const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer';
             document.querySelectorAll('#tab-content-setup input, #tab-content-setup select, #tab-content-setup button').forEach(el => {
-                el.disabled = isViewer;
+                el.disabled = isDisabled;
             });
-            if (isViewer) {
+            if (isDisabled) {
                 ui.createFixtureBtn.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
                 ui.createFixtureBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -1299,7 +1299,7 @@
             const isFinalGame = state.fixture.games && state.fixture.games.length > 0 && state.currentGameIndex === state.fixture.games.length - 1;
             const finishMatchBtn = document.getElementById('finish-match-btn');
 
-            if (isFinalGame && state.isLoggedIn) {
+            if (isFinalGame && (state.userRole === 'scorer' || state.userRole === 'member' || state.userRole === 'admin')) {
                 finishMatchBtn.classList.remove('hidden');
             } else {
                 finishMatchBtn.classList.add('hidden');
@@ -1567,6 +1567,7 @@
                         <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
                             <select data-user-id="${doc.id}" class="user-role-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
                                 <option value="viewer" ${userData.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                                <option value="scorer" ${userData.role === 'scorer' ? 'selected' : ''}>Scorer</option>
                                 <option value="member" ${userData.role === 'member' ? 'selected' : ''}>Member</option>
                                 <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
                             </select>
@@ -1791,6 +1792,10 @@
         }
 
         async function createFixture() {
+            if (state.userRole === 'viewer' || state.userRole === 'scorer') {
+                showToast("You don't have permission to create matches.", true);
+                return;
+            }
             if (!state.isLoggedIn) {
                 showToast("You must be logged in to create a match.", true);
                 return;
