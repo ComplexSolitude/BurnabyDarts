@@ -333,10 +333,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="mt-3">
-                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 text-center mb-1">High Checkout</label>
-                                            <input type="number" id="p1-high-checkout-input" class="w-full text-center text-lg p-1 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                        </div>
                                     </div>
                                     <!-- Player 2 -->
                                     <div class="border border-gray-200 dark:border-gray-700 p-3 sm:p-4 rounded-2xl">
@@ -375,16 +371,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="mt-3">
-                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 text-center mb-1">High Checkout</label>
-                                            <input type="number" id="p2-high-checkout-input" class="w-full text-center text-lg p-1 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- High Checkout for Singles -->
-                            <div id="singles-high-checkout" class="mb-6 max-w-xs mx-auto">
+                            <div class="mb-6 max-w-xs mx-auto">
                                 <label for="high-checkout-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-center">High Checkout (H/C)</label>
                                 <input type="number" id="high-checkout-input" class="mt-1 block w-full text-center text-xl p-2 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             </div>
@@ -1315,12 +1306,6 @@
             ui.singlesScoringPanel.classList.toggle('hidden', isDoubles);
             ui.doublesScoringPanel.classList.toggle('hidden', !isDoubles);
             ui.finesPanel.classList.toggle('hidden', isDoubles);
-            
-            // Show/hide high checkout inputs based on game type
-            const singlesHighCheckout = document.getElementById('singles-high-checkout');
-            if (singlesHighCheckout) {
-                singlesHighCheckout.classList.toggle('hidden', isDoubles);
-            }
 
             const playerNames = game.playerIds.map(id => {
                 const player = state.players.find(p => p.id === id);
@@ -1337,18 +1322,6 @@
             ui.statValueSpans.legsWon.textContent = game.legsWon || 0;
             ui.statValueSpans.legsLost.textContent = game.legsLost || 0;
             ui.statValueSpans.fines.textContent = `£${((game.fines || 0) / 100).toFixed(2)}`;
-            
-            if (isDoubles) {
-                // Use setTimeout to ensure DOM elements are rendered
-                setTimeout(() => {
-                    const p1HighCheckoutInput = document.getElementById('p1-high-checkout-input');
-                    const p2HighCheckoutInput = document.getElementById('p2-high-checkout-input');
-                    if (p1HighCheckoutInput) p1HighCheckoutInput.value = p1Scores.highCheckout || '';
-                    if (p2HighCheckoutInput) p2HighCheckoutInput.value = p2Scores.highCheckout || '';
-                }, 0);
-            } else {
-                ui.highCheckoutInput.value = game.highCheckout || '';
-            }
             // Render individual fines list
             renderCurrentGameFines(game);
             ui.highCheckoutInput.value = game.highCheckout || '';
@@ -1359,13 +1332,8 @@
                 if (p2Input) p2Input.value = p2Scores.highCheckout || '';
             }
 
-            // Ensure playerScores exists
-            if (!game.playerScores) {
-                game.playerScores = isDoubles ? [{}, {}] : [{}];
-            }
-            
-            const p1Scores = game.playerScores[0] || {};
-            const p2Scores = game.playerScores[1] || {};
+            const p1Scores = game.playerScores?.[0] || {};
+            const p2Scores = game.playerScores?.[1] || {};
 
             if (isDoubles) {
                 ui.statValueSpans.p1_scores100.textContent = p1Scores.scores100 || 0;
@@ -1389,7 +1357,7 @@
             const isFinalGame = state.fixture.games && state.fixture.games.length > 0 && state.currentGameIndex === state.fixture.games.length - 1;
             const finishMatchBtn = document.getElementById('finish-match-btn');
 
-            if (isFinalGame && (state.isLoggedIn || state.userRole === 'member')) {
+            if (isFinalGame && (state.userRole === 'scorer' || state.userRole === 'member' || state.userRole === 'admin')) {
                 finishMatchBtn.classList.remove('hidden');
             } else {
                 finishMatchBtn.classList.add('hidden');
@@ -2086,7 +2054,6 @@
                     scores140: 0,
                     scores180: 0,
                     sillyThings: 0,
-                    highCheckout: 0,
                 }));
                 
                 games.push({
@@ -2154,24 +2121,12 @@
                 }
             }
 
-            // Ensure playerScores array exists for doubles games
-            const isDoubles = game.playerIds.length > 1;
-            if (isDoubles && !game.playerScores) {
-                game.playerScores = [{}, {}];
-            }
+            if (!game.playerScores) game.playerScores = [{}, {}];
 
             if(stat.startsWith('scores') || stat === 'sillyThings') {
-                if (isDoubles) {
-                    const playerScores = game.playerScores[playerIndex] || {};
-                    playerScores[stat] = Math.max(0, (playerScores[stat] || 0) + value);
-                    game.playerScores[playerIndex] = playerScores;
-                } else {
-                    // For singles, store in playerScores[0] for consistency
-                    if (!game.playerScores) game.playerScores = [{}];
-                    const playerScores = game.playerScores[0] || {};
-                    playerScores[stat] = Math.max(0, (playerScores[stat] || 0) + value);
-                    game.playerScores[0] = playerScores;
-                }
+                const playerScores = game.playerScores[playerIndex] || {};
+                playerScores[stat] = Math.max(0, (playerScores[stat] || 0) + value);
+                game.playerScores[playerIndex] = playerScores;
             } else {
                  game[stat] = Math.max(0, (game[stat] || 0) + value);
             }
@@ -2310,7 +2265,7 @@
                                     singlesSeasonStats.highCheckout = game.highCheckout;
                                 }
                             } else if (gameType === 'doubles') {
-                                // Update individual high checkouts for doubles players
+                                // For doubles, check individual player high checkouts
                                 const playerHighCheckout = pScores.highCheckout || 0;
                                 if (playerHighCheckout > (seasonStats.highCheckout || 0)) {
                                     seasonStats.highCheckout = playerHighCheckout;
@@ -2825,9 +2780,9 @@
             ui.prevGameBtn.addEventListener('click', () => { if (state.currentGameIndex > 0) { state.currentGameIndex--; render(); } });
             ui.nextGameBtn.addEventListener('click', () => { if (state.currentGameIndex < state.fixture.games.length - 1) { state.currentGameIndex++; render(); } });
 
-            document.addEventListener('click', (e) => {
+            ui.liveMatchContent.addEventListener('click', (e) => {
                 const statBtn = e.target.closest('.stat-btn');
-                if (statBtn && ui.liveMatchContent.contains(statBtn)) {
+                if (statBtn) {
                      const playerIndex = statBtn.hasAttribute('data-player-index') ? parseInt(statBtn.dataset.playerIndex) : 0;
                      updateStat(statBtn.dataset.stat, parseInt(statBtn.dataset.op), playerIndex);
                 }
@@ -2889,20 +2844,6 @@
                 if (game) {
                     game.highCheckout = parseInt(e.target.value) || 0;
                     updateGameData();
-                }
-            });
-            // Add event listeners for doubles high checkout inputs (replace the above with this in init())
-            document.addEventListener('input', (e) => {
-                if (e.target.id === 'p1-high-checkout-input' || e.target.id === 'p2-high-checkout-input') {
-                    const game = state.fixture.games[state.currentGameIndex];
-                    if (game) {
-                        if (!game.playerScores) game.playerScores = [{}, {}];
-                        const playerIndex = e.target.id === 'p1-high-checkout-input' ? 0 : 1;
-                        const playerScores = game.playerScores[playerIndex] || {};
-                        playerScores.highCheckout = parseInt(e.target.value) || 0;
-                        game.playerScores[playerIndex] = playerScores;
-                        updateGameData();
-                    }
                 }
             });
             ui.liveMatchContent.addEventListener('input', (e) => {
