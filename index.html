@@ -840,7 +840,7 @@
             } else {
                 ui.headerSignoutBtn.classList.add('hidden');
             }
-            ui.adminContentArea.innerHTML = '';
+            ui.adminContentArea.textContent = '';
 
             if (state.isLoggedIn) {
                 const loggedInContainer = document.createElement('div');
@@ -849,37 +849,78 @@
                 // User info section
                 const userInfoDiv = document.createElement('div');
                 userInfoDiv.className = 'bg-gray-50 dark:bg-gray-700 p-4 rounded-xl';
-                userInfoDiv.innerHTML = `
-                    <div class="text-gray-600 dark:text-gray-300">
-                        <p>Signed in as <span class="font-bold capitalize">${state.userRole}</span></p>
-                        <p class="text-sm">${state.userEmail}</p>
-                        ${state.userName ? `<p class="text-sm">${state.userName}</p>` : ''}
-                    </div>
-                `;
+                const userInfoWrapper = document.createElement('div');
+                userInfoWrapper.className = 'text-gray-600 dark:text-gray-300';
+
+                const roleP = document.createElement('p');
+                roleP.textContent = 'Signed in as ';
+                const roleSpan = document.createElement('span');
+                roleSpan.className = 'font-bold capitalize';
+                roleSpan.textContent = state.userRole;
+                roleP.appendChild(roleSpan);
+                userInfoWrapper.appendChild(roleP);
+
+                const emailP = document.createElement('p');
+                emailP.className = 'text-sm';
+                emailP.textContent = state.userEmail;
+                userInfoWrapper.appendChild(emailP);
+
+                if (state.userName) {
+                    const nameP = document.createElement('p');
+                    nameP.className = 'text-sm';
+                    nameP.textContent = state.userName;
+                    userInfoWrapper.appendChild(nameP);
+                }
+
+                userInfoDiv.appendChild(userInfoWrapper);
                 loggedInContainer.appendChild(userInfoDiv);
 
                 // User management section (admin only)
                 if (state.userRole === 'admin') {
                     const userManagementDiv = document.createElement('div');
                     userManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
-                    userManagementDiv.innerHTML = `
-                        <h3 class="text-lg font-semibold mb-4 dark:text-white">User Management</h3>
 
-                        <!-- Security Warning -->
-                        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
-                            <div class="flex">
-                                <svg class="w-5 h-5 text-yellow-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                </svg>
-                                <div>
-                                    <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Security Notice</h4>
-                                    <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">Never give admin access to unknown users. All role changes are logged.</p>
-                                </div>
-                            </div>
-                        </div>
+                    const userMgmtHeading = document.createElement('h3');
+                    userMgmtHeading.className = 'text-lg font-semibold mb-4 dark:text-white';
+                    userMgmtHeading.textContent = 'User Management';
+                    userManagementDiv.appendChild(userMgmtHeading);
 
-                        <div id="users-list" class="space-y-2 mb-4"></div>
-                    `;
+                    const warningBox = document.createElement('div');
+                    warningBox.className = 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4';
+                    const warningFlex = document.createElement('div');
+                    warningFlex.className = 'flex';
+
+                    const warningSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    warningSvg.setAttribute('class', 'w-5 h-5 text-yellow-400 mr-2 mt-0.5 flex-shrink-0');
+                    warningSvg.setAttribute('fill', 'currentColor');
+                    warningSvg.setAttribute('viewBox', '0 0 20 20');
+                    const warningPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    warningPath.setAttribute('fill-rule', 'evenodd');
+                    warningPath.setAttribute('d', 'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z');
+                    warningPath.setAttribute('clip-rule', 'evenodd');
+                    warningSvg.appendChild(warningPath);
+                    warningFlex.appendChild(warningSvg);
+
+                    const warningTextWrapper = document.createElement('div');
+                    const warningTitle = document.createElement('h4');
+                    warningTitle.className = 'text-sm font-medium text-yellow-800 dark:text-yellow-200';
+                    warningTitle.textContent = 'Security Notice';
+                    warningTextWrapper.appendChild(warningTitle);
+
+                    const warningP = document.createElement('p');
+                    warningP.className = 'text-sm text-yellow-700 dark:text-yellow-300 mt-1';
+                    warningP.textContent = 'Never give admin access to unknown users. All role changes are logged.';
+                    warningTextWrapper.appendChild(warningP);
+
+                    warningFlex.appendChild(warningTextWrapper);
+                    warningBox.appendChild(warningFlex);
+                    userManagementDiv.appendChild(warningBox);
+
+                    const usersListDiv = document.createElement('div');
+                    usersListDiv.id = 'users-list';
+                    usersListDiv.className = 'space-y-2 mb-4';
+                    userManagementDiv.appendChild(usersListDiv);
+
                     loggedInContainer.appendChild(userManagementDiv);
 
                     // Load and display users
@@ -898,7 +939,10 @@
                 // Viewer mode content
                 const viewerContainer = document.createElement('div');
                 viewerContainer.className = 'space-y-4 max-w-sm';
-                viewerContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-300">You are currently in View Only mode.</p>`;
+                const viewerMsg = document.createElement('p');
+                viewerMsg.className = 'text-gray-600 dark:text-gray-300';
+                viewerMsg.textContent = 'You are currently in View Only mode.';
+                viewerContainer.appendChild(viewerMsg);
 
                 const returnBtn = document.createElement('button');
                 returnBtn.textContent = 'Return to Sign In';
@@ -914,7 +958,7 @@
         }
 
         function renderTabs() {
-            ui.mobileNavLinks.innerHTML = ''; // Clear previous links
+            ui.mobileNavLinks.textContent = ''; // Clear previous links
             for (const tabKey in ui.tabs) {
                 const tabButton = ui.tabs[tabKey];
                 const contentPanel = ui.content[tabKey];
@@ -961,17 +1005,30 @@
         }
 
         function renderPlayerRoster() {
-            ui.playerRoster.innerHTML = '';
+            ui.playerRoster.textContent = '';
             if (state.players.length === 0) {
-                ui.playerRoster.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No players added yet.</p>`;
+                const noPlayersP = document.createElement('p');
+                noPlayersP.className = 'text-gray-500 dark:text-gray-400';
+                noPlayersP.textContent = 'No players added yet.';
+                ui.playerRoster.appendChild(noPlayersP);
             } else {
                 state.players.forEach(player => {
                     const playerEl = document.createElement('div');
                     playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg';
-                    playerEl.innerHTML = `
-                        <span class="font-medium dark:text-white">${player.name}</span>
-                        ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold">Remove</button>` : ''}
-                    `;
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'font-medium dark:text-white';
+                    nameSpan.textContent = player.name;
+                    playerEl.appendChild(nameSpan);
+
+                    if (state.userRole === 'admin') {
+                        const removeBtn = document.createElement('button');
+                        removeBtn.dataset.playerId = player.id;
+                        removeBtn.className = 'delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold';
+                        removeBtn.textContent = 'Remove';
+                        playerEl.appendChild(removeBtn);
+                    }
+
                     ui.playerRoster.appendChild(playerEl);
                 });
             }
@@ -979,9 +1036,12 @@
         }
 
         function renderSeasonManagement() {
-            ui.seasonsList.innerHTML = '';
+            ui.seasonsList.textContent = '';
             if (state.seasons.length === 0) {
-                ui.seasonsList.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No seasons created yet.</p>`;
+                const noSeasonsP = document.createElement('p');
+                noSeasonsP.className = 'text-gray-500 dark:text-gray-400';
+                noSeasonsP.textContent = 'No seasons created yet.';
+                ui.seasonsList.appendChild(noSeasonsP);
                 ui.activeSeasonDisplay.textContent = 'N/A - Please create a season.';
             } else {
                 let activeSeasonName = 'N/A';
@@ -990,10 +1050,20 @@
                     if (isActive) activeSeasonName = season.name;
                     const seasonEl = document.createElement('div');
                     seasonEl.className = `flex items-center justify-between p-2 rounded-lg ${isActive ? 'bg-emerald-100 dark:bg-emerald-900' : 'bg-gray-100 dark:bg-gray-700'}`;
-                    seasonEl.innerHTML = `
-                        <span class="font-medium dark:text-white">${season.name}</span>
-                        ${!isActive && (state.userRole === 'admin' || state.userRole === 'member') ? `<button data-season-id="${season.id}" class="set-active-season-btn text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 text-sm font-semibold">Set Active</button>` : ''}
-                    `;
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'font-medium dark:text-white';
+                    nameSpan.textContent = season.name;
+                    seasonEl.appendChild(nameSpan);
+
+                    if (!isActive && (state.userRole === 'admin' || state.userRole === 'member')) {
+                        const setActiveBtn = document.createElement('button');
+                        setActiveBtn.dataset.seasonId = season.id;
+                        setActiveBtn.className = 'set-active-season-btn text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 text-sm font-semibold';
+                        setActiveBtn.textContent = 'Set Active';
+                        seasonEl.appendChild(setActiveBtn);
+                    }
+
                     ui.seasonsList.appendChild(seasonEl);
                 });
                 ui.activeSeasonDisplay.textContent = activeSeasonName;
@@ -1003,16 +1073,17 @@
 
         function renderFixturePlayerSelectors() {
             const form = ui.fixtureForm;
-            form.innerHTML = '';
+            form.textContent = '';
             if (state.players.length === 0) {
-                form.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Add players to the roster before setting up a match.</p>';
+                const msg = document.createElement('p');
+                msg.className = 'text-sm text-gray-500 dark:text-gray-400';
+                msg.textContent = 'Add players to the roster before setting up a match.';
+                form.appendChild(msg);
                 return;
             }
 
-            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-
             GAME_TITLES.forEach((title, i) => {
-                const isDoubles = title.includes("Doubles");
+                const isDoubles = title.includes('Doubles');
                 const gameSetupEl = document.createElement('div');
                 gameSetupEl.className = 'mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg';
 
@@ -1021,33 +1092,54 @@
                 const currentP1 = currentGame?.playerIds?.[0] || '';
                 const currentP2 = currentGame?.playerIds?.[1] || '';
 
-                let selectorsHtml = `
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${title}</label>
-                    <div class="grid grid-cols-1 ${isDoubles ? 'sm:grid-cols-2' : ''} gap-2">
-                        <div>
-                            <select id="game-${i}-p1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="">Select Player 1</option>
-                                ${playerOptions}
-                            </select>
-                        </div>
-                `;
+                const label = document.createElement('label');
+                label.className = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
+                label.textContent = title;
+                gameSetupEl.appendChild(label);
+
+                const gridDiv = document.createElement('div');
+                gridDiv.className = `grid grid-cols-1 ${isDoubles ? 'sm:grid-cols-2' : ''} gap-2`;
+
+                const selectContainer1 = document.createElement('div');
+                const select1 = document.createElement('select');
+                select1.id = `game-${i}-p1`;
+                select1.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white';
+                const defaultOpt1 = document.createElement('option');
+                defaultOpt1.value = '';
+                defaultOpt1.textContent = 'Select Player 1';
+                select1.appendChild(defaultOpt1);
+                state.players.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    select1.appendChild(opt);
+                });
+                selectContainer1.appendChild(select1);
+                gridDiv.appendChild(selectContainer1);
 
                 if (isDoubles) {
-                    selectorsHtml += `
-                        <div>
-                            <select id="game-${i}-p2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="">Select Player 2</option>
-                                ${playerOptions}
-                            </select>
-                        </div>
-                    `;
+                    const selectContainer2 = document.createElement('div');
+                    const select2 = document.createElement('select');
+                    select2.id = `game-${i}-p2`;
+                    select2.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white';
+                    const defaultOpt2 = document.createElement('option');
+                    defaultOpt2.value = '';
+                    defaultOpt2.textContent = 'Select Player 2';
+                    select2.appendChild(defaultOpt2);
+                    state.players.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.name;
+                        select2.appendChild(opt);
+                    });
+                    selectContainer2.appendChild(select2);
+                    gridDiv.appendChild(selectContainer2);
                 }
 
-                selectorsHtml += '</div>';
-                gameSetupEl.innerHTML = selectorsHtml;
+                gameSetupEl.appendChild(gridDiv);
                 form.appendChild(gameSetupEl);
 
-                // Set the current selections after the elements are added to the DOM
+                // Set current selections after the elements are added to the DOM
                 setTimeout(() => {
                     const p1Select = document.getElementById(`game-${i}-p1`);
                     const p2Select = document.getElementById(`game-${i}-p2`);
