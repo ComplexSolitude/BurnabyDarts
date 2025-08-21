@@ -1007,6 +1007,11 @@
                 const gameSetupEl = document.createElement('div');
                 gameSetupEl.className = 'mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg';
 
+                // Get current player selections if there's an active fixture
+                const currentGame = state.fixture.games?.[i];
+                const currentP1 = currentGame?.playerIds?.[0] || '';
+                const currentP2 = currentGame?.playerIds?.[1] || '';
+
                 let selectorsHtml = `
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${title}</label>
                     <div class="grid grid-cols-1 ${isDoubles ? 'sm:grid-cols-2' : ''} gap-2">
@@ -1032,9 +1037,21 @@
                 selectorsHtml += '</div>';
                 gameSetupEl.innerHTML = selectorsHtml;
                 form.appendChild(gameSetupEl);
+
+                // Set the current selections after the elements are added to the DOM
+                setTimeout(() => {
+                    const p1Select = document.getElementById(`game-${i}-p1`);
+                    const p2Select = document.getElementById(`game-${i}-p2`);
+
+                    if (p1Select && currentP1) {
+                        p1Select.value = currentP1;
+                    }
+                    if (p2Select && currentP2) {
+                        p2Select.value = currentP2;
+                    }
+                }, 0);
             });
         }
-
 
         function renderFixtureSetup() {
             const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer';
