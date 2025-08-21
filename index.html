@@ -687,12 +687,7 @@
 
             if (storedRole && !allowedRoles.includes(storedRole)) {
                 console.warn('Invalid role in storage, clearing...');
-                localStorage.removeItem('userRole');
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('loginTimestamp');
-                localStorage.removeItem('userEmail');
-                localStorage.removeItem('userId');
-                resetSignInButtonState();
+                clearUserSession();
                 return false;
             }
 
@@ -700,12 +695,7 @@
             const loginTimestamp = Number(localStorage.getItem('loginTimestamp'));
             if (loginTimestamp && (Date.now() - loginTimestamp > SESSION_DURATION_MS)) {
                 console.warn('Session expired, clearing storage...');
-                localStorage.removeItem('userRole');
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('loginTimestamp');
-                localStorage.removeItem('userEmail');
-                localStorage.removeItem('userId');
-                resetSignInButtonState();
+                clearUserSession();
                 return false;
             }
 
@@ -1732,13 +1722,7 @@
                 state.userEmail = null;
                 state.userName = null;
                 state.userPlayerId = null;
-
-                localStorage.removeItem('userRole');
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('loginTimestamp');
-                localStorage.removeItem('userEmail');
-                localStorage.removeItem('userId');
-                resetSignInButtonState();
+                clearUserSession();
                 showToast('You have been logged out.');
                 ui.mainApp.classList.add('hidden');
                 ui.roleSelectionOverlay.classList.remove('hidden');
@@ -1778,6 +1762,15 @@
             if (loadingOverlay) {
                 loadingOverlay.classList.add('hidden');
             }
+        }
+
+        function clearUserSession() {
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('loginTimestamp');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userId');
+            resetSignInButtonState();
         }
         async function loadUsers() {
             if (!state.db) return;
@@ -2710,11 +2703,7 @@
                         // If we can't get user data, clear everything
                         state.isLoggedIn = false;
                         state.userRole = null;
-                        localStorage.removeItem('userRole');
-                        localStorage.removeItem('isLoggedIn');
-                        localStorage.removeItem('loginTimestamp');
-                        localStorage.removeItem('userEmail');
-                        localStorage.removeItem('userId');
+                        clearUserSession();
                     }
                 } else {
                     // Not authenticated - check if we should show viewer mode
@@ -2726,11 +2715,7 @@
                         // Clear everything if not authenticated and not viewer
                         state.isLoggedIn = false;
                         state.userRole = null;
-                        localStorage.removeItem('userRole');
-                        localStorage.removeItem('isLoggedIn');
-                        localStorage.removeItem('loginTimestamp');
-                        localStorage.removeItem('userEmail');
-                        localStorage.removeItem('userId');
+                        clearUserSession();
                     }
                 }
 
