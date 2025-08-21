@@ -849,13 +849,30 @@
                 // User info section
                 const userInfoDiv = document.createElement('div');
                 userInfoDiv.className = 'bg-gray-50 dark:bg-gray-700 p-4 rounded-xl';
-                userInfoDiv.innerHTML = `
-                    <div class="text-gray-600 dark:text-gray-300">
-                        <p>Signed in as <span class="font-bold capitalize">${state.userRole}</span></p>
-                        <p class="text-sm">${state.userEmail}</p>
-                        ${state.userName ? `<p class="text-sm">${state.userName}</p>` : ''}
-                    </div>
-                `;
+                const infoWrap = document.createElement('div');
+                infoWrap.className = 'text-gray-600 dark:text-gray-300';
+
+                const roleP = document.createElement('p');
+                roleP.textContent = 'Signed in as ';
+                const roleSpan = document.createElement('span');
+                roleSpan.className = 'font-bold capitalize';
+                roleSpan.textContent = state.userRole;
+                roleP.appendChild(roleSpan);
+                infoWrap.appendChild(roleP);
+
+                const emailP = document.createElement('p');
+                emailP.className = 'text-sm';
+                emailP.textContent = state.userEmail;
+                infoWrap.appendChild(emailP);
+
+                if (state.userName) {
+                    const nameP = document.createElement('p');
+                    nameP.className = 'text-sm';
+                    nameP.textContent = state.userName;
+                    infoWrap.appendChild(nameP);
+                }
+
+                userInfoDiv.appendChild(infoWrap);
                 loggedInContainer.appendChild(userInfoDiv);
 
                 // User management section (admin only)
@@ -898,7 +915,10 @@
                 // Viewer mode content
                 const viewerContainer = document.createElement('div');
                 viewerContainer.className = 'space-y-4 max-w-sm';
-                viewerContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-300">You are currently in View Only mode.</p>`;
+                const viewerMsg = document.createElement('p');
+                viewerMsg.className = 'text-gray-600 dark:text-gray-300';
+                viewerMsg.textContent = 'You are currently in View Only mode.';
+                viewerContainer.appendChild(viewerMsg);
 
                 const returnBtn = document.createElement('button');
                 returnBtn.textContent = 'Return to Sign In';
@@ -963,15 +983,28 @@
         function renderPlayerRoster() {
             ui.playerRoster.innerHTML = '';
             if (state.players.length === 0) {
-                ui.playerRoster.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No players added yet.</p>`;
+                const msg = document.createElement('p');
+                msg.className = 'text-gray-500 dark:text-gray-400';
+                msg.textContent = 'No players added yet.';
+                ui.playerRoster.appendChild(msg);
             } else {
                 state.players.forEach(player => {
                     const playerEl = document.createElement('div');
                     playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg';
-                    playerEl.innerHTML = `
-                        <span class="font-medium dark:text-white">${player.name}</span>
-                        ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold">Remove</button>` : ''}
-                    `;
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'font-medium dark:text-white';
+                    nameSpan.textContent = player.name;
+                    playerEl.appendChild(nameSpan);
+
+                    if (state.userRole === 'admin') {
+                        const removeBtn = document.createElement('button');
+                        removeBtn.dataset.playerId = player.id;
+                        removeBtn.className = 'delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold';
+                        removeBtn.textContent = 'Remove';
+                        playerEl.appendChild(removeBtn);
+                    }
+
                     ui.playerRoster.appendChild(playerEl);
                 });
             }
@@ -981,19 +1014,33 @@
         function renderSeasonManagement() {
             ui.seasonsList.innerHTML = '';
             if (state.seasons.length === 0) {
-                ui.seasonsList.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No seasons created yet.</p>`;
+                const msg = document.createElement('p');
+                msg.className = 'text-gray-500 dark:text-gray-400';
+                msg.textContent = 'No seasons created yet.';
+                ui.seasonsList.appendChild(msg);
                 ui.activeSeasonDisplay.textContent = 'N/A - Please create a season.';
             } else {
                 let activeSeasonName = 'N/A';
                 state.seasons.forEach(season => {
                     const isActive = season.id === state.activeSeasonId;
                     if (isActive) activeSeasonName = season.name;
+
                     const seasonEl = document.createElement('div');
                     seasonEl.className = `flex items-center justify-between p-2 rounded-lg ${isActive ? 'bg-emerald-100 dark:bg-emerald-900' : 'bg-gray-100 dark:bg-gray-700'}`;
-                    seasonEl.innerHTML = `
-                        <span class="font-medium dark:text-white">${season.name}</span>
-                        ${!isActive && (state.userRole === 'admin' || state.userRole === 'member') ? `<button data-season-id="${season.id}" class="set-active-season-btn text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 text-sm font-semibold">Set Active</button>` : ''}
-                    `;
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'font-medium dark:text-white';
+                    nameSpan.textContent = season.name;
+                    seasonEl.appendChild(nameSpan);
+
+                    if (!isActive && (state.userRole === 'admin' || state.userRole === 'member')) {
+                        const btn = document.createElement('button');
+                        btn.dataset.seasonId = season.id;
+                        btn.className = 'set-active-season-btn text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 text-sm font-semibold';
+                        btn.textContent = 'Set Active';
+                        seasonEl.appendChild(btn);
+                    }
+
                     ui.seasonsList.appendChild(seasonEl);
                 });
                 ui.activeSeasonDisplay.textContent = activeSeasonName;
@@ -1005,11 +1052,12 @@
             const form = ui.fixtureForm;
             form.innerHTML = '';
             if (state.players.length === 0) {
-                form.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Add players to the roster before setting up a match.</p>';
+                const msg = document.createElement('p');
+                msg.className = 'text-sm text-gray-500 dark:text-gray-400';
+                msg.textContent = 'Add players to the roster before setting up a match.';
+                form.appendChild(msg);
                 return;
             }
-
-            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
 
             GAME_TITLES.forEach((title, i) => {
                 const isDoubles = title.includes("Doubles");
@@ -1021,30 +1069,43 @@
                 const currentP1 = currentGame?.playerIds?.[0] || '';
                 const currentP2 = currentGame?.playerIds?.[1] || '';
 
-                let selectorsHtml = `
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${title}</label>
-                    <div class="grid grid-cols-1 ${isDoubles ? 'sm:grid-cols-2' : ''} gap-2">
-                        <div>
-                            <select id="game-${i}-p1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="">Select Player 1</option>
-                                ${playerOptions}
-                            </select>
-                        </div>
-                `;
+                const label = document.createElement('label');
+                label.className = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
+                label.textContent = title;
+                gameSetupEl.appendChild(label);
+
+                const grid = document.createElement('div');
+                grid.className = `grid grid-cols-1 ${isDoubles ? 'sm:grid-cols-2' : ''} gap-2`;
+                gameSetupEl.appendChild(grid);
+
+                const createSelect = (id, placeholder) => {
+                    const wrapper = document.createElement('div');
+                    const select = document.createElement('select');
+                    select.id = id;
+                    select.className = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white';
+
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = '';
+                    defaultOpt.textContent = placeholder;
+                    select.appendChild(defaultOpt);
+
+                    state.players.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.name;
+                        select.appendChild(opt);
+                    });
+
+                    wrapper.appendChild(select);
+                    return wrapper;
+                };
+
+                grid.appendChild(createSelect(`game-${i}-p1`, 'Select Player 1'));
 
                 if (isDoubles) {
-                    selectorsHtml += `
-                        <div>
-                            <select id="game-${i}-p2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="">Select Player 2</option>
-                                ${playerOptions}
-                            </select>
-                        </div>
-                    `;
+                    grid.appendChild(createSelect(`game-${i}-p2`, 'Select Player 2'));
                 }
 
-                selectorsHtml += '</div>';
-                gameSetupEl.innerHTML = selectorsHtml;
                 form.appendChild(gameSetupEl);
 
                 // Set the current selections after the elements are added to the DOM
@@ -1161,9 +1222,16 @@
 
 
         function renderLeaderboard() {
-            ui.seasonFilterSelect.innerHTML = `<option value="all-time">All-Time</option>`;
+            ui.seasonFilterSelect.innerHTML = '';
+            const allOption = document.createElement('option');
+            allOption.value = 'all-time';
+            allOption.textContent = 'All-Time';
+            ui.seasonFilterSelect.appendChild(allOption);
             state.seasons.forEach(s => {
-                ui.seasonFilterSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                ui.seasonFilterSelect.appendChild(opt);
             });
             ui.seasonFilterSelect.value = state.selectedStatsSeasonId;
 
@@ -1183,19 +1251,42 @@
                 const tr = document.createElement('tr');
                 tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
                 tr.dataset.playerId = player.id;
-                tr.innerHTML = `
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${legWinPercent}%</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${((stats.totalFines) / 100).toFixed(2)}</td>
-                `;
+
+                const cells = [
+                    player.name,
+                    stats.gamesWon,
+                    stats.gamesLost,
+                    stats.legsWon,
+                    stats.legsLost,
+                    `${legWinPercent}%`,
+                    stats.scores100,
+                    stats.scores140,
+                    stats.scores180,
+                    stats.highCheckout,
+                    `£${((stats.totalFines) / 100).toFixed(2)}`
+                ];
+
+                const classes = [
+                    'px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center',
+                    'px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center'
+                ];
+
+                cells.forEach((text, idx) => {
+                    const td = document.createElement('td');
+                    td.className = classes[idx];
+                    td.textContent = text;
+                    tr.appendChild(td);
+                });
+
                 ui.leaderboardBody.appendChild(tr);
             });
         }
@@ -1213,13 +1304,20 @@
 
             const scoreEl = document.createElement('div');
             scoreEl.className = 'p-4 bg-emerald-600 text-white rounded-xl';
-            scoreEl.innerHTML = `<h3 class="text-xl sm:text-2xl font-bold text-center">Total Legs: ${burnabyLegs} - ${oppositionLegs}</h3>`;
+            const h3 = document.createElement('h3');
+            h3.className = 'text-xl sm:text-2xl font-bold text-center';
+            h3.textContent = `Total Legs: ${burnabyLegs} - ${oppositionLegs}`;
+            scoreEl.appendChild(h3);
             container.appendChild(scoreEl);
         }
 
         function renderCurrentMatch() {
             if (!state.fixture.id) {
-                ui.currentMatchResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No active match.</p>';
+                ui.currentMatchResults.innerHTML = '';
+                const msg = document.createElement('p');
+                msg.className = 'text-gray-500 dark:text-gray-400';
+                msg.textContent = 'No active match.';
+                ui.currentMatchResults.appendChild(msg);
                 ui.currentMatchOpponent.textContent = 'Live results as they come in.';
                 ui.currentMatchScoreContainer.innerHTML = '';
                 return;
@@ -1233,15 +1331,29 @@
                 const gameEl = document.createElement('div');
                 gameEl.className = `p-4 rounded-xl ${state.currentGameIndex === index ? 'bg-emerald-50 dark:bg-emerald-900/50' : 'bg-gray-50 dark:bg-gray-700/50'}`;
                 const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
-                gameEl.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-bold dark:text-white">${game.title}</p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">${playerNames}</p>
-                        </div>
-                        <p class="text-xl font-bold dark:text-white">${game.legsWon || 0} - ${game.legsLost || 0}</p>
-                    </div>
-                `;
+
+                const flex = document.createElement('div');
+                flex.className = 'flex justify-between items-center';
+
+                const left = document.createElement('div');
+                const titleP = document.createElement('p');
+                titleP.className = 'font-bold dark:text-white';
+                titleP.textContent = game.title;
+                left.appendChild(titleP);
+
+                const namesP = document.createElement('p');
+                namesP.className = 'text-sm text-gray-600 dark:text-gray-400';
+                namesP.textContent = playerNames;
+                left.appendChild(namesP);
+
+                const scoreP = document.createElement('p');
+                scoreP.className = 'text-xl font-bold dark:text-white';
+                scoreP.textContent = `${game.legsWon || 0} - ${game.legsLost || 0}`;
+
+                flex.appendChild(left);
+                flex.appendChild(scoreP);
+
+                gameEl.appendChild(flex);
                 ui.currentMatchResults.appendChild(gameEl);
             });
         }
@@ -1249,8 +1361,15 @@
         function renderPreviousMatches() {
             ui.previousMatchesList.innerHTML = '';
             if (state.previousFixtures.length === 0) {
-                ui.previousMatchesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No finished matches.</p>';
-                ui.previousMatchDetails.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Select a match to see the details.</p>';
+                const listMsg = document.createElement('p');
+                listMsg.className = 'text-gray-500 dark:text-gray-400';
+                listMsg.textContent = 'No finished matches.';
+                ui.previousMatchesList.appendChild(listMsg);
+                const detailMsg = document.createElement('p');
+                detailMsg.className = 'text-gray-500 dark:text-gray-400';
+                detailMsg.textContent = 'Select a match to see the details.';
+                ui.previousMatchDetails.innerHTML = '';
+                ui.previousMatchDetails.appendChild(detailMsg);
                 return;
             }
             state.previousFixtures.forEach(fixture => {
@@ -1264,47 +1383,92 @@
                 const item = document.createElement('div');
                 item.className = `w-full text-left p-3 rounded-lg transition-colors duration-200 ${state.selectedPreviousFixtureId === fixture.id ? 'bg-emerald-100 dark:bg-emerald-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`;
 
-                const isAdmin = state.userRole === 'admin';
-                item.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <button class="flex-grow text-left select-match-btn" data-fixture-id="${fixture.id}">
-                            <p class="font-semibold dark:text-white">vs ${fixture.oppositionName}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">${fixture.createdAt.toDate().toLocaleDateString()}</p>
-                        </button>
-                        <div class="flex items-center space-x-2 flex-shrink-0">
-                            <p class="font-bold text-lg dark:text-white">${burnabyLegs} - ${oppositionLegs}</p>
-                            ${isAdmin ? `<button data-fixture-id="${fixture.id}" class="delete-fixture-btn text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>` : ''}
-                        </div>
-                    </div>
-                `;
+                const flex = document.createElement('div');
+                flex.className = 'flex justify-between items-center';
+
+                const button = document.createElement('button');
+                button.className = 'flex-grow text-left select-match-btn';
+                button.dataset.fixtureId = fixture.id;
+
+                const nameP = document.createElement('p');
+                nameP.className = 'font-semibold dark:text-white';
+                nameP.textContent = `vs ${fixture.oppositionName}`;
+                const dateP = document.createElement('p');
+                dateP.className = 'text-sm text-gray-500 dark:text-gray-400';
+                dateP.textContent = fixture.createdAt.toDate().toLocaleDateString();
+                button.appendChild(nameP);
+                button.appendChild(dateP);
+
+                const scoreWrap = document.createElement('div');
+                scoreWrap.className = 'flex items-center space-x-2 flex-shrink-0';
+                const scoreP = document.createElement('p');
+                scoreP.className = 'font-bold text-lg dark:text-white';
+                scoreP.textContent = `${burnabyLegs} - ${oppositionLegs}`;
+                scoreWrap.appendChild(scoreP);
+
+                if (state.userRole === 'admin') {
+                    const delBtn = document.createElement('button');
+                    delBtn.dataset.fixtureId = fixture.id;
+                    delBtn.className = 'delete-fixture-btn text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50';
+                    delBtn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+                    scoreWrap.appendChild(delBtn);
+                }
+
+                flex.appendChild(button);
+                flex.appendChild(scoreWrap);
+                item.appendChild(flex);
+
                 ui.previousMatchesList.appendChild(item);
             });
 
             const selectedFixture = state.previousFixtures.find(f => f.id === state.selectedPreviousFixtureId);
             if (selectedFixture) {
                 ui.previousMatchDetails.innerHTML = '';
-                 let burnabyLegs = 0;
-                 let oppositionLegs = 0;
-                 selectedFixture.games.forEach(game => {
-                      burnabyLegs += game.legsWon || 0;
-                      oppositionLegs += game.legsLost || 0;
-                 });
-                ui.previousMatchDetails.innerHTML += `<h3 class="text-xl font-bold mb-4 dark:text-white">vs ${selectedFixture.oppositionName} (Total Legs: ${burnabyLegs}-${oppositionLegs})</h3>`;
+                let burnabyLegs = 0;
+                let oppositionLegs = 0;
                 selectedFixture.games.forEach(game => {
-                     const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
-                     ui.previousMatchDetails.innerHTML += `
-                          <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg mb-2">
-                               <div class="flex justify-between items-center">
-                                    <div><p class="font-semibold dark:text-white">${game.title}</p><p class="text-sm text-gray-500 dark:text-gray-400">${playerNames}</p></div>
-                                    <p class="font-bold dark:text-white">${game.legsWon} - ${game.legsLost}</p>
-                               </div>
-                          </div>
-                     `;
+                    burnabyLegs += game.legsWon || 0;
+                    oppositionLegs += game.legsLost || 0;
+                });
+
+                const header = document.createElement('h3');
+                header.className = 'text-xl font-bold mb-4 dark:text-white';
+                header.textContent = `vs ${selectedFixture.oppositionName} (Total Legs: ${burnabyLegs}-${oppositionLegs})`;
+                ui.previousMatchDetails.appendChild(header);
+
+                selectedFixture.games.forEach(game => {
+                    const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
+                    const wrap = document.createElement('div');
+                    wrap.className = 'p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg mb-2';
+
+                    const flex = document.createElement('div');
+                    flex.className = 'flex justify-between items-center';
+
+                    const left = document.createElement('div');
+                    const titleP = document.createElement('p');
+                    titleP.className = 'font-semibold dark:text-white';
+                    titleP.textContent = game.title;
+                    const namesP = document.createElement('p');
+                    namesP.className = 'text-sm text-gray-500 dark:text-gray-400';
+                    namesP.textContent = playerNames;
+                    left.appendChild(titleP);
+                    left.appendChild(namesP);
+
+                    const scoreP = document.createElement('p');
+                    scoreP.className = 'font-bold dark:text-white';
+                    scoreP.textContent = `${game.legsWon} - ${game.legsLost}`;
+
+                    flex.appendChild(left);
+                    flex.appendChild(scoreP);
+                    wrap.appendChild(flex);
+                    ui.previousMatchDetails.appendChild(wrap);
                 });
             } else {
-                ui.previousMatchDetails.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Select a match to see the details.</p>';
+                ui.previousMatchDetails.innerHTML = '';
+                const msg = document.createElement('p');
+                msg.className = 'text-gray-500 dark:text-gray-400';
+                msg.textContent = 'Select a match to see the details.';
+                ui.previousMatchDetails.appendChild(msg);
             }
         }
 
@@ -1320,18 +1484,35 @@
                 totalOutstandingFines += player.outstandingFines;
                 const fineEl = document.createElement('div');
                 fineEl.className = 'p-4 flex items-center justify-between';
-                fineEl.innerHTML = `
-                    <div>
-                        <p class="font-semibold dark:text-white">${player.name}</p>
-                        <p class="text-lg font-bold text-red-600 dark:text-red-400">£${(player.outstandingFines / 100).toFixed(2)}</p>
-                    </div>
-                    ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="pay-fines-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700">Mark as Paid</button>` : ''}
-                `;
+
+                const infoDiv = document.createElement('div');
+                const nameP = document.createElement('p');
+                nameP.className = 'font-semibold dark:text-white';
+                nameP.textContent = player.name;
+                const amountP = document.createElement('p');
+                amountP.className = 'text-lg font-bold text-red-600 dark:text-red-400';
+                amountP.textContent = `£${(player.outstandingFines / 100).toFixed(2)}`;
+                infoDiv.appendChild(nameP);
+                infoDiv.appendChild(amountP);
+                fineEl.appendChild(infoDiv);
+
+                if (state.userRole === 'admin') {
+                    const btn = document.createElement('button');
+                    btn.dataset.playerId = player.id;
+                    btn.className = 'pay-fines-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700';
+                    btn.textContent = 'Mark as Paid';
+                    fineEl.appendChild(btn);
+                }
+
                 ui.finesList.appendChild(fineEl);
             });
 
             if (totalOutstandingFines === 0) {
-                ui.finesList.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">No outstanding fines. Good lads.</p>';
+                ui.finesList.innerHTML = '';
+                const msg = document.createElement('p');
+                msg.className = 'p-4 text-gray-500 dark:text-gray-400';
+                msg.textContent = 'No outstanding fines. Good lads.';
+                ui.finesList.appendChild(msg);
                 ui.payFineContainer.classList.add('hidden');
             } else {
                 ui.payFineContainer.classList.remove('hidden');
@@ -1528,9 +1709,12 @@
             if (!ui.finesListCurrentGame) return;
             
             ui.finesListCurrentGame.innerHTML = '';
-            
+
             if (!game.finesList || game.finesList.length === 0) {
-                ui.finesListCurrentGame.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400">No fines this game</p>';
+                const msg = document.createElement('p');
+                msg.className = 'text-center text-sm text-gray-500 dark:text-gray-400';
+                msg.textContent = 'No fines this game';
+                ui.finesListCurrentGame.appendChild(msg);
                 return;
             }
             
@@ -1562,7 +1746,7 @@
                 const groupTotal = fines.reduce((sum, fine) => sum + fine.amount, 0);
                 const count = fines.length;
                 
-                headerEl.innerHTML = `${groupName} (${count}) - £${(groupTotal/100).toFixed(2)}`;
+                headerEl.textContent = `${groupName} (${count}) - £${(groupTotal/100).toFixed(2)}`;
                 ui.finesListCurrentGame.appendChild(headerEl);
                 
                 // Individual fines in this group
@@ -1577,14 +1761,26 @@
                     } else {
                         displayText = `${groupName}`; // Just "Score of 26" or "Missed Board"
                     }
-                    
-                    fineEl.innerHTML = `
-                        <span class="text-red-700 dark:text-red-300">${displayText}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-red-600 dark:text-red-400">£${(fine.amount/100).toFixed(2)}</span>
-                            ${state.userRole !== 'viewer' ? `<button data-fine-id="${fine.id}" class="remove-fine-btn text-red-500 hover:text-red-700 text-xs bg-white dark:bg-gray-700 px-2 py-1 rounded border">✕</button>` : ''}
-                        </div>
-                    `;
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'text-red-700 dark:text-red-300';
+                    textSpan.textContent = displayText;
+                    fineEl.appendChild(textSpan);
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'flex items-center gap-2';
+                    const amountSpan = document.createElement('span');
+                    amountSpan.className = 'font-bold text-red-600 dark:text-red-400';
+                    amountSpan.textContent = `£${(fine.amount/100).toFixed(2)}`;
+                    wrapper.appendChild(amountSpan);
+                    if (state.userRole !== 'viewer') {
+                        const btn = document.createElement('button');
+                        btn.dataset.fineId = fine.id;
+                        btn.className = 'remove-fine-btn text-red-500 hover:text-red-700 text-xs bg-white dark:bg-gray-700 px-2 py-1 rounded border';
+                        btn.textContent = '✕';
+                        wrapper.appendChild(btn);
+                    }
+                    fineEl.appendChild(wrapper);
                     ui.finesListCurrentGame.appendChild(fineEl);
                 });
             });
@@ -1792,24 +1988,52 @@
                     const userData = doc.data();
                     const userItem = document.createElement('div');
                     userItem.className = 'flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 dark:bg-gray-600 p-3 rounded-lg space-y-2 sm:space-y-0';
-                    userItem.innerHTML = `
-                        <div class="min-w-0 flex-1">
-                            <p class="font-medium dark:text-white truncate">${userData.name || userData.email}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">${userData.email}</p>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
-                            <select data-user-id="${doc.id}" class="user-role-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
-                                <option value="viewer" ${userData.role === 'viewer' ? 'selected' : ''}>Viewer</option>
-                                <option value="scorer" ${userData.role === 'scorer' ? 'selected' : ''}>Scorer</option>
-                                <option value="member" ${userData.role === 'member' ? 'selected' : ''}>Member</option>
-                                <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            </select>
-                            <select data-user-id="${doc.id}" class="user-player-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
-                                <option value="">No Player</option>
-                                ${state.players.map(p => `<option value="${p.id}" ${userData.playerId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
-                            </select>
-                        </div>
-                    `;
+
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'min-w-0 flex-1';
+                    const nameP = document.createElement('p');
+                    nameP.className = 'font-medium dark:text-white truncate';
+                    nameP.textContent = userData.name || userData.email;
+                    const emailP = document.createElement('p');
+                    emailP.className = 'text-sm text-gray-500 dark:text-gray-400 truncate';
+                    emailP.textContent = userData.email;
+                    infoDiv.appendChild(nameP);
+                    infoDiv.appendChild(emailP);
+
+                    const controlsDiv = document.createElement('div');
+                    controlsDiv.className = 'flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto';
+
+                    const roleSelect = document.createElement('select');
+                    roleSelect.dataset.userId = doc.id;
+                    roleSelect.className = 'user-role-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm';
+                    ['viewer','scorer','member','admin'].forEach(role => {
+                        const opt = document.createElement('option');
+                        opt.value = role;
+                        opt.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+                        if (userData.role === role) opt.selected = true;
+                        roleSelect.appendChild(opt);
+                    });
+
+                    const playerSelect = document.createElement('select');
+                    playerSelect.dataset.userId = doc.id;
+                    playerSelect.className = 'user-player-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm';
+                    const noneOpt = document.createElement('option');
+                    noneOpt.value = '';
+                    noneOpt.textContent = 'No Player';
+                    playerSelect.appendChild(noneOpt);
+                    state.players.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.name;
+                        if (userData.playerId === p.id) opt.selected = true;
+                        playerSelect.appendChild(opt);
+                    });
+
+                    controlsDiv.appendChild(roleSelect);
+                    controlsDiv.appendChild(playerSelect);
+
+                    userItem.appendChild(infoDiv);
+                    userItem.appendChild(controlsDiv);
                     usersList.appendChild(userItem);
                 });
 
@@ -2438,13 +2662,28 @@
 
                 const playerEl = document.createElement('div');
                 playerEl.className = 'flex items-center justify-between';
-                playerEl.innerHTML = `
-                    <div>
-                        <input id="dotd-${player.id}" name="dotd-vote" type="radio" value="${player.id}" class="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500">
-                        <label for="dotd-${player.id}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">${player.name}</label>
-                    </div>
-                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">? x ${sillyThingsCount}</span>
-                `;
+
+                const leftDiv = document.createElement('div');
+                const input = document.createElement('input');
+                input.id = `dotd-${player.id}`;
+                input.name = 'dotd-vote';
+                input.type = 'radio';
+                input.value = player.id;
+                input.className = 'h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500';
+                leftDiv.appendChild(input);
+
+                const label = document.createElement('label');
+                label.htmlFor = `dotd-${player.id}`;
+                label.className = 'ml-3 text-sm font-medium text-gray-700 dark:text-gray-300';
+                label.textContent = player.name;
+                leftDiv.appendChild(label);
+
+                const countSpan = document.createElement('span');
+                countSpan.className = 'text-sm font-medium text-gray-500 dark:text-gray-400';
+                countSpan.textContent = `? x ${sillyThingsCount}`;
+
+                playerEl.appendChild(leftDiv);
+                playerEl.appendChild(countSpan);
                 ui.dotdModal.list.appendChild(playerEl);
             });
 
@@ -2453,10 +2692,30 @@
         }
 
         function renderH2HTab() {
-            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            ui.h2h.player1Select.innerHTML = `<option value="">Select Player 1</option>${playerOptions}`;
-            ui.h2h.player2Select.innerHTML = `<option value="">Select Player 2</option>${playerOptions}`;
-            
+            ui.h2h.player1Select.innerHTML = '';
+            const p1Default = document.createElement('option');
+            p1Default.value = '';
+            p1Default.textContent = 'Select Player 1';
+            ui.h2h.player1Select.appendChild(p1Default);
+            state.players.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                ui.h2h.player1Select.appendChild(opt);
+            });
+
+            ui.h2h.player2Select.innerHTML = '';
+            const p2Default = document.createElement('option');
+            p2Default.value = '';
+            p2Default.textContent = 'Select Player 2';
+            ui.h2h.player2Select.appendChild(p2Default);
+            state.players.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                ui.h2h.player2Select.appendChild(opt);
+            });
+
             if(state.h2h.player1) ui.h2h.player1Select.value = state.h2h.player1;
             if(state.h2h.player2) ui.h2h.player2Select.value = state.h2h.player2;
         }
@@ -2467,7 +2726,11 @@
             const container = ui.h2h.resultsContainer;
 
             if (!p1Id || !p2Id || p1Id === p2Id) {
-                container.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400">Select two different players to compare their stats.</p>';
+                container.innerHTML = '';
+                const msg = document.createElement('p');
+                msg.className = 'text-center text-gray-500 dark:text-gray-400';
+                msg.textContent = 'Select two different players to compare their stats.';
+                container.appendChild(msg);
                 return;
             }
 
@@ -2477,39 +2740,65 @@
             const p1Stats = getPlayerStats(player1, 'all-time', 'combined');
             const p2Stats = getPlayerStats(player2, 'all-time', 'combined');
             
-            const renderStatRow = (label, val1, val2) => {
+            const createStatRow = (label, val1, val2) => {
                 const isP1Winner = val1 > val2;
                 const isP2Winner = val2 > val1;
-                return `
-                    <div class="flex justify-between items-center py-2">
-                        <span class="font-semibold ${isP1Winner ? 'text-emerald-500' : 'dark:text-white'}">${val1}</span>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">${label}</span>
-                        <span class="font-semibold ${isP2Winner ? 'text-emerald-500' : 'dark:text-white'}">${val2}</span>
-                    </div>
-                `;
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center py-2';
+
+                const span1 = document.createElement('span');
+                span1.className = 'font-semibold ' + (isP1Winner ? 'text-emerald-500' : 'dark:text-white');
+                span1.textContent = val1;
+
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'text-sm text-gray-500 dark:text-gray-400';
+                labelSpan.textContent = label;
+
+                const span2 = document.createElement('span');
+                span2.className = 'font-semibold ' + (isP2Winner ? 'text-emerald-500' : 'dark:text-white');
+                span2.textContent = val2;
+
+                row.appendChild(span1);
+                row.appendChild(labelSpan);
+                row.appendChild(span2);
+                return row;
             };
 
-            container.innerHTML = `
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                     <div class="text-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                         <h3 class="text-lg font-bold text-emerald-600 dark:text-emerald-400">${player1.name}</h3>
-                     </div>
-                     <div class="text-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                         <h3 class="text-lg font-bold text-emerald-600 dark:text-emerald-400">${player2.name}</h3>
-                     </div>
-                </div>
-                <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                    ${renderStatRow('Games Won', p1Stats.gamesWon, p2Stats.gamesWon)}
-                    ${renderStatRow('Legs Won', p1Stats.legsWon, p2Stats.legsWon)}
-                    ${renderStatRow('Leg Win %', parseFloat(((p1Stats.legsWon + p1Stats.legsLost > 0) ? (p1Stats.legsWon / (p1Stats.legsWon + p1Stats.legsLost) * 100) : 0).toFixed(1)), parseFloat(((p2Stats.legsWon + p2Stats.legsLost > 0) ? (p2Stats.legsWon / (p2Stats.legsWon + p2Stats.legsLost) * 100) : 0).toFixed(1)))}
-                    ${renderStatRow('100+', p1Stats.scores100, p2Stats.scores100)}
-                    ${renderStatRow('140+', p1Stats.scores140, p2Stats.scores140)}
-                    ${renderStatRow('180s', p1Stats.scores180, p2Stats.scores180)}
-                    ${renderStatRow('High Checkout', p1Stats.highCheckout, p2Stats.highCheckout)}
-                    ${renderStatRow('Total Fines (£)', (p1Stats.totalFines/100).toFixed(2), (p2Stats.totalFines/100).toFixed(2))}
-                </div>
-                <p class="text-xs text-center text-gray-400 mt-4">* Singles stats shown for wins/legs/HC/fines. All scores included.</p>
-            `;
+            container.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-2 gap-4 mb-4';
+            const p1Div = document.createElement('div');
+            p1Div.className = 'text-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg';
+            const p1H3 = document.createElement('h3');
+            p1H3.className = 'text-lg font-bold text-emerald-600 dark:text-emerald-400';
+            p1H3.textContent = player1.name;
+            p1Div.appendChild(p1H3);
+            const p2Div = document.createElement('div');
+            p2Div.className = 'text-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg';
+            const p2H3 = document.createElement('h3');
+            p2H3.className = 'text-lg font-bold text-emerald-600 dark:text-emerald-400';
+            p2H3.textContent = player2.name;
+            p2Div.appendChild(p2H3);
+            grid.appendChild(p1Div);
+            grid.appendChild(p2Div);
+
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'divide-y divide-gray-200 dark:divide-gray-700';
+            statsDiv.appendChild(createStatRow('Games Won', p1Stats.gamesWon, p2Stats.gamesWon));
+            statsDiv.appendChild(createStatRow('Legs Won', p1Stats.legsWon, p2Stats.legsWon));
+            statsDiv.appendChild(createStatRow('Leg Win %', parseFloat(((p1Stats.legsWon + p1Stats.legsLost > 0) ? (p1Stats.legsWon / (p1Stats.legsWon + p1Stats.legsLost) * 100) : 0).toFixed(1)), parseFloat(((p2Stats.legsWon + p2Stats.legsLost > 0) ? (p2Stats.legsWon / (p2Stats.legsWon + p2Stats.legsLost) * 100) : 0).toFixed(1))));
+            statsDiv.appendChild(createStatRow('100+', p1Stats.scores100, p2Stats.scores100));
+            statsDiv.appendChild(createStatRow('140+', p1Stats.scores140, p2Stats.scores140));
+            statsDiv.appendChild(createStatRow('180s', p1Stats.scores180, p2Stats.scores180));
+            statsDiv.appendChild(createStatRow('High Checkout', p1Stats.highCheckout, p2Stats.highCheckout));
+            statsDiv.appendChild(createStatRow('Total Fines (£)', (p1Stats.totalFines/100).toFixed(2), (p2Stats.totalFines/100).toFixed(2)));
+
+            container.appendChild(grid);
+            container.appendChild(statsDiv);
+            const foot = document.createElement('p');
+            foot.className = 'text-xs text-center text-gray-400 mt-4';
+            foot.textContent = '* Singles stats shown for wins/legs/HC/fines. All scores included.';
+            container.appendChild(foot);
         }
 
          function setupProfileTabs(container) {
@@ -2566,8 +2855,17 @@
 
             // Fallback: Show player selector for manual selection (for users without linked profiles)
             ui.myProfile.playerSelect.parentElement.classList.remove('hidden');
-            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            ui.myProfile.playerSelect.innerHTML = `<option value="">Select a player...</option>${playerOptions}`;
+            ui.myProfile.playerSelect.innerHTML = '';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = 'Select a player...';
+            ui.myProfile.playerSelect.appendChild(defaultOpt);
+            state.players.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                ui.myProfile.playerSelect.appendChild(opt);
+            });
 
             if (state.myProfile.selectedPlayerId) {
                 ui.myProfile.playerSelect.value = state.myProfile.selectedPlayerId;
@@ -2671,7 +2969,11 @@
 
             const handleError = (error, type) => {
                  console.error(`Error fetching ${type}: `, error);
-                 ui.connectionStatus.innerHTML = `<strong>Database Error:</strong> Could not load ${type}. Please check Firestore security rules.`;
+                 ui.connectionStatus.textContent = '';
+                 const strong = document.createElement('strong');
+                 strong.textContent = 'Database Error:';
+                 ui.connectionStatus.appendChild(strong);
+                 ui.connectionStatus.append(` Could not load ${type}. Please check Firestore security rules.`);
                  ui.connectionStatus.classList.replace('bg-yellow-100', 'bg-red-100');
                  ui.connectionStatus.classList.replace('text-yellow-800', 'text-red-800');
                  ui.connectionStatus.classList.remove('hidden');
