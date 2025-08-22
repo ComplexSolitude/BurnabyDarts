@@ -89,11 +89,23 @@
 
     <!-- Fail-safe: ensure loading and role selection overlays stay in sync -->
     <script>
-        // If initialization fails to toggle the overlays, this timeout will
-        // hide the loading overlay and show the role selection overlay after 8s.
+        // This block keeps the loading, role selection and main app overlays in parity.
+        // 1) If a persisted auth state exists (localStorage or Firebase session),
+        //    skip the timeout and immediately reveal the main app.
+        // 2) Otherwise, after 8s show the role selection overlay if loading is still visible.
         window.addEventListener('DOMContentLoaded', () => {
             const loadingOverlay = document.getElementById('loading-overlay');
             const roleSelectionOverlay = document.getElementById('role-selection-overlay');
+            const mainApp = document.getElementById('main-app');
+
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const currentUser = window.firebase?.auth?.().currentUser;
+            if (isLoggedIn || currentUser) {
+                loadingOverlay.classList.add('hidden');
+                roleSelectionOverlay.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                return; // Auth already confirmed; no need for fail-safe timeout.
+            }
 
             setTimeout(() => {
                 // Maintain parity between overlays: if loading is still visible
