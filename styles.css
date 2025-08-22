@@ -1,0 +1,29 @@
+body { font-family: 'Inter', sans-serif; }
+#toast-notification {
+    transition: all 0.5s ease-in-out;
+}
+
+.toast-hidden {
+    transform: translateX(-50%) translateY(-100%) !important;
+    opacity: 0 !important;
+}
+
+.toast-visible {
+    transform: translateX(-50%) translateY(1.25rem) !important;
+    opacity: 1 !important;
+}
+.modal-overlay {
+    transition: opacity 0.3s ease;
+}
+.spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #10b981;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
