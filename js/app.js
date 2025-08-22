@@ -1,21 +1,4 @@
-// Environment detection and Tailwind setup
-const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-
-if (isDev) {
-    // Load Tailwind CDN for development
-    const tailwindScript = document.createElement('script');
-    tailwindScript.src = 'https://cdn.tailwindcss.com';
-    tailwindScript.onload = () => {
-        window.tailwind.config = { darkMode: 'class' };
-    };
-    document.head.appendChild(tailwindScript);
-} else {
-    // Load pre-built CSS for production
-    const tailwindLink = document.createElement('link');
-    tailwindLink.rel = 'stylesheet';
-    tailwindLink.href = 'css/tailwind.min.css';
-    document.head.appendChild(tailwindLink);
-}
+// Tailwind CSS is now loaded via built CSS file in HTML
 
 // --- Firebase SDK Imports ---
 // noinspection JSFileReferences
