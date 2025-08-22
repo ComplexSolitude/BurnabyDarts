@@ -1112,14 +1112,14 @@ async function handleGoogleSignIn() {
 
         startLogoutTimer();
         // Small delay to ensure smooth transition
-        setTimeout(() => {
+        // Use requestAnimationFrame instead of setTimeout
+        requestAnimationFrame(() => {
             loadingOverlay.classList.add('hidden');
             ui.roleSelectionOverlay.classList.add('hidden');
             ui.mainApp.classList.remove('hidden');
-
             showToast(`Welcome ${user.displayName || email}!`);
             render();
-        }, 500);
+        });
         showToast(`Welcome ${user.displayName || email}!`);
 
         ui.roleSelectionOverlay.classList.add('hidden');
