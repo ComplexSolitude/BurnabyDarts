@@ -2619,9 +2619,7 @@
         }
 
         async function init() {
-            const storedTheme = localStorage.getItem('theme');
-            const hasStoredTheme = localStorage.getItem('theme') !== null;
-            if (storedTheme === 'dark' || (!hasStoredTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
                 ui.themeIconsMobile.sun.classList.add('hidden');
                 ui.themeIconsMobile.moon.classList.remove('hidden');
@@ -3017,7 +3015,7 @@
                 state.h2h.player2 = e.target.value;
                 calculateAndRenderH2H();
             });
-            
+
             // My Profile Listeners
             ui.myProfile.playerSelect.addEventListener('change', async (e) => {
                 const newPlayerId = e.target.value;
