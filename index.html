@@ -2619,7 +2619,9 @@
         }
 
         async function init() {
-            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            const storedTheme = localStorage.getItem('theme');
+            const hasStoredTheme = localStorage.getItem('theme') !== null;
+            if (storedTheme === 'dark' || (!hasStoredTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
                 ui.themeIconsMobile.sun.classList.add('hidden');
                 ui.themeIconsMobile.moon.classList.remove('hidden');
