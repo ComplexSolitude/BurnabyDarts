@@ -158,6 +158,7 @@
             toast: { element: document.getElementById('toast-notification'), message: document.getElementById('toast-message') },
             mainApp: document.getElementById('main-app'),
             roleSelectionOverlay: document.getElementById('role-selection-overlay'),
+            loadingOverlay: document.getElementById('loading-overlay'),
             hamburgerBtn: document.getElementById('hamburger-btn'),
             themeToggleBtnMobile: document.getElementById('theme-toggle-btn-mobile'),
             themeIconsMobile: { sun: document.getElementById('theme-icon-sun-mobile'), moon: document.getElementById('theme-icon-moon-mobile') },
@@ -2098,6 +2099,7 @@
                 ui.connectionStatus.textContent = "Authentication failed. App may not work.";
                 ui.connectionStatus.classList.replace('bg-yellow-100', 'bg-red-100');
                 ui.connectionStatus.classList.replace('text-yellow-800', 'text-red-800');
+                ui.loadingOverlay.classList.add('hidden');
                 return;
             }
 
@@ -2114,69 +2116,77 @@
             const unsubscribe = onAuthStateChanged(state.auth, async (user) => {
                 unsubscribe(); // Only run this once
 
-                if (user) {
-                    state.userId = user.uid;
+                try {
+                    if (user) {
+                        state.userId = user.uid;
 
-                    try {
-                        // Check if this user has a role in Firestore
-                        const userDoc = await getDoc(doc(state.db, 'users', user.uid));
-                        if (userDoc.exists()) {
-                            const userData = userDoc.data();
-                            state.userRole = userData.role;
-                            state.userEmail = userData.email;
-                            state.userName = userData.name;
-                            state.userPlayerId = userData.playerId;
-                            state.isLoggedIn = true;
+                        try {
+                            // Check if this user has a role in Firestore
+                            const userDoc = await getDoc(doc(state.db, 'users', user.uid));
+                            if (userDoc.exists()) {
+                                const userData = userDoc.data();
+                                state.userRole = userData.role;
+                                state.userEmail = userData.email;
+                                state.userName = userData.name;
+                                state.userPlayerId = userData.playerId;
+                                state.isLoggedIn = true;
 
-                            // Update localStorage with fresh data
-                            localStorage.setItem('userRole', userData.role);
-                            localStorage.setItem('isLoggedIn', 'true');
-                            localStorage.setItem('userEmail', userData.email);
-                            localStorage.setItem('userId', user.uid);
+                                // Update localStorage with fresh data
+                                localStorage.setItem('userRole', userData.role);
+                                localStorage.setItem('isLoggedIn', 'true');
+                                localStorage.setItem('userEmail', userData.email);
+                                localStorage.setItem('userId', user.uid);
 
-                            // Start logout timer
-                            startLogoutTimer();
+                                // Start logout timer
+                                startLogoutTimer();
+                            }
+                        } catch (error) {
+                            console.log('Error fetching user document:', error);
+                            // If we can't get user data, clear everything
+                            state.isLoggedIn = false;
+                            state.userRole = null;
+                            localStorage.removeItem('userRole');
+                            localStorage.removeItem('isLoggedIn');
+                            localStorage.removeItem('loginTimestamp');
+                            localStorage.removeItem('userEmail');
+                            localStorage.removeItem('userId');
                         }
-                    } catch (error) {
-                        console.log('Error fetching user document:', error);
-                        // If we can't get user data, clear everything
-                        state.isLoggedIn = false;
-                        state.userRole = null;
-                        localStorage.removeItem('userRole');
-                        localStorage.removeItem('isLoggedIn');
-                        localStorage.removeItem('loginTimestamp');
-                        localStorage.removeItem('userEmail');
-                        localStorage.removeItem('userId');
-                    }
-                } else {
-                    // Not authenticated - check if we should show viewer mode
-                    const savedRole = localStorage.getItem('userRole');
-                    if (savedRole === 'viewer') {
-                        state.userRole = 'viewer';
-                        state.isLoggedIn = false;
                     } else {
-                        // Clear everything if not authenticated and not viewer
-                        state.isLoggedIn = false;
-                        state.userRole = null;
-                        localStorage.removeItem('userRole');
-                        localStorage.removeItem('isLoggedIn');
-                        localStorage.removeItem('loginTimestamp');
-                        localStorage.removeItem('userEmail');
-                        localStorage.removeItem('userId');
+                        // Not authenticated - check if we should show viewer mode
+                        const savedRole = localStorage.getItem('userRole');
+                        if (savedRole === 'viewer') {
+                            state.userRole = 'viewer';
+                            state.isLoggedIn = false;
+                        } else {
+                            // Clear everything if not authenticated and not viewer
+                            state.isLoggedIn = false;
+                            state.userRole = null;
+                            localStorage.removeItem('userRole');
+                            localStorage.removeItem('isLoggedIn');
+                            localStorage.removeItem('loginTimestamp');
+                            localStorage.removeItem('userEmail');
+                            localStorage.removeItem('userId');
+                        }
                     }
-                }
 
-                // NOW set up UI and Firestore listeners after auth is fully resolved
-                if (state.isLoggedIn || state.userRole === 'viewer') {
-                    ui.roleSelectionOverlay.classList.add('hidden');
-                    ui.mainApp.classList.remove('hidden');
-                } else {
+                    // Show appropriate UI based on auth state
+                    if (user) {
+                        ui.roleSelectionOverlay.classList.add('hidden');
+                        ui.mainApp.classList.remove('hidden');
+                    } else {
+                        ui.roleSelectionOverlay.classList.remove('hidden');
+                        ui.mainApp.classList.add('hidden');
+                    }
+
+                    setupFirestoreListeners();
+                    render();
+                } catch (error) {
+                    console.error('Error during auth initialization:', error);
                     ui.roleSelectionOverlay.classList.remove('hidden');
                     ui.mainApp.classList.add('hidden');
+                } finally {
+                    ui.loadingOverlay.classList.add('hidden');
                 }
-
-                setupFirestoreListeners();
-                render();
             });
             function setupFirestoreListeners() {
                 onSnapshot(query(collection(state.db, SEASONS_COLLECTION)), (snapshot) => {
