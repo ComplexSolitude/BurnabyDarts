@@ -3,10 +3,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>The Burnaby Arms - Darts Scorer</title>
     <link rel="apple-touch-icon" href="darts-icon-v2.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preload" href="css/styles.css" as="style">
+    <link rel="preload" href="js/app.js" as="script">
+    <script src="https://cdn.tailwindcss.com" defer></script>
     <script>
         // noinspection JSUnresolvedReference
         tailwind.config = {
@@ -15,7 +17,11 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://apis.google.com">
+    <link rel="preconnect" href="https://apis.google.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://cdnjs.cloudflare.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com; frame-src https://accounts.google.com https://darts-app-9e752.firebaseapp.com https://darts-app-dev.firebaseapp.com;">
     <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -530,6 +536,6 @@
     <div id="toast-notification" class="fixed top-0 left-1/2 bg-emerald-500 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center whitespace-nowrap" role="alert">
         <span id="toast-message"></span>
     </div>
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/app.js" defer></script>
 </body>
 </html>
