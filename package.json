@@ -4,6 +4,8 @@
   "description": "The Burnaby Arms B Darts Scorer is a web application for managing darts matches for the Burnaby Arms B team. It provides tools to set up fixtures, track live scores, handle player fines, and view statistics. The app is built with vanilla JavaScript, Tailwind CSS, and Firebase (Authentication and Firestore).",
   "main": "index.js",
   "scripts": {
+    "build": "tailwindcss -i ./src/input.css -o ./css/tailwind.min.css --minify",
+    "dev": "tailwindcss -i ./src/input.css -o ./css/tailwind.css --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
