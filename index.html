@@ -87,6 +87,25 @@
         </div>
     </div>
 
+    <!-- Fail-safe: ensure loading and role selection overlays stay in sync -->
+    <script>
+        // If initialization fails to toggle the overlays, this timeout will
+        // hide the loading overlay and show the role selection overlay after 8s.
+        window.addEventListener('DOMContentLoaded', () => {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const roleSelectionOverlay = document.getElementById('role-selection-overlay');
+
+            setTimeout(() => {
+                // Maintain parity between overlays: if loading is still visible
+                // and role selection is hidden, toggle them.
+                if (!loadingOverlay.classList.contains('hidden') && roleSelectionOverlay.classList.contains('hidden')) {
+                    loadingOverlay.classList.add('hidden');
+                    roleSelectionOverlay.classList.remove('hidden');
+                }
+            }, 8000); // 8s timeout acts as a fail-safe
+        });
+    </script>
+
     <!-- Main App Container (Initially Hidden) -->
     <div id="main-app" class="hidden max-w-4xl mx-auto p-2 sm:p-4 lg:p-8">
 
