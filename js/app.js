@@ -1,5 +1,3 @@
-// Tailwind CSS is now loaded via built CSS file in HTML
-
 // --- Firebase SDK Imports ---
 // noinspection JSFileReferences
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -99,7 +97,7 @@ function validateInput(input, maxLength = 100) {
         /javascript:/i,
         /data:/i,
         /vbscript:/i,
-    /onload=/i,
+        /onload=/i,
         /onerror=/i
     ];
 
@@ -1112,14 +1110,14 @@ async function handleGoogleSignIn() {
 
         startLogoutTimer();
         // Small delay to ensure smooth transition
-        // Use requestAnimationFrame instead of setTimeout
-        requestAnimationFrame(() => {
+        setTimeout(() => {
             loadingOverlay.classList.add('hidden');
             ui.roleSelectionOverlay.classList.add('hidden');
             ui.mainApp.classList.remove('hidden');
+
             showToast(`Welcome ${user.displayName || email}!`);
             render();
-        });
+        }, 500);
         showToast(`Welcome ${user.displayName || email}!`);
 
         ui.roleSelectionOverlay.classList.add('hidden');
