@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Burnaby Arms - Darts Scorer</title>
     <link rel="apple-touch-icon" href="darts-icon-v2.png">
-    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // noinspection JSUnresolvedReference
         tailwind.config = {
@@ -15,16 +15,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="//fonts.googleapis.com">
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    <link rel="dns-prefetch" href="//www.gstatic.com">
-    <link rel="dns-prefetch" href="//apis.google.com">
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" crossorigin>
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" crossorigin>
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://cdnjs.cloudflare.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com; frame-src https://accounts.google.com https://darts-app-9e752.firebaseapp.com;">
     <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -34,12 +25,12 @@
        #toast-notification {
             transition: all 0.5s ease-in-out;
         }
-        
+
         .toast-hidden {
             transform: translateX(-50%) translateY(-100%) !important;
             opacity: 0 !important;
         }
-        
+
         .toast-visible {
             transform: translateX(-50%) translateY(1.25rem) !important;
             opacity: 1 !important;
@@ -687,7 +678,12 @@
 
             if (storedRole && !allowedRoles.includes(storedRole)) {
                 console.warn('Invalid role in storage, clearing...');
-                clearUserSession();
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+                resetSignInButtonState();
                 return false;
             }
 
@@ -695,7 +691,12 @@
             const loginTimestamp = Number(localStorage.getItem('loginTimestamp'));
             if (loginTimestamp && (Date.now() - loginTimestamp > SESSION_DURATION_MS)) {
                 console.warn('Session expired, clearing storage...');
-                clearUserSession();
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+                resetSignInButtonState();
                 return false;
             }
 
@@ -908,7 +909,7 @@
             for (const tabKey in ui.tabs) {
                 const tabButton = ui.tabs[tabKey];
                 const contentPanel = ui.content[tabKey];
-        
+
                 // Hide admin tab for non-admin users
                 if (tabKey === 'admin' && state.userRole !== 'admin') {
                     if (tabButton) {
@@ -922,7 +923,7 @@
                         tabButton.style.display = '';
                     }
                 }
-        
+
                 if (tabButton) {
                     if (tabKey === state.activeTab) {
                         tabButton.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
@@ -932,7 +933,7 @@
                         tabButton.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200', 'hover:border-gray-300', 'dark:hover:border-gray-500');
                     }
                 }
-        
+
                 if (contentPanel) {
                     if (tabKey === state.activeTab) {
                         contentPanel.classList.remove('hidden');
@@ -940,7 +941,7 @@
                         contentPanel.classList.add('hidden');
                     }
                 }
-        
+
                 const mobileLink = document.createElement('a');
                 mobileLink.href = '#';
                 mobileLink.dataset.tabName = tabKey;
@@ -1422,7 +1423,7 @@
             const singlesStats = getPlayerStats(player, seasonId, 'singles');
             const doublesStats = getPlayerStats(player, seasonId, 'doubles');
             const combinedScores = getPlayerStats(player, seasonId, 'combined');
-            
+
             // Calculate win percentages for singles
             const totalLegs = singlesStats.legsWon + singlesStats.legsLost;
             const legWinPercent = totalLegs > 0 ? ((singlesStats.legsWon / totalLegs) * 100).toFixed(0) + '%' : 'N/A';
@@ -1434,7 +1435,7 @@
             state.seasons.forEach(s => {
                 optionsHtml += `<option value="${s.id}" ${s.id === seasonId ? 'selected' : ''}>${s.name}</option>`;
             });
-            
+
             // Find doubles partners for the selected season
             let partners = {};
             state.previousFixtures.forEach(fixture => {
@@ -1450,7 +1451,7 @@
                     }
                 });
             });
-            
+
             const partnersHtml = Object.keys(partners).length > 0
                 ? Object.entries(partners).sort((a,b) => b[1] - a[1]).map(([name, count]) => `<span class="bg-gray-200 dark:bg-gray-600 text-sm font-medium px-2 py-1 rounded">${name} (${count})</span>`).join(' ')
                 : '<p class="text-sm text-gray-500 dark:text-gray-400">No doubles games played.</p>';
@@ -1516,21 +1517,21 @@
         }
         function renderCurrentGameFines(game) {
             if (!ui.finesListCurrentGame) return;
-            
+
             ui.finesListCurrentGame.innerHTML = '';
-            
+
             if (!game.finesList || game.finesList.length === 0) {
                 ui.finesListCurrentGame.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400">No fines this game</p>';
                 return;
             }
-            
+
             // Group fines by category
             const fineGroups = {
                 'Score of 26': [],
                 'Missed Board': [],
                 'Low Scores': []
             };
-            
+
             game.finesList.forEach(fine => {
                 if (fine.reason === 'Score of 26') {
                     fineGroups['Score of 26'].push(fine);
@@ -1540,26 +1541,26 @@
                     fineGroups['Low Scores'].push(fine);
                 }
             });
-            
+
             // Render each group that has fines
             Object.entries(fineGroups).forEach(([groupName, fines]) => {
                 if (fines.length === 0) return;
-                
+
                 // Group header
                 const headerEl = document.createElement('div');
                 headerEl.className = 'text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1 mt-2 first:mt-0';
-                
+
                 const groupTotal = fines.reduce((sum, fine) => sum + fine.amount, 0);
                 const count = fines.length;
-                
+
                 headerEl.innerHTML = `${groupName} (${count}) - £${(groupTotal/100).toFixed(2)}`;
                 ui.finesListCurrentGame.appendChild(headerEl);
-                
+
                 // Individual fines in this group
                 fines.forEach(fine => {
                     const fineEl = document.createElement('div');
                     fineEl.className = 'flex items-center justify-between bg-red-50 dark:bg-red-900/20 p-2 rounded-lg text-sm mb-1';
-                    
+
                     // For low scores, show the actual score; for others, show count
                     let displayText = fine.reason;
                     if (groupName === 'Low Scores') {
@@ -1567,7 +1568,7 @@
                     } else {
                         displayText = `${groupName}`; // Just "Score of 26" or "Missed Board"
                     }
-                    
+
                     fineEl.innerHTML = `
                         <span class="text-red-700 dark:text-red-300">${displayText}</span>
                         <div class="flex items-center gap-2">
@@ -1579,7 +1580,7 @@
                 });
             });
         }
-        
+
         function renderPlayerCard() {
             if (!state.playerCard.isOpen) {
                 ui.playerCardModal.overlay.classList.add('hidden');
@@ -1598,15 +1599,15 @@
 
         function showToast(message, isError = false) {
             ui.toast.message.textContent = message;
-            
+
             // Update the background color
             ui.toast.element.classList.remove('bg-emerald-500', 'bg-red-500');
             ui.toast.element.classList.add(isError ? 'bg-red-500' : 'bg-emerald-500');
-            
+
             // Show the toast
             ui.toast.element.classList.remove('toast-hidden');
             ui.toast.element.classList.add('toast-visible');
-            
+
             // Hide after 3 seconds
             setTimeout(() => {
                 ui.toast.element.classList.remove('toast-visible');
@@ -1623,12 +1624,12 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             const signInBtn = document.getElementById('google-signin-btn');
             const signInText = document.getElementById('signin-btn-text');
-            
+
             loadingOverlay.classList.remove('hidden');
             signInBtn.disabled = true;
             signInText.textContent = 'Signing in...';
             signInBtn.classList.add('opacity-75', 'cursor-not-allowed');
-            
+
 
             try {
                 const result = await signInWithPopup(state.auth, provider);
@@ -1674,7 +1675,7 @@
                     loadingOverlay.classList.add('hidden');
                     ui.roleSelectionOverlay.classList.add('hidden');
                     ui.mainApp.classList.remove('hidden');
-                    
+
                     showToast(`Welcome ${user.displayName || email}!`);
                     render();
                 }, 500);
@@ -1722,7 +1723,13 @@
                 state.userEmail = null;
                 state.userName = null;
                 state.userPlayerId = null;
-                clearUserSession();
+
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+                resetSignInButtonState();
                 showToast('You have been logged out.');
                 ui.mainApp.classList.add('hidden');
                 ui.roleSelectionOverlay.classList.remove('hidden');
@@ -1752,25 +1759,16 @@
             const signInBtn = document.getElementById('google-signin-btn');
             const signInText = document.getElementById('signin-btn-text');
             const loadingOverlay = document.getElementById('loading-overlay');
-            
+
             if (signInBtn && signInText) {
                 signInBtn.disabled = false;
                 signInText.textContent = 'Sign in with Google';
                 signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
             }
-            
+
             if (loadingOverlay) {
                 loadingOverlay.classList.add('hidden');
             }
-        }
-
-        function clearUserSession() {
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('loginTimestamp');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userId');
-            resetSignInButtonState();
         }
         async function loadUsers() {
             if (!state.db) return;
@@ -1830,7 +1828,7 @@
                 // Get the target user's document to capture their name and old role
                 const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
                 const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
-                
+
                 // Add enhanced audit logging
                 await safeFirebaseCall('auditLog', async () => {
                     return await addDoc(collection(state.db, 'audit_logs'), {
@@ -1877,10 +1875,10 @@
                 // Get the target user's document and player information
                 const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
                 const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
-                
+
                 const oldPlayer = state.players.find(p => p.id === targetUserData.playerId);
                 const newPlayer = newPlayerId ? state.players.find(p => p.id === newPlayerId) : null;
-        
+
                 // Add enhanced audit logging for player links
                 await safeFirebaseCall('auditLog', async () => {
                     return await addDoc(collection(state.db, 'audit_logs'), {
@@ -1900,7 +1898,7 @@
                     });
                 });
 
-                
+
                 await safeFirebaseCall('updateUserPlayer', async () => {
                     return await updateDoc(doc(state.db, 'users', userId), {
                         playerId: newPlayerId,
@@ -1990,7 +1988,7 @@
                 showToast("Access denied. Admin privileges required.", true);
                 return;
             }
-            
+
             state.activeTab = tabName;
             render();
             closeMobileMenu();
@@ -2108,7 +2106,7 @@
                     scores180: 0,
                     sillyThings: 0,
                 }));
-                
+
                 games.push({
                     title: title,
                     type: isDoubles ? 'doubles' : 'singles', // Add game type
@@ -2190,10 +2188,10 @@
         function addFine(amount, reason) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game) return;
-            
+
             // Initialize finesList if it doesn't exist
             if (!game.finesList) game.finesList = [];
-            
+
             // Add the individual fine with a unique ID
             const fineId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
             game.finesList.push({
@@ -2202,7 +2200,7 @@
                 reason: reason,
                 timestamp: new Date().toISOString()
             });
-            
+
             // Update total fines
             game.fines = (game.fines || 0) + amount;
             showToast(`Fine added: ${reason} (+£${(amount/100).toFixed(2)})`);
@@ -2221,7 +2219,7 @@
             try {
                 state.fixture.games.forEach(game => {
                     if (!game.playerNames) {
-                        game.playerNames = game.playerIds.map(id => 
+                        game.playerNames = game.playerIds.map(id =>
                             state.players.find(p => p.id === id)?.name || 'Unknown'
                         );
                     }
@@ -2232,11 +2230,11 @@
                     if (dotdPlayerId && !allPlayerIds.includes(dotdPlayerId)) {
                         allPlayerIds.push(dotdPlayerId);
                     }
-        
+
                     // 1. READS: Get all player documents first.
                     const playerRefs = allPlayerIds.map(id => doc(state.db, PLAYERS_COLLECTION, id));
                     const playerDocs = await Promise.all(playerRefs.map(ref => transaction.get(ref)));
-        
+
                     // Create enhanced audit log for match completion
                     const matchAuditData = {
                         action: 'match_completed',
@@ -2261,7 +2259,7 @@
                         gameResults: state.fixture.games.map(game => ({
                             title: game.title,
                             type: game.type,
-                            playerNames: game.playerIds.map(id => 
+                            playerNames: game.playerIds.map(id =>
                                 state.players.find(p => p.id === id)?.name || 'Unknown'
                             ),
                             legsWon: game.legsWon || 0,
@@ -2270,11 +2268,11 @@
                         timestamp: serverTimestamp(),
                         userAgent: navigator.userAgent
                     };
-        
+
                     // Add the audit log
                     const auditRef = doc(collection(state.db, 'audit_logs'));
                     transaction.set(auditRef, matchAuditData);
-        
+
                     const playerUpdates = {};
 
                     // 2. CALCULATIONS: Prepare updates in memory.
@@ -2299,7 +2297,7 @@
                             const pScores = game.playerScores?.[playerIndex] || {};
                             const gameType = game.type;
                             const gameWon = game.legsWon > game.legsLost;
-                            
+
                             const seasonStats = newStats[seasonId][gameType];
 
                             seasonStats.gamesWon = (seasonStats.gamesWon || 0) + (gameWon ? 1 : 0);
@@ -2331,7 +2329,7 @@
                             singlesSeasonStats.outstandingFines = (singlesSeasonStats.outstandingFines || 0) + 250;
                             singlesSeasonStats.totalFines = (singlesSeasonStats.totalFines || 0) + 250;
                         }
-                        
+
                         playerUpdates[playerId] = { stats: newStats };
                     }
 
@@ -2394,20 +2392,20 @@
                 showToast("Please enter a score between 1 and 9.", true);
             }
         }
-        
+
         function removeFine(fineId) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game || !game.finesList) return;
-            
+
             const fineIndex = game.finesList.findIndex(f => f.id === fineId);
             if (fineIndex === -1) return;
-            
+
             const removedFine = game.finesList[fineIndex];
             game.finesList.splice(fineIndex, 1);
-            
+
             // Update total fines
             game.fines = Math.max(0, (game.fines || 0) - removedFine.amount);
-            
+
             showToast(`Fine removed: ${removedFine.reason} (-£${(removedFine.amount/100).toFixed(2)})`);
             render();
             updateGameData();
@@ -2449,7 +2447,7 @@
             const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
             ui.h2h.player1Select.innerHTML = `<option value="">Select Player 1</option>${playerOptions}`;
             ui.h2h.player2Select.innerHTML = `<option value="">Select Player 2</option>${playerOptions}`;
-            
+
             if(state.h2h.player1) ui.h2h.player1Select.value = state.h2h.player1;
             if(state.h2h.player2) ui.h2h.player2Select.value = state.h2h.player2;
         }
@@ -2469,7 +2467,7 @@
 
             const p1Stats = getPlayerStats(player1, 'all-time', 'combined');
             const p2Stats = getPlayerStats(player2, 'all-time', 'combined');
-            
+
             const renderStatRow = (label, val1, val2) => {
                 const isP1Winner = val1 > val2;
                 const isP2Winner = val2 > val1;
@@ -2677,7 +2675,7 @@
 
                 if (user) {
                     state.userId = user.uid;
-                    
+
                     try {
                         // Check if this user has a role in Firestore
                         const userDoc = await getDoc(doc(state.db, 'users', user.uid));
@@ -2688,13 +2686,13 @@
                             state.userName = userData.name;
                             state.userPlayerId = userData.playerId;
                             state.isLoggedIn = true;
-                            
+
                             // Update localStorage with fresh data
                             localStorage.setItem('userRole', userData.role);
                             localStorage.setItem('isLoggedIn', 'true');
                             localStorage.setItem('userEmail', userData.email);
                             localStorage.setItem('userId', user.uid);
-                            
+
                             // Start logout timer
                             startLogoutTimer();
                         }
@@ -2703,7 +2701,11 @@
                         // If we can't get user data, clear everything
                         state.isLoggedIn = false;
                         state.userRole = null;
-                        clearUserSession();
+                        localStorage.removeItem('userRole');
+                        localStorage.removeItem('isLoggedIn');
+                        localStorage.removeItem('loginTimestamp');
+                        localStorage.removeItem('userEmail');
+                        localStorage.removeItem('userId');
                     }
                 } else {
                     // Not authenticated - check if we should show viewer mode
@@ -2715,7 +2717,11 @@
                         // Clear everything if not authenticated and not viewer
                         state.isLoggedIn = false;
                         state.userRole = null;
-                        clearUserSession();
+                        localStorage.removeItem('userRole');
+                        localStorage.removeItem('isLoggedIn');
+                        localStorage.removeItem('loginTimestamp');
+                        localStorage.removeItem('userEmail');
+                        localStorage.removeItem('userId');
                     }
                 }
 
