@@ -2058,9 +2058,7 @@
         }
 
         async function init() {
-            const storedTheme = localStorage.getItem('theme');
-            const hasStoredTheme = localStorage.getItem('theme') !== null;
-            if (storedTheme === 'dark' || (!hasStoredTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
                 ui.themeIconsMobile.sun.classList.add('hidden');
                 ui.themeIconsMobile.moon.classList.remove('hidden');
@@ -2073,7 +2071,20 @@
             // Validate storage before using it
             validateStoredData();
 
-            const firebaseConfig = {
+            const isDevelopment = window.location.hostname === 'localhost' ||
+                                 window.location.hostname === '127.0.0.1';
+
+            const firebaseConfig = isDevelopment ? {
+                // Development Firebase config (paste your dev config here)
+                apiKey: "AIzaSyDf4GMyPJP6MvGo2hycKGSiKe-w5xJF_fw",
+                authDomain: "darts-app-dev.firebaseapp.com",
+                projectId: "darts-app-dev",
+                storageBucket: "darts-app-dev.firebasestorage.app",
+                messagingSenderId: "540400402942",
+                appId: "1:540400402942:web:f5399eb48c04fd129180af",
+                measurementId: "G-GGKKH0RGNM"
+            } : {
+                // Production Firebase config
                 apiKey: "AIzaSyCU66DqSCzkwaEhTLEOftEJtKbt9y4xVeI",
                 authDomain: "darts-app-9e752.firebaseapp.com",
                 databaseURL: "https://darts-app-9e752-default-rtdb.europe-west1.firebasedatabase.app",
@@ -2082,7 +2093,6 @@
                 messagingSenderId: "520662271304",
                 appId: "1:520662271304:web:abb1ca68445511c8bb1f7d"
             };
-
             const app = initializeApp(firebaseConfig);
             state.db = getFirestore(app);
             state.auth = getAuth(app);
@@ -2093,6 +2103,15 @@
                 // const userCredential = await signInAnonymously(state.auth);
                 //state.userId = userCredential.user.uid;
                 console.log("Authentication successful. UID:", state.userId);
+
+                // Show dev indicator and update title
+                if (isDevelopment) {
+                    const devIndicator = document.getElementById('dev-indicator');
+                    if (devIndicator) devIndicator.classList.remove('hidden');
+                    document.title = '[DEV] ' + document.title;
+                    console.log('🚀 Running in DEVELOPMENT mode');
+                    console.log('Firebase Project:', firebaseConfig.projectId);
+                }
             } catch (error) {
                 console.error("Firebase Authentication Failed:", error);
                 ui.connectionStatus.textContent = "Authentication failed. App may not work.";
@@ -2456,7 +2475,7 @@
                 state.h2h.player2 = e.target.value;
                 calculateAndRenderH2H();
             });
-            
+
             // My Profile Listeners
             ui.myProfile.playerSelect.addEventListener('change', async (e) => {
                 const newPlayerId = e.target.value;
