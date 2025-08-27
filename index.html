@@ -625,7 +625,7 @@
             previousFixtures: [],
             selectedPreviousFixtureId: null,
             currentGameIndex: 0,
-            previousPlayerNames: '',
+            lastTurnSeq: 0,
             confirmation: { action: null, data: null },
             loginAttemptRole: null,
             logoutTimer: null,
@@ -1391,9 +1391,10 @@
             });
             const namesText = playerNames.join(' & ');
             ui.currentPlayerNames.textContent = namesText;
-            if (state.previousPlayerNames !== namesText) {
+            const turnSeq = game.turnSeq || 0;
+            if (state.lastTurnSeq !== turnSeq) {
                 triggerPlayerChangeAnimation();
-                state.previousPlayerNames = namesText;
+                state.lastTurnSeq = turnSeq;
             }
             ui.gameNavTitle.textContent = game.title;
 
@@ -2995,8 +2996,24 @@
                     showToast("Could not update team selections.", 'error');
                 }
             };
-            ui.prevGameBtn.addEventListener('click', () => { if (state.currentGameIndex > 0) { state.currentGameIndex--; render(); } });
-            ui.nextGameBtn.addEventListener('click', () => { if (state.currentGameIndex < state.fixture.games.length - 1) { state.currentGameIndex++; render(); } });
+            ui.prevGameBtn.addEventListener('click', () => {
+                if (state.currentGameIndex > 0) {
+                    state.currentGameIndex--;
+                    const game = state.fixture.games[state.currentGameIndex];
+                    game.turnSeq = (game.turnSeq || 0) + 1;
+                    render();
+                    updateGameData();
+                }
+            });
+            ui.nextGameBtn.addEventListener('click', () => {
+                if (state.currentGameIndex < state.fixture.games.length - 1) {
+                    state.currentGameIndex++;
+                    const game = state.fixture.games[state.currentGameIndex];
+                    game.turnSeq = (game.turnSeq || 0) + 1;
+                    render();
+                    updateGameData();
+                }
+            });
 
             ui.liveMatchContent.addEventListener('click', (e) => {
                 const statBtn = e.target.closest('.stat-btn');
