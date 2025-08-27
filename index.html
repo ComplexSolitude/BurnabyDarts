@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burnaby Arms B Darts Scorer</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, orderBy, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.googleProvider = provider;
+        window.signInWithPopup = signInWithPopup;
+        window.signOut = signOut;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.getDocs = getDocs;
+        window.updateDoc = updateDoc;
+        window.doc = doc;
+        window.deleteDoc = deleteDoc;
+        window.query = query;
+        window.orderBy = orderBy;
+        window.where = where;
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <img src="darts-icon-v3.png" alt="Darts" class="w-8 h-8">
+                    <h1 class="text-2xl font-bold text-emerald-400">Burnaby Arms B</h1>
+                </div>
+                <div id="auth-section" class="flex items-center space-x-4">
+                    <button id="sign-in-btn" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors">
+                        Sign In with Google
+                    </button>
+                    <div id="user-info" class="hidden flex items-center space-x-3">
+                        <img id="user-photo" class="w-8 h-8 rounded-full" alt="User">
+                        <span id="user-name" class="text-sm"></span>
+                        <button id="sign-out-btn" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Role Selection -->
+    <div id="role-selection" class="container mx-auto px-4 py-8">
+        <div class="max-w-md mx-auto bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 text-center">Select Your Role</h2>
+            <div class="space-y-3">
+                <button onclick="setRole('captain')" class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-lg transition-colors">
+                    Team Captain
+                </button>
+                <button onclick="setRole('player')" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg transition-colors">
+                    Player
+                </button>
+                <button onclick="setRole('scorer')" class="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-lg transition-colors">
+                    Scorer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav id="main-nav" class="hidden container mx-auto px-4 py-4">
+        <div class="flex flex-wrap justify-center gap-4">
+            <button onclick="showSection('fixtures')" class="nav-btn bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded-lg transition-colors">
+                Fixtures
+            </button>
+            <button onclick="showSection('live-scoring')" class="nav-btn bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg transition-colors">
+                Live Scoring
+            </button>
+            <button onclick="showSection('fines')" class="nav-btn bg-yellow-600 hover:bg-yellow-700 px-6 py-3 rounded-lg transition-colors">
+                Fines
+            </button>
+            <button onclick="showSection('stats')" class="nav-btn bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg transition-colors">
+                Statistics
+            </button>
+        </div>
+    </nav>
+
+    <!-- Fixtures Section -->
+    <section id="fixtures-section" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Fixtures</h2>
+                <button onclick="showAddFixture()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors">
+                    Add Fixture
+                </button>
+            </div>
+            
+            <!-- Add Fixture Form -->
+            <div id="add-fixture-form" class="hidden bg-gray-800 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-bold mb-4">Add New Fixture</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="date" id="fixture-date" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <input type="time" id="fixture-time" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <input type="text" id="opponent-team" placeholder="Opponent Team" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <select id="home-away" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                        <option value="home">Home</option>
+                        <option value="away">Away</option>
+                    </select>
+                </div>
+                <div class="flex gap-4 mt-4">
+                    <button onclick="addFixture()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors">
+                        Add Fixture
+                    </button>
+                    <button onclick="hideAddFixture()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fixtures List -->
+            <div id="fixtures-list" class="space-y-4">
+                <!-- Fixtures will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Scoring Section -->
+    <section id="live-scoring-section" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-2xl font-bold mb-6">Live Scoring</h2>
+            
+            <!-- Match Setup -->
+            <div id="match-setup" class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-bold mb-4">Match Setup</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <select id="match-fixture" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                        <option value="">Select Fixture</option>
+                    </select>
+                    <select id="game-type" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                        <option value="501">501</option>
+                        <option value="301">301</option>
+                        <option value="cricket">Cricket</option>
+                    </select>
+                    <button onclick="startMatch()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors">
+                        Start Match
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Match -->
+            <div id="active-match" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Player 1 -->
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-lg font-bold mb-4" id="player1-name">Player 1</h3>
+                        <div class="text-4xl font-bold mb-4" id="player1-score">501</div>
+                        <div class="grid grid-cols-3 gap-2 mb-4">
+                            <input type="number" id="p1-dart1" placeholder="Dart 1" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-center">
+                            <input type="number" id="p1-dart2" placeholder="Dart 2" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-center">
+                            <input type="number" id="p1-dart3" placeholder="Dart 3" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-center">
+                        </div>
+                        <button onclick="submitThrow(1)" class="w-full bg-emerald-600 hover:bg-emerald-700 py-2 rounded-lg transition-colors">
+                            Submit Throw
+                        </button>
+                    </div>
+
+                    <!-- Player 2 -->
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-lg font-bold mb-4" id="player2-name">Player 2</h3>
+                        <div class="text-4xl font-bold mb-4" id="player2-score">501</div>
+                        <div class="grid grid-cols-3 gap-2 mb-4">
+                            <input type="number" id="p2-dart1" placeholder="Dart 1" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-center">
+                            <input type="number" id="p2-dart2" placeholder="Dart 2" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-center">
+                            <input type="number" id="p2-dart3" placeholder="Dart 3" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-center">
+                        </div>
+                        <button onclick="submitThrow(2)" class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded-lg transition-colors">
+                            Submit Throw
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Match Controls -->
+                <div class="mt-6 text-center">
+                    <button onclick="endMatch()" class="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-colors">
+                        End Match
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Fines Section -->
+    <section id="fines-section" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Fines</h2>
+                <button onclick="showAddFine()" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg transition-colors">
+                    Add Fine
+                </button>
+            </div>
+
+            <!-- Add Fine Form -->
+            <div id="add-fine-form" class="hidden bg-gray-800 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-bold mb-4">Add New Fine</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="fine-player" placeholder="Player Name" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <input type="number" id="fine-amount" placeholder="Amount (£)" step="0.01" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <input type="text" id="fine-reason" placeholder="Reason" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 md:col-span-2">
+                </div>
+                <div class="flex gap-4 mt-4">
+                    <button onclick="addFine()" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg transition-colors">
+                        Add Fine
+                    </button>
+                    <button onclick="hideAddFine()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fines List -->
+            <div id="fines-list" class="space-y-4">
+                <!-- Fines will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section id="stats-section" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-2xl font-bold mb-6">Statistics</h2>
+            
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gray-800 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-emerald-400" id="total-matches">0</div>
+                    <div class="text-gray-400">Total Matches</div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-blue-400" id="wins">0</div>
+                    <div class="text-gray-400">Wins</div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-red-400" id="losses">0</div>
+                    <div class="text-gray-400">Losses</div>
+                </div>
+            </div>
+
+            <!-- Player Stats -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-bold mb-4">Player Statistics</h3>
+                <div id="player-stats" class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="py-2">Player</th>
+                                <th class="py-2">Matches</th>
+                                <th class="py-2">Wins</th>
+                                <th class="py-2">Average</th>
+                                <th class="py-2">High Finish</th>
+                            </tr>
+                        </thead>
+                        <tbody id="player-stats-body">
+                            <!-- Player stats will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="app.js"></script>
+</body>
+</html>
