@@ -52,6 +52,20 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .tab-enter {
+            animation: tabEnter 0.3s ease forwards;
+        }
+        .tab-leave {
+            animation: tabLeave 0.3s ease forwards;
+        }
+        @keyframes tabEnter {
+            from { opacity: 0; transform: translateY(0.5rem); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes tabLeave {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-0.5rem); }
+        }
     </style>
     <!-- HTTPS Redirect -->
     <script>
@@ -939,14 +953,6 @@
                     } else {
                         tabButton.classList.remove('border-emerald-500', 'text-emerald-600');
                         tabButton.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200', 'hover:border-gray-300', 'dark:hover:border-gray-500');
-                    }
-                }
-
-                if (contentPanel) {
-                    if (tabKey === state.activeTab) {
-                        contentPanel.classList.remove('hidden');
-                    } else {
-                        contentPanel.classList.add('hidden');
                     }
                 }
 
@@ -2004,8 +2010,35 @@
                 return;
             }
 
+            if (tabName === state.activeTab) {
+                closeMobileMenu();
+                return;
+            }
+
+            const currentTab = state.activeTab;
+            const currentPanel = ui.content[currentTab];
+            const newPanel = ui.content[tabName];
+
             state.activeTab = tabName;
             render();
+
+            if (currentPanel && newPanel) {
+                currentPanel.classList.add('tab-leave');
+                currentPanel.addEventListener('animationend', () => {
+                    currentPanel.classList.add('hidden');
+                    currentPanel.classList.remove('tab-leave');
+                }, { once: true });
+
+                newPanel.classList.remove('hidden');
+                newPanel.classList.add('tab-enter');
+                newPanel.addEventListener('animationend', () => {
+                    newPanel.classList.remove('tab-enter');
+                }, { once: true });
+            } else {
+                if (newPanel) newPanel.classList.remove('hidden');
+                if (currentPanel && currentPanel !== newPanel) currentPanel.classList.add('hidden');
+            }
+
             closeMobileMenu();
         }
         async function addPlayer() {
