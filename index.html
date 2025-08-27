@@ -150,7 +150,7 @@
             </div>
 
             <!-- Tab Content Area -->
-            <div class="p-4 sm:p-6">
+            <div class="relative p-4 sm:p-6">
                 <!-- Current Match Tab -->
                 <div id="tab-content-match">
                     <div class="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -2023,10 +2023,10 @@
             render();
 
             if (currentPanel && newPanel) {
-                currentPanel.classList.add('tab-leave');
+                currentPanel.classList.add('tab-leave', 'absolute', 'w-full');
                 currentPanel.addEventListener('animationend', () => {
                     currentPanel.classList.add('hidden');
-                    currentPanel.classList.remove('tab-leave');
+                    currentPanel.classList.remove('tab-leave', 'absolute', 'w-full');
                 }, { once: true });
 
                 newPanel.classList.remove('hidden');
