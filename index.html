@@ -15,7 +15,6 @@
             darkMode: 'class',
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2514,31 +2513,8 @@
             updateGameData();
         }
 
-        function playMatchCompleteSound() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const ctx = new AudioContext();
-                const oscillator = ctx.createOscillator();
-                const gain = ctx.createGain();
-                oscillator.type = 'triangle';
-                oscillator.frequency.value = 880;
-                oscillator.connect(gain);
-                gain.connect(ctx.destination);
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-                oscillator.start();
-                oscillator.stop(ctx.currentTime + 0.5);
-            } catch (e) {
-                console.warn('Audio not supported', e);
-            }
-        }
-
         function openDotdModal() {
-            if (window.confetti) {
-                window.confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-            }
             showToast('Match Complete!');
-            playMatchCompleteSound();
 
             const allPlayerIdsInFixture = [...new Set(state.fixture.games.flatMap(game => game.playerIds))];
 
