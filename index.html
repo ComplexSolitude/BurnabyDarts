@@ -536,7 +536,8 @@
     </div>
 
     <div id="dotd-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md relative">
+            <button id="dotd-close-btn" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-3xl leading-none">&times;</button>
             <h3 class="text-2xl font-bold text-center mb-4 dark:text-white">Vote for DOTD</h3>
             <p class="text-center text-gray-600 dark:text-gray-400 mb-6">The player with the most votes receives a £2.50 fine.</p>
             <div id="dotd-vote-list" class="space-y-3 mb-6"></div>
@@ -3016,6 +3017,11 @@
             ui.dotdModal.finish.addEventListener('click', () => {
                 const selectedPlayer = document.querySelector('input[name="dotd-vote"]:checked');
                 finishMatch(selectedPlayer ? selectedPlayer.value : null);
+            });
+
+            document.getElementById('dotd-close-btn').addEventListener('click', () => {
+                ui.dotdModal.overlay.classList.add('hidden');
+                ui.dotdModal.overlay.classList.remove('flex');
             });
 
             ui.confirmModal.cancel.addEventListener('click', closeConfirmModal);
