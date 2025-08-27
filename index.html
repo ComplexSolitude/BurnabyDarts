@@ -1968,6 +1968,7 @@
             } else if (action === 'clearPlayerFines') {
                 try {
                     await markFinesAsPaid(data);
+                    showToast("Fines cleared for player.", false);
                 } catch (error) {
                     console.error("Error clearing fines:", error);
                     showToast("Could not clear fines.", true);
@@ -2390,7 +2391,6 @@
                     updates[`stats.${seasonId}.singles.outstandingFines`] = 0;
                 }
                 await updateDoc(playerRef, updates);
-                showToast("Fines cleared for player.", false);
             } catch (error) {
                 console.error("Error clearing fines: ", error);
                 showToast("Could not clear fines.", true);
