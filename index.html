@@ -41,16 +41,13 @@
             transition: opacity 0.3s ease;
         }
         .spinner {
-            border: 3px solid #f3f4f6;
-            border-top: 3px solid #10b981;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            width: 60px;
+            height: 60px;
+            animation: dart-spin 1.5s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes dart-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
     <!-- HTTPS Redirect -->
@@ -62,9 +59,9 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
-    <div id="loading-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-60 flex items-center justify-center hidden">
+    <div id="loading-overlay" class="fixed inset-0 z-60 flex items-center justify-center bg-gradient-to-br from-green-800/90 to-gray-900/90 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
-            <div class="spinner mx-auto mb-4"></div>
+            <img src="darts-icon-v3.png" alt="Loading..." class="spinner mx-auto mb-4">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Signing you in...</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">Please wait a moment</p>
         </div>
@@ -1633,7 +1630,8 @@
             const signInBtn = document.getElementById('google-signin-btn');
             const signInText = document.getElementById('signin-btn-text');
 
-            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            loadingOverlay.classList.add('opacity-100');
             signInBtn.disabled = true;
             signInText.textContent = 'Signing in...';
             signInBtn.classList.add('opacity-75', 'cursor-not-allowed');
@@ -1680,7 +1678,8 @@
                 startLogoutTimer();
                 // Small delay to ensure smooth transition
                 setTimeout(() => {
-                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('opacity-100');
+                    loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
                     ui.roleSelectionOverlay.classList.add('hidden');
                     ui.mainApp.classList.remove('hidden');
 
@@ -1696,7 +1695,8 @@
             } catch (error) {
                 console.error('Google Sign-In error:', error);
                 // Hide loading on error
-                loadingOverlay.classList.add('hidden');
+                loadingOverlay.classList.remove('opacity-100');
+                loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
                 signInBtn.disabled = false;
                 signInText.textContent = 'Sign in with Google';
                 signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -1775,7 +1775,8 @@
             }
 
             if (loadingOverlay) {
-                loadingOverlay.classList.add('hidden');
+                loadingOverlay.classList.remove('opacity-100');
+                loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
             }
         }
         async function loadUsers() {
