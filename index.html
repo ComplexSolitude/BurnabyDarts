@@ -73,7 +73,7 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
-    <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-green-800/90 to-gray-900/90 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+    <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-green-800/90 to-gray-900/90 backdrop-blur-sm opacity-100 transition-opacity duration-300">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
             <img src="darts-icon-v3.png" alt="Loading..." class="spinner mx-auto mb-4">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Signing you in...</h3>
@@ -2818,6 +2818,13 @@
 
                 setupFirestoreListeners();
                 render();
+
+                // Hide loading overlay once auth state is resolved
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if (loadingOverlay) {
+                    loadingOverlay.classList.remove('opacity-100');
+                    loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+                }
             });
             function setupFirestoreListeners() {
                 onSnapshot(query(collection(state.db, SEASONS_COLLECTION)), (snapshot) => {
