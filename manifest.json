@@ -1,0 +1,26 @@
+{
+  "name": "Burnaby Arms B Darts Scorer",
+  "short_name": "Darts Scorer",
+  "description": "A web application for managing darts matches for the Burnaby Arms B team",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "darts-icon-v3.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "darts-icon-v3.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["sports", "games"],
+  "lang": "en"
+}
