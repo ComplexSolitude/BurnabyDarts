@@ -1964,10 +1964,16 @@
                     console.error("Error deleting fixture:", error);
                     showToast("Could not delete the match.", true);
                 }
+            } else if (action === 'clearPlayerFines') {
+                try {
+                    await markFinesAsPaid(data);
+                } catch (error) {
+                    console.error("Error clearing fines:", error);
+                    showToast("Could not clear fines.", true);
+                }
             }
             closeConfirmModal();
         }
-
         function openMobileMenu() {
             ui.mobileMenuOverlay.classList.remove('hidden');
             setTimeout(() => {
@@ -2914,7 +2920,18 @@
 
             ui.finesList.addEventListener('click', (e) => {
                 const payBtn = e.target.closest('.pay-fines-btn');
-                if (payBtn) markFinesAsPaid(payBtn.dataset.playerId);
+                if (payBtn) {
+                    const player = state.players.find(p => p.id === payBtn.dataset.playerId);
+                    const allTimeStats = getPlayerStats(player, 'all-time', 'singles');
+                    const fineAmount = `£${(allTimeStats.outstandingFines / 100).toFixed(2)}`;
+
+                    openConfirmModal(
+                        `Clear ${player?.name || 'Player'}'s Fines?`,
+                        `Are you sure you want to mark ${fineAmount} in outstanding fines as paid? This action cannot be undone.`,
+                        'clearPlayerFines',
+                        payBtn.dataset.playerId
+                    );
+                }
             });
 
             ui.seasonFilterSelect.addEventListener('change', (e) => {
