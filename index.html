@@ -16,6 +16,7 @@
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -463,6 +464,7 @@
                     </div>
                     <div id="h2h-results-container" class="mt-6">
                         <p class="text-center text-gray-500 dark:text-gray-400">Select two different players to compare their stats.</p>
+                        <canvas id="h2h-chart" class="mx-auto max-w-md mt-4"></canvas>
                     </div>
                 </div>
 
@@ -625,6 +627,7 @@
             h2h: {
                 player1: null,
                 player2: null,
+                chart: null,
             },
             myProfile: {
                 selectedPlayerId: null,
@@ -2566,7 +2569,11 @@
             const container = ui.h2h.resultsContainer;
 
             if (!p1Id || !p2Id || p1Id === p2Id) {
-                container.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400">Select two different players to compare their stats.</p>';
+                container.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400">Select two different players to compare their stats.</p><canvas id="h2h-chart" class="mx-auto max-w-md mt-4"></canvas>';
+                if (state.h2h.chart) {
+                    state.h2h.chart.destroy();
+                    state.h2h.chart = null;
+                }
                 return;
             }
 
@@ -2575,6 +2582,11 @@
 
             const p1Stats = getPlayerStats(player1, 'all-time', 'combined');
             const p2Stats = getPlayerStats(player2, 'all-time', 'combined');
+
+            const p1LegPct = parseFloat(((p1Stats.legsWon + p1Stats.legsLost > 0) ? (p1Stats.legsWon / (p1Stats.legsWon + p1Stats.legsLost) * 100) : 0).toFixed(1));
+            const p2LegPct = parseFloat(((p2Stats.legsWon + p2Stats.legsLost > 0) ? (p2Stats.legsWon / (p2Stats.legsWon + p2Stats.legsLost) * 100) : 0).toFixed(1));
+            const p1Fines = p1Stats.totalFines / 100;
+            const p2Fines = p2Stats.totalFines / 100;
 
             const renderStatRow = (label, val1, val2) => {
                 const isP1Winner = val1 > val2;
@@ -2600,15 +2612,49 @@
                 <div class="divide-y divide-gray-200 dark:divide-gray-700">
                     ${renderStatRow('Games Won', p1Stats.gamesWon, p2Stats.gamesWon)}
                     ${renderStatRow('Legs Won', p1Stats.legsWon, p2Stats.legsWon)}
-                    ${renderStatRow('Leg Win %', parseFloat(((p1Stats.legsWon + p1Stats.legsLost > 0) ? (p1Stats.legsWon / (p1Stats.legsWon + p1Stats.legsLost) * 100) : 0).toFixed(1)), parseFloat(((p2Stats.legsWon + p2Stats.legsLost > 0) ? (p2Stats.legsWon / (p2Stats.legsWon + p2Stats.legsLost) * 100) : 0).toFixed(1)))}
+                    ${renderStatRow('Leg Win %', p1LegPct, p2LegPct)}
                     ${renderStatRow('100+', p1Stats.scores100, p2Stats.scores100)}
                     ${renderStatRow('140+', p1Stats.scores140, p2Stats.scores140)}
                     ${renderStatRow('180s', p1Stats.scores180, p2Stats.scores180)}
                     ${renderStatRow('High Checkout', p1Stats.highCheckout, p2Stats.highCheckout)}
-                    ${renderStatRow('Total Fines (£)', (p1Stats.totalFines/100).toFixed(2), (p2Stats.totalFines/100).toFixed(2))}
+                    ${renderStatRow('Total Fines (£)', p1Fines.toFixed(2), p2Fines.toFixed(2))}
                 </div>
                 <p class="text-xs text-center text-gray-400 mt-4">* Singles stats shown for wins/legs/HC/fines. All scores included.</p>
+                <canvas id="h2h-chart" class="mx-auto max-w-md mt-4"></canvas>
             `;
+
+            const ctx = document.getElementById('h2h-chart').getContext('2d');
+            const chartData = {
+                labels: ['Games Won', 'Legs Won', 'Leg Win %', '100+', '140+', '180s', 'High Checkout', 'Total Fines (£)'],
+                datasets: [
+                    {
+                        label: player1.name,
+                        data: [p1Stats.gamesWon, p1Stats.legsWon, p1LegPct, p1Stats.scores100, p1Stats.scores140, p1Stats.scores180, p1Stats.highCheckout, p1Fines],
+                        backgroundColor: 'rgba(16,185,129,0.7)'
+                    },
+                    {
+                        label: player2.name,
+                        data: [p2Stats.gamesWon, p2Stats.legsWon, p2LegPct, p2Stats.scores100, p2Stats.scores140, p2Stats.scores180, p2Stats.highCheckout, p2Fines],
+                        backgroundColor: 'rgba(52,211,153,0.7)'
+                    }
+                ]
+            };
+
+            if (state.h2h.chart) {
+                state.h2h.chart.destroy();
+            }
+            state.h2h.chart = new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
         }
 
          function setupProfileTabs(container) {
