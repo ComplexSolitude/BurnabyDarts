@@ -2097,11 +2097,6 @@
                     if (p2) playerIds.push(p2);
                 }
 
-                if (playerIds.some(id => !id)) {
-                    showToast(`Please select players for ${title}.`, true);
-                    return;
-                }
-
                 const playerScores = playerIds.map(() => ({
                     scores100: 0,
                     scores140: 0,
@@ -2853,11 +2848,6 @@
                             return;
                         }
                         if (p2) playerIds.push(p2);
-                    }
-
-                    if (playerIds.some(id => !id)) {
-                        showToast(`Please select players for ${title}.`, true);
-                        return;
                     }
 
                     // Keep existing game data but update player selections
