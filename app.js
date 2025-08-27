@@ -2336,6 +2336,7 @@
                     const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
                     await updateDoc(fixtureRef, { games: games });
                     showToast("Team selections updated successfully!");
+                    switchTab('live');
                 } catch (error) {
                     console.error("Error updating teams:", error);
                     showToast("Could not update team selections.", true);
