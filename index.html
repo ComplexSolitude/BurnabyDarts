@@ -186,12 +186,17 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                         <!-- Left Column -->
                         <div>
-                            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8">
-                                <h2 class="text-xl font-semibold mb-4 dark:text-white">Player Roster</h2>
-                                <div id="player-roster-list" class="space-y-3 mb-4"></div>
-                                <div id="add-player-form" class="space-y-2">
-                                    <input type="text" id="new-player-name-input" aria-label="New Player Input" placeholder="Enter new player name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                    <button id="add-player-btn" class="w-full bg-gray-800 dark:bg-gray-600 text-white py-2 px-4 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-500 transition-colors duration-200">Add Player</button>
+                            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h2 class="text-xl font-semibold dark:text-white">Player Roster</h2>
+                                    <button id="toggle-roster-btn" class="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Show</button>
+                                </div>
+                                <div id="player-roster-content" class="hidden">
+                                    <div id="player-roster-list" class="space-y-3 mb-4"></div>
+                                    <div id="add-player-form" class="space-y-2">
+                                        <input type="text" id="new-player-name-input" aria-label="New Player Input" placeholder="Enter new player name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                        <button id="add-player-btn" class="w-full bg-gray-800 dark:bg-gray-600 text-white py-2 px-4 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-500 transition-colors duration-200">Add Player</button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -3076,6 +3081,21 @@
                 renderMyProfile();
             });
             ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
+
+            // Toggle player roster visibility
+            document.getElementById('toggle-roster-btn').addEventListener('click', () => {
+                const content = document.getElementById('player-roster-content');
+                const button = document.getElementById('toggle-roster-btn');
+                const isHidden = content.classList.contains('hidden');
+
+                if (isHidden) {
+                    content.classList.remove('hidden');
+                    button.textContent = 'Hide';
+                } else {
+                    content.classList.add('hidden');
+                    button.textContent = 'Show';
+                }
+            });
         }
         ui.headerSignoutBtn.addEventListener('click', handleHeaderButtonClick);
         ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
