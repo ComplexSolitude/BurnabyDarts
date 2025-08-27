@@ -1784,6 +1784,8 @@
                 showToast("Match finished and all stats saved! Well played.", false);
                 ui.dotdModal.overlay.classList.add('hidden');
                 ui.dotdModal.overlay.classList.remove('flex');
+                state.fixture = { id: null, games: [] };
+                state.currentGameIndex = 0;
                 switchTab('match');
 
             } catch (e) {
