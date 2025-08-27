@@ -621,7 +621,7 @@
             activeSeasonId: null,
             selectedStatsSeasonId: 'all-time',
             playerCard: { isOpen: false, playerId: null, selectedSeasonId: 'all-time' },
-            fixture: { id: null, games: [] },
+            fixture: { id: null, games: [], activeGameIndex: 0 },
             previousFixtures: [],
             selectedPreviousFixtureId: null,
             currentGameIndex: 0,
@@ -2210,6 +2210,7 @@
                         seasonId: state.activeSeasonId,
                         oppositionName: oppositionName,
                         games: games,
+                        activeGameIndex: 0,
                         status: 'live',
                         createdAt: createdAt
                     });
@@ -2230,7 +2231,8 @@
             try {
                 await safeFirebaseCall('updateGame', async () => {
                     return await updateDoc(fixtureRef, {
-                        games: state.fixture.games
+                        games: state.fixture.games,
+                        activeGameIndex: state.fixture.activeGameIndex || 0
                     });
                 });
             } catch (error) {
@@ -2873,14 +2875,14 @@
                     const activeFixture = allFixtures.find(f => f.status === 'live');
 
                     if (activeFixture) {
-                         if (state.fixture.id !== activeFixture.id) {
-                              state.fixture = activeFixture;
-                              state.currentGameIndex = 0;
-                         } else {
-                              state.fixture.games = activeFixture.games;
-                         }
+                        state.fixture = activeFixture;
+                        state.currentGameIndex = activeFixture.activeGameIndex || 0;
+                        state.fixture.activeGameIndex = state.currentGameIndex;
+                        state.lastTurnSeq = state.fixture.games[state.currentGameIndex]?.turnSeq || 0;
                     } else {
-                        state.fixture = { id: null, games: [] };
+                        state.fixture = { id: null, games: [], activeGameIndex: 0 };
+                        state.currentGameIndex = 0;
+                        state.lastTurnSeq = 0;
                     }
 
                     state.previousFixtures = allFixtures.filter(f => f.status === 'finished');
@@ -2999,6 +3001,7 @@
             ui.prevGameBtn.addEventListener('click', () => {
                 if (state.currentGameIndex > 0) {
                     state.currentGameIndex--;
+                    state.fixture.activeGameIndex = state.currentGameIndex;
                     const game = state.fixture.games[state.currentGameIndex];
                     game.turnSeq = (game.turnSeq || 0) + 1;
                     render();
@@ -3008,6 +3011,7 @@
             ui.nextGameBtn.addEventListener('click', () => {
                 if (state.currentGameIndex < state.fixture.games.length - 1) {
                     state.currentGameIndex++;
+                    state.fixture.activeGameIndex = state.currentGameIndex;
                     const game = state.fixture.games[state.currentGameIndex];
                     game.turnSeq = (game.turnSeq || 0) + 1;
                     render();
