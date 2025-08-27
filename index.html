@@ -64,6 +64,13 @@
             from { opacity: 1; transform: translateY(0); }
             to { opacity: 0; transform: translateY(-0.5rem); }
         }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); color: inherit; }
+            50% { transform: scale(1.05); color: #fbbf24; }
+        }
+        #current-player-names.animate-pulse {
+            animation: pulse 0.6s ease;
+        }
     </style>
     <!-- HTTPS Redirect -->
     <script>
@@ -619,6 +626,7 @@
             previousFixtures: [],
             selectedPreviousFixtureId: null,
             currentGameIndex: 0,
+            previousPlayerNames: '',
             confirmation: { action: null, data: null },
             loginAttemptRole: null,
             logoutTimer: null,
@@ -1342,6 +1350,13 @@
             }
         }
 
+        function triggerPlayerChangeAnimation() {
+            const el = ui.currentPlayerNames;
+            el.classList.remove('animate-pulse');
+            void el.offsetWidth;
+            el.classList.add('animate-pulse');
+        }
+
         function renderLiveMatch() {
             const isViewer = state.userRole === 'viewer';
             document.querySelectorAll('#live-match-content button, #live-match-content input').forEach(el => {
@@ -1375,7 +1390,12 @@
                 const player = state.players.find(p => p.id === id);
                 return player?.nickname || player?.name || 'Unknown';
             });
-            ui.currentPlayerNames.textContent = playerNames.join(' & ');
+            const namesText = playerNames.join(' & ');
+            ui.currentPlayerNames.textContent = namesText;
+            if (state.previousPlayerNames !== namesText) {
+                triggerPlayerChangeAnimation();
+                state.previousPlayerNames = namesText;
+            }
             ui.gameNavTitle.textContent = game.title;
 
             if(isDoubles) {
