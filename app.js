@@ -1,0 +1,2500 @@
+        // --- Firebase SDK Imports ---
+        // noinspection JSFileReferences
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // noinspection JSFileReferences
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, runTransaction, query, updateDoc, serverTimestamp, increment, writeBatch, Timestamp, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            signInWithPopup,
+            GoogleAuthProvider,
+            signOut as firebaseSignOut,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const provider = new GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+
+        // --- APPLICATION STATE ---
+        const state = {
+            db: null,
+            auth: null,
+            userId: null,
+            userEmail: null,
+            userName: null,
+            userRole: null, // null, 'viewer', 'member', 'admin'
+            userPlayerId: null, // Link to player profile
+            isLoggedIn: false,
+            signingIn: false,
+            activeTab: 'match',
+            players: [],
+            seasons: [],
+            activeSeasonId: null,
+            selectedStatsSeasonId: 'all-time',
+            playerCard: { isOpen: false, playerId: null, selectedSeasonId: 'all-time' },
+            fixture: { id: null, games: [] },
+            previousFixtures: [],
+            selectedPreviousFixtureId: null,
+            currentGameIndex: 0,
+            confirmation: { action: null, data: null },
+            loginAttemptRole: null,
+            logoutTimer: null,
+            h2h: {
+                player1: null,
+                player2: null,
+            },
+            myProfile: {
+                selectedPlayerId: null,
+            }
+        };
+
+        const rateLimiter = {
+            requests: new Map(),
+
+            isAllowed(operation = 'general', limit = 100, windowMs = 60000) {
+                const userId = state.userId || 'anonymous';
+                const key = `${userId}-${operation}`;
+                const now = Date.now();
+
+                const userRequests = this.requests.get(key) || [];
+                const recentRequests = userRequests.filter(time => now - time < windowMs);
+
+                if (recentRequests.length >= limit) {
+                    return false;
+                }
+
+                this.requests.set(key, [...recentRequests, now]);
+                return true;
+            },
+
+            checkAndBlock(operation, limit, windowMs) {
+                if (!this.isAllowed(operation, limit, windowMs)) {
+                    throw new Error(`Rate limit exceeded for ${operation}. Please wait before trying again.`);
+                }
+            }
+        };
+
+        // Wrapper for Firebase operations
+        const safeFirebaseCall = async (operation, firebaseFunction) => {
+            rateLimiter.checkAndBlock(operation, 50, 60000); // 50 requests per minute
+            return await firebaseFunction();
+        };
+
+        // Input validation function
+        function validateInput(input, maxLength = 100) {
+            if (typeof input !== 'string') {
+                throw new Error('Input must be a string');
+            }
+
+            if (input.length > maxLength) {
+                throw new Error(`Input too long (max ${maxLength} characters)`);
+            }
+
+            // Check for potentially malicious content
+            const dangerousPatterns = [
+                /<script/i,
+                /javascript:/i,
+                /data:/i,
+                /vbscript:/i,
+                /onload=/i,
+                /onerror=/i
+            ];
+
+            for (const pattern of dangerousPatterns) {
+                if (pattern.test(input)) {
+                    throw new Error('Invalid characters detected');
+                }
+            }
+
+            return input.trim();
+        }
+
+        // Storage validation function
+        function validateStoredData() {
+            const allowedRoles = ['viewer', 'scorer', 'member', 'admin'];
+            const storedRole = localStorage.getItem('userRole');
+
+            if (storedRole && !allowedRoles.includes(storedRole)) {
+                console.warn('Invalid role in storage, clearing...');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+                resetSignInButtonState();
+                return false;
+            }
+
+            // Validate login timestamp
+            const loginTimestamp = Number(localStorage.getItem('loginTimestamp'));
+            if (loginTimestamp && (Date.now() - loginTimestamp > SESSION_DURATION_MS)) {
+                console.warn('Session expired, clearing storage...');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+                resetSignInButtonState();
+                return false;
+            }
+
+            return true;
+        }
+
+
+        // --- CONSTANTS ---
+        const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
+        const GAME_TITLES = ["Singles 1", "Singles 2", "Singles 3", "Singles 4", "Singles 5", "Doubles 1", "Doubles 2"];
+        const PLAYERS_COLLECTION = 'players';
+        const FIXTURES_COLLECTION = 'fixtures';
+        const SEASONS_COLLECTION = 'seasons';
+
+        // --- DOM ELEMENTS ---
+        const ui = {
+            tabs: { match: document.getElementById('tab-btn-match'), live: document.getElementById('tab-btn-live'), previous: document.getElementById('tab-btn-previous'), fines: document.getElementById('tab-btn-fines'), stats: document.getElementById('tab-btn-stats'), h2h: document.getElementById('tab-btn-h2h'), 'my-profile': document.getElementById('tab-btn-my-profile'), setup: document.getElementById('tab-btn-setup'), admin: document.getElementById('tab-btn-admin') },
+            headerSignoutBtn: document.getElementById('header-signout-btn'),
+            content: { match: document.getElementById('tab-content-match'), live: document.getElementById('tab-content-live'), previous: document.getElementById('tab-content-previous'), fines: document.getElementById('tab-content-fines'), stats: document.getElementById('tab-content-stats'), h2h: document.getElementById('tab-content-h2h'), 'my-profile': document.getElementById('tab-content-my-profile'), setup: document.getElementById('tab-content-setup'), admin: document.getElementById('tab-content-admin') },
+            toast: { element: document.getElementById('toast-notification'), message: document.getElementById('toast-message') },
+            mainApp: document.getElementById('main-app'),
+            roleSelectionOverlay: document.getElementById('role-selection-overlay'),
+            loadingOverlay: document.getElementById('loading-overlay'),
+            hamburgerBtn: document.getElementById('hamburger-btn'),
+            themeToggleBtnMobile: document.getElementById('theme-toggle-btn-mobile'),
+            themeIconsMobile: { sun: document.getElementById('theme-icon-sun-mobile'), moon: document.getElementById('theme-icon-moon-mobile') },
+            desktopNav: document.getElementById('desktop-nav'),
+            mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
+            mobileNavLinks: document.getElementById('mobile-nav-links'),
+            closeMenuBtn: document.getElementById('close-menu-btn'),
+            adminContentArea: document.getElementById('admin-content-area'),
+            connectionStatus: document.getElementById('connection-status'),
+            playerRoster: document.getElementById('player-roster-list'),
+            addPlayerForm: document.getElementById('add-player-form'),
+            newPlayerInput: document.getElementById('new-player-name-input'),
+            addPlayerBtn: document.getElementById('add-player-btn'),
+            addSeasonForm: document.getElementById('add-season-form'),
+            oppositionNameInput: document.getElementById('opposition-name-input'),
+            matchDateInput: document.getElementById('match-date-input'),
+            fixtureForm: document.getElementById('fixture-setup-form'),
+            createFixtureBtn: document.getElementById('create-fixture-btn'),
+            seasonsList: document.getElementById('seasons-list'),
+            newSeasonInput: document.getElementById('new-season-name-input'),
+            addSeasonBtn: document.getElementById('add-season-btn'),
+            activeSeasonDisplay: document.getElementById('active-season-display'),
+            seasonFilterSelect: document.getElementById('season-filter-select'),
+            liveMatchContent: document.getElementById('live-match-content'),
+            noFixtureMessage: document.getElementById('no-fixture-message'),
+            gameNavTitle: document.getElementById('game-nav-title'),
+            prevGameBtn: document.getElementById('prev-game-btn'),
+            nextGameBtn: document.getElementById('next-game-btn'),
+            currentPlayerNames: document.getElementById('current-player-names'),
+            statValueSpans: {
+                legsWon: document.getElementById('stat-legsWon'),
+                legsLost: document.getElementById('stat-legsLost'),
+                fines: document.getElementById('stat-fines'),
+                scores100: document.getElementById('stat-scores100'),
+                scores140: document.getElementById('stat-scores140'),
+                scores180: document.getElementById('stat-scores180'),
+                sillyThings: document.getElementById('stat-sillyThings'),
+                p1_scores100: document.getElementById('stat-p1-scores100'),
+                p1_scores140: document.getElementById('stat-p1-scores140'),
+                p1_scores180: document.getElementById('stat-p1-scores180'),
+                p1_sillyThings: document.getElementById('stat-p1-sillyThings'),
+                p2_scores100: document.getElementById('stat-p2-scores100'),
+                p2_scores140: document.getElementById('stat-p2-scores140'),
+                p2_scores180: document.getElementById('stat-p2-scores180'),
+                p2_sillyThings: document.getElementById('stat-p2-sillyThings'),
+            },
+            doublesPlayerNames: { p1: document.getElementById('doubles-p1-name'), p2: document.getElementById('doubles-p2-name') },
+            highCheckoutInput: document.getElementById('high-checkout-input'),
+            finesPanel: document.getElementById('fines-panel'),
+            finesListCurrentGame: document.getElementById('fines-list-current-game'),
+            gameActionButtons: document.getElementById('game-action-buttons'),
+            leaderboardBody: document.getElementById('leaderboard-body'),
+            currentMatchResults: document.getElementById('current-match-results'),
+            currentMatchOpponent: document.getElementById('current-match-opponent'),
+            currentMatchScoreContainer: document.getElementById('current-match-score-container'),
+            liveScoringScoreContainer: document.getElementById('live-scoring-score-container'),
+            previousMatchesList: document.getElementById('previous-matches-list'),
+            previousMatchDetails: document.getElementById('previous-match-details'),
+            finesList: document.getElementById('fines-list'),
+            payFineContainer: document.getElementById('pay-fine-container'),
+            singlesScoringPanel: document.getElementById('singles-scoring-panel'),
+            doublesScoringPanel: document.getElementById('doubles-scoring-panel'),
+            playerCardModal: { overlay: document.getElementById('player-card-modal'), content: document.getElementById('player-card-content'), closeBtn: document.getElementById('player-card-close-btn') },
+            lowScoreModal: { overlay: document.getElementById('low-score-modal'), input: document.getElementById('low-score-input'), cancel: document.getElementById('low-score-cancel'), submit: document.getElementById('low-score-submit') },
+            dotdModal: { overlay: document.getElementById('dotd-modal'), list: document.getElementById('dotd-vote-list'), finish: document.getElementById('dotd-finish-btn') },
+            confirmModal: { overlay: document.getElementById('confirm-modal'), title: document.getElementById('confirm-modal-title'), text: document.getElementById('confirm-modal-text'), cancel: document.getElementById('confirm-modal-cancel'), confirm: document.getElementById('confirm-modal-confirm') },
+            fineBtn26: document.getElementById('fine-btn-26'),
+            fineBtnMiss: document.getElementById('fine-btn-miss'),
+            fineBtnLowScore: document.getElementById('fine-btn-low-score'),
+            h2h: {
+                player1Select: document.getElementById('h2h-player1-select'),
+                player2Select: document.getElementById('h2h-player2-select'),
+                resultsContainer: document.getElementById('h2h-results-container'),
+            },
+            myProfile: {
+                playerSelect: document.getElementById('my-profile-player-select'),
+                editArea: document.getElementById('my-profile-edit-area'),
+                statsArea: document.getElementById('my-profile-stats-area'),
+                nameInput: document.getElementById('my-profile-name'),
+                nicknameInput: document.getElementById('my-profile-nickname'),
+                saveBtn: document.getElementById('my-profile-save-btn'),
+            }
+        };
+
+        // --- RENDER FUNCTIONS ---
+        function render() {
+            renderAuth();
+            renderTabs();
+            renderPlayerRoster();
+            renderSeasonManagement();
+            renderFixturePlayerSelectors();
+            renderFixtureSetup();
+            renderLiveMatch();
+            renderLeaderboard();
+            renderCurrentMatch();
+            renderPreviousMatches();
+            renderFines();
+            renderH2HTab();
+            renderMyProfile();
+        }
+
+        function renderAuth() {
+            // Show/hide header buttons based on login status
+            if (state.isLoggedIn) {
+                ui.headerSignoutBtn.classList.remove('hidden');
+                ui.headerSignoutBtn.textContent = 'Sign Out';
+            } else if (state.userRole === 'viewer') {
+                ui.headerSignoutBtn.classList.remove('hidden');
+                ui.headerSignoutBtn.textContent = 'Sign In';
+            } else {
+                ui.headerSignoutBtn.classList.add('hidden');
+            }
+            ui.adminContentArea.innerHTML = '';
+
+            if (state.isLoggedIn) {
+                const loggedInContainer = document.createElement('div');
+                loggedInContainer.className = 'space-y-6 max-w-2xl';
+
+                // User info section
+                const userInfoDiv = document.createElement('div');
+                userInfoDiv.className = 'bg-gray-50 dark:bg-gray-700 p-4 rounded-xl';
+                userInfoDiv.innerHTML = `
+                    <div class="text-gray-600 dark:text-gray-300">
+                        <p>Signed in as <span class="font-bold capitalize">${state.userRole}</span></p>
+                        <p class="text-sm">${state.userEmail}</p>
+                        ${state.userName ? `<p class="text-sm">${state.userName}</p>` : ''}
+                    </div>
+                `;
+                loggedInContainer.appendChild(userInfoDiv);
+
+                // User management section (admin only)
+                if (state.userRole === 'admin') {
+                    const userManagementDiv = document.createElement('div');
+                    userManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
+                    userManagementDiv.innerHTML = `
+                        <h3 class="text-lg font-semibold mb-4 dark:text-white">User Management</h3>
+
+                        <!-- Security Warning -->
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                            <div class="flex">
+                                <svg class="w-5 h-5 text-yellow-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Security Notice</h4>
+                                    <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">Never give admin access to unknown users. All role changes are logged.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="users-list" class="space-y-2 mb-4"></div>
+                    `;
+                    loggedInContainer.appendChild(userManagementDiv);
+
+                    // Load and display users
+                    loadUsers();
+                }
+
+                // Sign out button
+                const logoutBtn = document.createElement('button');
+                logoutBtn.textContent = 'Sign Out';
+                logoutBtn.className = 'w-full bg-red-500 text-white py-2 px-4 rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium';
+                logoutBtn.addEventListener('click', handleLogout);
+                loggedInContainer.appendChild(logoutBtn);
+
+                ui.adminContentArea.appendChild(loggedInContainer);
+            } else {
+                // Viewer mode content
+                const viewerContainer = document.createElement('div');
+                viewerContainer.className = 'space-y-4 max-w-sm';
+                viewerContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-300">You are currently in View Only mode.</p>`;
+
+                const returnBtn = document.createElement('button');
+                returnBtn.textContent = 'Return to Sign In';
+                returnBtn.className = 'w-full bg-gray-800 dark:bg-gray-600 text-white py-2 px-4 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-500 transition-colors duration-200 font-medium';
+                returnBtn.addEventListener('click', () => {
+                    ui.mainApp.classList.add('hidden');
+                    ui.roleSelectionOverlay.classList.remove('hidden');
+                });
+
+                viewerContainer.appendChild(returnBtn);
+                ui.adminContentArea.appendChild(viewerContainer);
+            }
+        }
+
+        function renderTabs() {
+            ui.mobileNavLinks.innerHTML = ''; // Clear previous links
+            for (const tabKey in ui.tabs) {
+                const tabButton = ui.tabs[tabKey];
+                const contentPanel = ui.content[tabKey];
+
+                // Hide admin tab for non-admin users
+                if (tabKey === 'admin' && state.userRole !== 'admin') {
+                    if (tabButton) {
+                        tabButton.style.display = 'none';
+                    }
+                    // Skip adding to mobile menu
+                    continue;
+                } else if (tabKey === 'admin' && state.userRole === 'admin') {
+                    // Show admin tab for admins
+                    if (tabButton) {
+                        tabButton.style.display = '';
+                    }
+                }
+
+                if (tabButton) {
+                    if (tabKey === state.activeTab) {
+                        tabButton.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                        tabButton.classList.add('border-emerald-500', 'text-emerald-600');
+                    } else {
+                        tabButton.classList.remove('border-emerald-500', 'text-emerald-600');
+                        tabButton.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-200', 'hover:border-gray-300', 'dark:hover:border-gray-500');
+                    }
+                }
+
+                if (contentPanel) {
+                    if (tabKey === state.activeTab) {
+                        contentPanel.classList.remove('hidden');
+                    } else {
+                        contentPanel.classList.add('hidden');
+                    }
+                }
+
+                const mobileLink = document.createElement('a');
+                mobileLink.href = '#';
+                mobileLink.dataset.tabName = tabKey;
+                mobileLink.textContent = tabButton.textContent;
+                mobileLink.className = `text-lg p-2 rounded-md ${tabKey === state.activeTab ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
+                ui.mobileNavLinks.appendChild(mobileLink);
+            }
+        }
+
+        function renderPlayerRoster() {
+            ui.playerRoster.innerHTML = '';
+            if (state.players.length === 0) {
+                ui.playerRoster.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No players added yet.</p>`;
+            } else {
+                state.players.forEach(player => {
+                    const playerEl = document.createElement('div');
+                    playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg';
+                    playerEl.innerHTML = `
+                        <span class="font-medium dark:text-white">${player.name}</span>
+                        ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold">Remove</button>` : ''}
+                    `;
+                    ui.playerRoster.appendChild(playerEl);
+                });
+            }
+            ui.addPlayerForm.classList.toggle('hidden', state.userRole === 'viewer' || state.userRole === 'scorer');
+        }
+
+        function renderSeasonManagement() {
+            ui.seasonsList.innerHTML = '';
+            if (state.seasons.length === 0) {
+                ui.seasonsList.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No seasons created yet.</p>`;
+                ui.activeSeasonDisplay.textContent = 'N/A - Please create a season.';
+            } else {
+                let activeSeasonName = 'N/A';
+                state.seasons.forEach(season => {
+                    const isActive = season.id === state.activeSeasonId;
+                    if (isActive) activeSeasonName = season.name;
+                    const seasonEl = document.createElement('div');
+                    seasonEl.className = `flex items-center justify-between p-2 rounded-lg ${isActive ? 'bg-emerald-100 dark:bg-emerald-900' : 'bg-gray-100 dark:bg-gray-700'}`;
+                    seasonEl.innerHTML = `
+                        <span class="font-medium dark:text-white">${season.name}</span>
+                        ${!isActive && (state.userRole === 'admin' || state.userRole === 'member') ? `<button data-season-id="${season.id}" class="set-active-season-btn text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 text-sm font-semibold">Set Active</button>` : ''}
+                    `;
+                    ui.seasonsList.appendChild(seasonEl);
+                });
+                ui.activeSeasonDisplay.textContent = activeSeasonName;
+            }
+            ui.addSeasonForm.classList.toggle('hidden', state.userRole === 'viewer' || state.userRole === 'scorer');
+        }
+
+        function renderFixturePlayerSelectors() {
+            const form = ui.fixtureForm;
+            form.innerHTML = '';
+            if (state.players.length === 0) {
+                form.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Add players to the roster before setting up a match.</p>';
+                return;
+            }
+
+            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+            GAME_TITLES.forEach((title, i) => {
+                const isDoubles = title.includes("Doubles");
+                const gameSetupEl = document.createElement('div');
+                gameSetupEl.className = 'mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg';
+
+                // Get current player selections if there's an active fixture
+                const currentGame = state.fixture.games?.[i];
+                const currentP1 = currentGame?.playerIds?.[0] || '';
+                const currentP2 = currentGame?.playerIds?.[1] || '';
+
+                let selectorsHtml = `
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${title}</label>
+                    <div class="grid grid-cols-1 ${isDoubles ? 'sm:grid-cols-2' : ''} gap-2">
+                        <div>
+                            <select id="game-${i}-p1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="">Select Player 1</option>
+                                ${playerOptions}
+                            </select>
+                        </div>
+                `;
+
+                if (isDoubles) {
+                    selectorsHtml += `
+                        <div>
+                            <select id="game-${i}-p2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="">Select Player 2</option>
+                                ${playerOptions}
+                            </select>
+                        </div>
+                    `;
+                }
+
+                selectorsHtml += '</div>';
+                gameSetupEl.innerHTML = selectorsHtml;
+                form.appendChild(gameSetupEl);
+
+                // Set the current selections after the elements are added to the DOM
+                setTimeout(() => {
+                    const p1Select = document.getElementById(`game-${i}-p1`);
+                    const p2Select = document.getElementById(`game-${i}-p2`);
+
+                    if (p1Select && currentP1) {
+                        p1Select.value = currentP1;
+                    }
+                    if (p2Select && currentP2) {
+                        p2Select.value = currentP2;
+                    }
+                }, 0);
+            });
+        }
+
+        function renderFixtureSetup() {
+            const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer';
+            const hasActiveFixture = state.fixture.id !== null;
+
+            // Disable most inputs for viewers/scorers, but allow editing during active fixture for members/admins
+            document.querySelectorAll('#tab-content-setup input:not(#opposition-name-input):not(#match-date-input), #tab-content-setup select').forEach(el => {
+                el.disabled = isDisabled;
+            });
+
+            // Handle the create button differently - hide when fixture is active, show "Update Teams" instead
+            if (hasActiveFixture) {
+                ui.createFixtureBtn.style.display = 'none';
+
+                // Add an update button if it doesn't exist
+                let updateBtn = document.getElementById('update-teams-btn');
+                if (!updateBtn) {
+                    updateBtn = document.createElement('button');
+                    updateBtn.id = 'update-teams-btn';
+                    updateBtn.className = 'w-full bg-blue-600 text-white py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-semibold text-lg';
+                    updateBtn.textContent = 'Update Team Selections';
+                    ui.createFixtureBtn.parentNode.insertBefore(updateBtn, ui.createFixtureBtn.nextSibling);
+
+                    updateBtn.addEventListener('click', updateTeamSelections);
+                }
+                updateBtn.style.display = isDisabled ? 'none' : 'block';
+
+                // Disable opposition name and date during active fixture
+                ui.oppositionNameInput.disabled = true;
+                ui.matchDateInput.disabled = true;
+            } else {
+                ui.createFixtureBtn.style.display = 'block';
+                const updateBtn = document.getElementById('update-teams-btn');
+                if (updateBtn) updateBtn.style.display = 'none';
+
+                // Re-enable opposition name and date when no active fixture
+                ui.oppositionNameInput.disabled = isDisabled;
+                ui.matchDateInput.disabled = isDisabled;
+
+                if (isDisabled) {
+                    ui.createFixtureBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    ui.createFixtureBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        function getPlayerStats(player, seasonId, type = 'singles') {
+            const defaultStats = { gamesWon: 0, gamesLost: 0, legsWon: 0, legsLost: 0, scores100: 0, scores140: 0, scores180: 0, highCheckout: 0, outstandingFines: 0, totalFines: 0 };
+            if (!player || !player.stats) return defaultStats;
+
+            const seasonsToAggregate = seasonId === 'all-time'
+                ? Object.values(player.stats)
+                : [player.stats[seasonId] || {}];
+
+            const aggregated = {
+                singles: { ...defaultStats },
+                doubles: { ...defaultStats }
+            };
+
+            for (const seasonData of seasonsToAggregate) {
+                const isNewFormat = seasonData.hasOwnProperty('singles') || seasonData.hasOwnProperty('doubles');
+                const singlesData = isNewFormat ? (seasonData.singles || {}) : seasonData;
+                const doublesData = isNewFormat ? (seasonData.doubles || {}) : {};
+
+                // Aggregate stats, but handle highCheckout separately as it's a 'max' not a 'sum'
+                for (const key in defaultStats) {
+                    if (key !== 'highCheckout') {
+                        aggregated.singles[key] += singlesData[key] || 0;
+                        aggregated.doubles[key] += doublesData[key] || 0;
+                    }
+                }
+                aggregated.singles.highCheckout = Math.max(aggregated.singles.highCheckout, singlesData.highCheckout || 0);
+                aggregated.doubles.highCheckout = Math.max(aggregated.doubles.highCheckout, doublesData.highCheckout || 0);
+                // Doubles doesn't have a high checkout in this app's logic, so we don't need to calculate it.
+            }
+
+            if (type === 'singles') return aggregated.singles;
+            if (type === 'doubles') return aggregated.doubles;
+            if (type === 'combined') {
+                // For the leaderboard, we combine stats from singles and doubles.
+                // Note: legs won/lost, fines, and high checkout are only tracked for singles games in this app.
+                return {
+                    gamesWon: aggregated.singles.gamesWon + aggregated.doubles.gamesWon,
+                    gamesLost: aggregated.singles.gamesLost + aggregated.doubles.gamesLost,
+                    legsWon: aggregated.singles.legsWon, // From singles only
+                    legsLost: aggregated.singles.legsLost, // From singles only
+                    scores100: aggregated.singles.scores100 + aggregated.doubles.scores100,
+                    scores140: aggregated.singles.scores140 + aggregated.doubles.scores140,
+                    scores180: aggregated.singles.scores180 + aggregated.doubles.scores180,
+                    highCheckout: Math.max(aggregated.singles.highCheckout, aggregated.doubles.highCheckout),
+                    outstandingFines: aggregated.singles.outstandingFines, // From singles only
+                    totalFines: aggregated.singles.totalFines, // From singles only
+                };
+            }
+            return defaultStats;
+        }
+
+
+        function renderLeaderboard() {
+            ui.seasonFilterSelect.innerHTML = `<option value="all-time">All-Time</option>`;
+            state.seasons.forEach(s => {
+                ui.seasonFilterSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+            });
+            ui.seasonFilterSelect.value = state.selectedStatsSeasonId;
+
+            ui.leaderboardBody.innerHTML = '';
+            const playersWithStats = state.players.map(p => ({
+                ...p,
+                displayStats: getPlayerStats(p, state.selectedStatsSeasonId, 'singles')
+            }));
+
+            playersWithStats.sort((a,b) => b.displayStats.gamesWon - a.displayStats.gamesWon || b.displayStats.legsWon - a.displayStats.legsWon);
+
+            playersWithStats.forEach(player => {
+                const stats = player.displayStats;
+                const totalLegs = stats.legsWon + stats.legsLost;
+                const legWinPercent = totalLegs > 0 ? ((stats.legsWon / totalLegs) * 100).toFixed(0) : 0;
+
+                const tr = document.createElement('tr');
+                tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
+                tr.dataset.playerId = player.id;
+                tr.innerHTML = `
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${legWinPercent}%</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${((stats.totalFines) / 100).toFixed(2)}</td>
+                `;
+                ui.leaderboardBody.appendChild(tr);
+            });
+        }
+
+        function renderOverallScore(container) {
+            container.innerHTML = '';
+            if (!state.fixture.id) return;
+
+            let burnabyLegs = 0;
+            let oppositionLegs = 0;
+            state.fixture.games.forEach(game => {
+                burnabyLegs += game.legsWon || 0;
+                oppositionLegs += game.legsLost || 0;
+            });
+
+            const scoreEl = document.createElement('div');
+            scoreEl.className = 'p-4 bg-emerald-600 text-white rounded-xl';
+            scoreEl.innerHTML = `<h3 class="text-xl sm:text-2xl font-bold text-center">Total Legs: ${burnabyLegs} - ${oppositionLegs}</h3>`;
+            container.appendChild(scoreEl);
+        }
+
+        function renderCurrentMatch() {
+            if (!state.fixture.id) {
+                ui.currentMatchResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No active match.</p>';
+                ui.currentMatchOpponent.textContent = 'Live results as they come in.';
+                ui.currentMatchScoreContainer.innerHTML = '';
+                return;
+            }
+            ui.currentMatchOpponent.textContent = `vs ${state.fixture.oppositionName}`;
+            ui.currentMatchResults.innerHTML = '';
+
+            renderOverallScore(ui.currentMatchScoreContainer);
+
+            state.fixture.games.forEach((game, index) => {
+                const gameEl = document.createElement('div');
+                gameEl.className = `p-4 rounded-xl ${state.currentGameIndex === index ? 'bg-emerald-50 dark:bg-emerald-900/50' : 'bg-gray-50 dark:bg-gray-700/50'}`;
+                const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
+                gameEl.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold dark:text-white">${game.title}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${playerNames}</p>
+                        </div>
+                        <p class="text-xl font-bold dark:text-white">${game.legsWon || 0} - ${game.legsLost || 0}</p>
+                    </div>
+                `;
+                ui.currentMatchResults.appendChild(gameEl);
+            });
+        }
+
+        function renderPreviousMatches() {
+            ui.previousMatchesList.innerHTML = '';
+            if (state.previousFixtures.length === 0) {
+                ui.previousMatchesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No finished matches.</p>';
+                ui.previousMatchDetails.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Select a match to see the details.</p>';
+                return;
+            }
+            state.previousFixtures.forEach(fixture => {
+                let burnabyLegs = 0;
+                let oppositionLegs = 0;
+                fixture.games.forEach(game => {
+                    burnabyLegs += game.legsWon || 0;
+                    oppositionLegs += game.legsLost || 0;
+                });
+
+                const item = document.createElement('div');
+                item.className = `w-full text-left p-3 rounded-lg transition-colors duration-200 ${state.selectedPreviousFixtureId === fixture.id ? 'bg-emerald-100 dark:bg-emerald-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`;
+
+                const isAdmin = state.userRole === 'admin';
+                item.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <button class="flex-grow text-left select-match-btn" data-fixture-id="${fixture.id}">
+                            <p class="font-semibold dark:text-white">vs ${fixture.oppositionName}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${fixture.createdAt.toDate().toLocaleDateString()}</p>
+                        </button>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <p class="font-bold text-lg dark:text-white">${burnabyLegs} - ${oppositionLegs}</p>
+                            ${isAdmin ? `<button data-fixture-id="${fixture.id}" class="delete-fixture-btn text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>` : ''}
+                        </div>
+                    </div>
+                `;
+                ui.previousMatchesList.appendChild(item);
+            });
+
+            const selectedFixture = state.previousFixtures.find(f => f.id === state.selectedPreviousFixtureId);
+            if (selectedFixture) {
+                ui.previousMatchDetails.innerHTML = '';
+                 let burnabyLegs = 0;
+                 let oppositionLegs = 0;
+                 selectedFixture.games.forEach(game => {
+                      burnabyLegs += game.legsWon || 0;
+                      oppositionLegs += game.legsLost || 0;
+                 });
+                ui.previousMatchDetails.innerHTML += `<h3 class="text-xl font-bold mb-4 dark:text-white">vs ${selectedFixture.oppositionName} (Total Legs: ${burnabyLegs}-${oppositionLegs})</h3>`;
+                selectedFixture.games.forEach(game => {
+                     const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
+                     ui.previousMatchDetails.innerHTML += `
+                          <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg mb-2">
+                               <div class="flex justify-between items-center">
+                                    <div><p class="font-semibold dark:text-white">${game.title}</p><p class="text-sm text-gray-500 dark:text-gray-400">${playerNames}</p></div>
+                                    <p class="font-bold dark:text-white">${game.legsWon} - ${game.legsLost}</p>
+                               </div>
+                          </div>
+                     `;
+                });
+            } else {
+                ui.previousMatchDetails.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Select a match to see the details.</p>';
+            }
+        }
+
+        function renderFines() {
+            ui.finesList.innerHTML = '';
+            let totalOutstandingFines = 0;
+            const playersWithFines = state.players.map(p => {
+                const allTimeStats = getPlayerStats(p, 'all-time', 'singles');
+                return { ...p, outstandingFines: allTimeStats.outstandingFines };
+            }).filter(p => p.outstandingFines > 0);
+
+            playersWithFines.forEach(player => {
+                totalOutstandingFines += player.outstandingFines;
+                const fineEl = document.createElement('div');
+                fineEl.className = 'p-4 flex items-center justify-between';
+                fineEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold dark:text-white">${player.name}</p>
+                        <p class="text-lg font-bold text-red-600 dark:text-red-400">£${(player.outstandingFines / 100).toFixed(2)}</p>
+                    </div>
+                    ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="pay-fines-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700">Mark as Paid</button>` : ''}
+                `;
+                ui.finesList.appendChild(fineEl);
+            });
+
+            if (totalOutstandingFines === 0) {
+                ui.finesList.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">No outstanding fines. Good lads.</p>';
+                ui.payFineContainer.classList.add('hidden');
+            } else {
+                ui.payFineContainer.classList.remove('hidden');
+            }
+        }
+
+        function renderLiveMatch() {
+            const isViewer = state.userRole === 'viewer';
+            document.querySelectorAll('#live-match-content button, #live-match-content input').forEach(el => {
+                if(el.id !== 'prev-game-btn' && el.id !== 'next-game-btn') {
+                    el.disabled = isViewer;
+                }
+            });
+
+            if (!state.fixture.id || !state.fixture.games || state.fixture.games.length === 0) {
+                ui.liveMatchContent.classList.add('hidden');
+                ui.noFixtureMessage.classList.remove('hidden');
+                return;
+            }
+            ui.liveMatchContent.classList.remove('hidden');
+            ui.noFixtureMessage.classList.add('hidden');
+
+            renderOverallScore(ui.liveScoringScoreContainer);
+
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) {
+                console.error("Could not find game data for the current index.");
+                return;
+            }
+
+            const isDoubles = game.playerIds.length > 1;
+            ui.singlesScoringPanel.classList.toggle('hidden', isDoubles);
+            ui.doublesScoringPanel.classList.toggle('hidden', !isDoubles);
+            ui.finesPanel.classList.toggle('hidden', isDoubles);
+
+            const playerNames = game.playerIds.map(id => {
+                const player = state.players.find(p => p.id === id);
+                return player?.nickname || player?.name || 'Unknown';
+            });
+            ui.currentPlayerNames.textContent = playerNames.join(' & ');
+            ui.gameNavTitle.textContent = game.title;
+
+            if(isDoubles) {
+                ui.doublesPlayerNames.p1.textContent = playerNames[0];
+                ui.doublesPlayerNames.p2.textContent = playerNames[1];
+            }
+
+            ui.statValueSpans.legsWon.textContent = game.legsWon || 0;
+            ui.statValueSpans.legsLost.textContent = game.legsLost || 0;
+            ui.statValueSpans.fines.textContent = `£${((game.fines || 0) / 100).toFixed(2)}`;
+            // Render individual fines list
+            renderCurrentGameFines(game);
+            ui.highCheckoutInput.value = game.highCheckout || '';
+            if(isDoubles) {
+                const p1Input = document.getElementById('p1-high-checkout-input');
+                const p2Input = document.getElementById('p2-high-checkout-input');
+                if (p1Input) p1Input.value = p1Scores.highCheckout || '';
+                if (p2Input) p2Input.value = p2Scores.highCheckout || '';
+            }
+
+            const p1Scores = game.playerScores?.[0] || {};
+            const p2Scores = game.playerScores?.[1] || {};
+
+            if (isDoubles) {
+                ui.statValueSpans.p1_scores100.textContent = p1Scores.scores100 || 0;
+                ui.statValueSpans.p1_scores140.textContent = p1Scores.scores140 || 0;
+                ui.statValueSpans.p1_scores180.textContent = p1Scores.scores180 || 0;
+                ui.statValueSpans.p1_sillyThings.textContent = p1Scores.sillyThings || 0;
+                ui.statValueSpans.p2_scores100.textContent = p2Scores.scores100 || 0;
+                ui.statValueSpans.p2_scores140.textContent = p2Scores.scores140 || 0;
+                ui.statValueSpans.p2_scores180.textContent = p2Scores.scores180 || 0;
+                ui.statValueSpans.p2_sillyThings.textContent = p2Scores.sillyThings || 0;
+            } else {
+                ui.statValueSpans.scores100.textContent = p1Scores.scores100 || 0;
+                ui.statValueSpans.scores140.textContent = p1Scores.scores140 || 0;
+                ui.statValueSpans.scores180.textContent = p1Scores.scores180 || 0;
+                ui.statValueSpans.sillyThings.textContent = p1Scores.sillyThings || 0;
+            }
+
+            ui.prevGameBtn.disabled = state.currentGameIndex === 0;
+            ui.nextGameBtn.disabled = state.currentGameIndex === state.fixture.games.length - 1;
+
+            const isFinalGame = state.fixture.games && state.fixture.games.length > 0 && state.currentGameIndex === state.fixture.games.length - 1;
+            const finishMatchBtn = document.getElementById('finish-match-btn');
+
+            if (isFinalGame && (state.userRole === 'scorer' || state.userRole === 'member' || state.userRole === 'admin')) {
+                finishMatchBtn.classList.remove('hidden');
+            } else {
+                finishMatchBtn.classList.add('hidden');
+            }
+        }
+
+        function generatePlayerCardHTML(playerId, seasonId) {
+            const player = state.players.find(p => p.id === playerId);
+            if (!player) return '<p>Player not found.</p>';
+
+            // Get stats for each game type and a combined total for scores
+            const singlesStats = getPlayerStats(player, seasonId, 'singles');
+            const doublesStats = getPlayerStats(player, seasonId, 'doubles');
+            const combinedScores = getPlayerStats(player, seasonId, 'combined');
+
+            // Calculate win percentages for singles
+            const totalLegs = singlesStats.legsWon + singlesStats.legsLost;
+            const legWinPercent = totalLegs > 0 ? ((singlesStats.legsWon / totalLegs) * 100).toFixed(0) + '%' : 'N/A';
+            const totalGames = singlesStats.gamesWon + singlesStats.gamesLost;
+            const gameWinPercent = totalGames > 0 ? ((singlesStats.gamesWon / totalGames) * 100).toFixed(0) + '%' : 'N/A';
+
+            // Generate season selector options
+            let optionsHtml = `<option value="all-time">All-Time</option>`;
+            state.seasons.forEach(s => {
+                optionsHtml += `<option value="${s.id}" ${s.id === seasonId ? 'selected' : ''}>${s.name}</option>`;
+            });
+
+            // Find doubles partners for the selected season
+            let partners = {};
+            state.previousFixtures.forEach(fixture => {
+                if (seasonId !== 'all-time' && fixture.seasonId !== seasonId) return;
+                fixture.games.forEach(game => {
+                    if (game.type === 'doubles' && game.playerIds.includes(player.id)) {
+                        const playerIndex = game.playerIds.indexOf(player.id);
+                        const partnerId = game.playerIds[1 - playerIndex];
+                        const partner = state.players.find(p => p.id === partnerId);
+                        if(partner) {
+                            partners[partner.name] = (partners[partner.name] || 0) + 1;
+                        }
+                    }
+                });
+            });
+
+            const partnersHtml = Object.keys(partners).length > 0
+                ? Object.entries(partners).sort((a,b) => b[1] - a[1]).map(([name, count]) => `<span class="bg-gray-200 dark:bg-gray-600 text-sm font-medium px-2 py-1 rounded">${name} (${count})</span>`).join(' ')
+                : '<p class="text-sm text-gray-500 dark:text-gray-400">No doubles games played.</p>';
+
+            //console.log('=== DEBUG PLAYER CARD ===');
+            //console.log('Player:', player.name);
+            //console.log('Season ID:', seasonId);
+            //console.log('Raw player stats:', player.stats);
+            //console.log('Singles stats:', singlesStats);
+            //console.log('Doubles stats:', doublesStats);
+
+            return `
+                <div class="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
+                    <h3 class="text-2xl font-bold dark:text-white">${player.name} ${player.nickname ? `"${player.nickname}"` : ''}</h3>
+                    <select id="player-card-season-select" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        ${optionsHtml}
+                    </select>
+                </div>
+
+                <div class="border-b border-gray-200 dark:border-gray-700">
+                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button id="profile-tab-singles" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Singles</button>
+                        <button id="profile-tab-doubles" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Doubles</button>
+                    </nav>
+                </div>
+
+                <!-- Singles Stats Panel -->
+                <div id="profile-content-singles" class="mt-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Games Won</p><p class="text-2xl font-bold dark:text-white">${singlesStats.gamesWon}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Games Lost</p><p class="text-2xl font-bold dark:text-white">${singlesStats.gamesLost}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Legs Won</p><p class="text-2xl font-bold dark:text-white">${singlesStats.legsWon}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Legs Lost</p><p class="text-2xl font-bold dark:text-white">${singlesStats.legsLost}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Game Win %</p><p class="text-2xl font-bold dark:text-white">${gameWinPercent}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Leg Win %</p><p class="text-2xl font-bold dark:text-white">${legWinPercent}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">100+</p><p class="text-2xl font-bold dark:text-white">${combinedScores.scores100}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">140+</p><p class="text-2xl font-bold dark:text-white">${combinedScores.scores140}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">180s</p><p class="text-2xl font-bold dark:text-white">${combinedScores.scores180}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">High Checkout</p><p class="text-2xl font-bold dark:text-white">${singlesStats.highCheckout}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Outstanding Fines</p><p class="text-2xl font-bold text-red-600 dark:text-red-400">£${(singlesStats.outstandingFines / 100).toFixed(2)}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Total Fines</p><p class="text-2xl font-bold text-red-600 dark:text-red-400">£${(singlesStats.totalFines / 100).toFixed(2)}</p></div>
+                    </div>
+                </div>
+
+                <!-- Doubles Stats Panel -->
+                <div id="profile-content-doubles" class="hidden mt-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Games Won</p><p class="text-2xl font-bold dark:text-white">${doublesStats.gamesWon}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Games Lost</p><p class="text-2xl font-bold dark:text-white">${doublesStats.gamesLost}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Legs Won</p><p class="text-2xl font-bold dark:text-white">${doublesStats.legsWon}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Legs Lost</p><p class="text-2xl font-bold dark:text-white">${doublesStats.legsLost}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">100+</p><p class="text-2xl font-bold dark:text-white">${doublesStats.scores100}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">140+</p><p class="text-2xl font-bold dark:text-white">${doublesStats.scores140}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">180s</p><p class="text-2xl font-bold dark:text-white">${doublesStats.scores180}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">High Checkout</p><p class="text-2xl font-bold dark:text-white">${doublesStats.highCheckout}</p></div>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="text-md font-semibold dark:text-white mb-2">Partners:</h4>
+                        <div class="flex flex-wrap gap-2">${partnersHtml}</div>
+                    </div>
+                </div>
+            `;
+        }
+        function renderCurrentGameFines(game) {
+            if (!ui.finesListCurrentGame) return;
+
+            ui.finesListCurrentGame.innerHTML = '';
+
+            if (!game.finesList || game.finesList.length === 0) {
+                ui.finesListCurrentGame.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400">No fines this game</p>';
+                return;
+            }
+
+            // Group fines by category
+            const fineGroups = {
+                'Score of 26': [],
+                'Missed Board': [],
+                'Low Scores': []
+            };
+
+            game.finesList.forEach(fine => {
+                if (fine.reason === 'Score of 26') {
+                    fineGroups['Score of 26'].push(fine);
+                } else if (fine.reason === 'Missed Board') {
+                    fineGroups['Missed Board'].push(fine);
+                } else if (fine.reason.startsWith('Score of ')) {
+                    fineGroups['Low Scores'].push(fine);
+                }
+            });
+
+            // Render each group that has fines
+            Object.entries(fineGroups).forEach(([groupName, fines]) => {
+                if (fines.length === 0) return;
+
+                // Group header
+                const headerEl = document.createElement('div');
+                headerEl.className = 'text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1 mt-2 first:mt-0';
+
+                const groupTotal = fines.reduce((sum, fine) => sum + fine.amount, 0);
+                const count = fines.length;
+
+                headerEl.innerHTML = `${groupName} (${count}) - £${(groupTotal/100).toFixed(2)}`;
+                ui.finesListCurrentGame.appendChild(headerEl);
+
+                // Individual fines in this group
+                fines.forEach(fine => {
+                    const fineEl = document.createElement('div');
+                    fineEl.className = 'flex items-center justify-between bg-red-50 dark:bg-red-900/20 p-2 rounded-lg text-sm mb-1';
+
+                    // For low scores, show the actual score; for others, show count
+                    let displayText = fine.reason;
+                    if (groupName === 'Low Scores') {
+                        displayText = fine.reason; // "Score of 3", "Score of 7", etc.
+                    } else {
+                        displayText = `${groupName}`; // Just "Score of 26" or "Missed Board"
+                    }
+
+                    fineEl.innerHTML = `
+                        <span class="text-red-700 dark:text-red-300">${displayText}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-red-600 dark:text-red-400">£${(fine.amount/100).toFixed(2)}</span>
+                            ${state.userRole !== 'viewer' ? `<button data-fine-id="${fine.id}" class="remove-fine-btn text-red-500 hover:text-red-700 text-xs bg-white dark:bg-gray-700 px-2 py-1 rounded border">✕</button>` : ''}
+                        </div>
+                    `;
+                    ui.finesListCurrentGame.appendChild(fineEl);
+                });
+            });
+        }
+
+        function renderPlayerCard() {
+            if (!state.playerCard.isOpen) {
+                ui.playerCardModal.overlay.classList.add('hidden');
+                ui.playerCardModal.overlay.classList.remove('flex');
+                return;
+            }
+
+            ui.playerCardModal.content.innerHTML = generatePlayerCardHTML(state.playerCard.playerId, state.playerCard.selectedSeasonId);
+
+            ui.playerCardModal.overlay.classList.remove('hidden');
+            ui.playerCardModal.overlay.classList.add('flex');
+
+            // Set up tab switching for the player card modal
+            setupProfileTabs(ui.playerCardModal.content);
+        }
+
+        function showToast(message, isError = false) {
+            ui.toast.message.textContent = message;
+
+            // Update the background color
+            ui.toast.element.classList.remove('bg-emerald-500', 'bg-red-500');
+            ui.toast.element.classList.add(isError ? 'bg-red-500' : 'bg-emerald-500');
+
+            // Show the toast
+            ui.toast.element.classList.remove('toast-hidden');
+            ui.toast.element.classList.add('toast-visible');
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                ui.toast.element.classList.remove('toast-visible');
+                ui.toast.element.classList.add('toast-hidden');
+            }, 3000);
+        }
+
+
+        async function handleGoogleSignIn() {
+            // Prevent multiple simultaneous sign-in attempts
+            if (state.signingIn) return;
+            state.signingIn = true;
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const signInBtn = document.getElementById('google-signin-btn');
+            const signInText = document.getElementById('signin-btn-text');
+
+            loadingOverlay.classList.remove('hidden');
+            signInBtn.disabled = true;
+            signInText.textContent = 'Signing in...';
+            signInBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+
+            try {
+                const result = await signInWithPopup(state.auth, provider);
+                const user = result.user;
+                const email = user.email;
+
+                // Check if user already has a role assigned in Firestore
+                const userDoc = await getDoc(doc(state.db, 'users', user.uid));
+
+                if (userDoc.exists()) {
+                    // Existing user - use their assigned role and player link
+                    const userData = userDoc.data();
+                    state.userRole = userData.role || 'viewer'; // Default to member
+                    state.userPlayerId = userData.playerId || null; // Get linked player ID
+                } else {
+                    // New user - default to member role and create user document
+                    state.userRole = 'viewer';
+                    state.userPlayerId = null;
+                    await setDoc(doc(state.db, 'users', user.uid), {
+                        email: email,
+                        name: user.displayName,
+                        role: 'viewer',
+                        playerId: null, // No player linked initially
+                        createdAt: serverTimestamp()
+                    });
+                }
+
+                state.isLoggedIn = true;
+                state.userEmail = email;
+                state.userName = user.displayName;
+                state.userId = user.uid;
+
+                // Save to localStorage
+                localStorage.setItem('userRole', state.userRole);
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('loginTimestamp', Date.now().toString());
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('userId', user.uid);
+
+                startLogoutTimer();
+                // Small delay to ensure smooth transition
+                setTimeout(() => {
+                    loadingOverlay.classList.add('hidden');
+                    ui.roleSelectionOverlay.classList.add('hidden');
+                    ui.mainApp.classList.remove('hidden');
+
+                    showToast(`Welcome ${user.displayName || email}!`);
+                    render();
+                }, 500);
+                showToast(`Welcome ${user.displayName || email}!`);
+
+                ui.roleSelectionOverlay.classList.add('hidden');
+                ui.mainApp.classList.remove('hidden');
+                render();
+
+            } catch (error) {
+                console.error('Google Sign-In error:', error);
+                // Hide loading on error
+                loadingOverlay.classList.add('hidden');
+                signInBtn.disabled = false;
+                signInText.textContent = 'Sign in with Google';
+                signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                if (error.code === 'auth/popup-closed-by-user') {
+                    showToast('Sign-in cancelled.', true);
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    showToast('Sign-in already in progress.', true);
+                } else {
+                    showToast('Sign-in failed. Please try again.', true);
+                }
+            } finally {
+                state.signingIn = false;
+            }
+        }
+
+        async function handleHeaderButtonClick() {
+            if (state.isLoggedIn) {
+                // Sign out functionality
+                try {
+                    await firebaseSignOut(state.auth);
+                } catch (error) {
+                    console.error('Sign-out error:', error);
+                }
+
+                if (state.logoutTimer) {
+                    clearTimeout(state.logoutTimer);
+                    state.logoutTimer = null;
+                }
+
+                state.isLoggedIn = false;
+                state.userRole = null;
+                state.userEmail = null;
+                state.userName = null;
+                state.userPlayerId = null;
+
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+                resetSignInButtonState();
+                showToast('You have been logged out.');
+                ui.mainApp.classList.add('hidden');
+                ui.roleSelectionOverlay.classList.remove('hidden');
+                render();
+            } else if (state.userRole === 'viewer') {
+                // Sign in functionality - go back to login screen
+                state.userRole = null;
+                localStorage.removeItem('userRole');
+                ui.mainApp.classList.add('hidden');
+                ui.roleSelectionOverlay.classList.remove('hidden');
+                render();
+            }
+        }
+
+        async function handleLogout() {
+            return handleHeaderButtonClick();
+        }
+
+        function startLogoutTimer(duration = SESSION_DURATION_MS) {
+            if (state.logoutTimer) {
+                clearTimeout(state.logoutTimer);
+            }
+            state.logoutTimer = setTimeout(handleLogout, duration);
+        }
+
+        function resetSignInButtonState() {
+            const signInBtn = document.getElementById('google-signin-btn');
+            const signInText = document.getElementById('signin-btn-text');
+            const loadingOverlay = document.getElementById('loading-overlay');
+
+            if (signInBtn && signInText) {
+                signInBtn.disabled = false;
+                signInText.textContent = 'Sign in with Google';
+                signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+        async function loadUsers() {
+            if (!state.db) return;
+            const usersCollection = collection(state.db, 'users');
+            onSnapshot(usersCollection, (snapshot) => {
+                const usersList = document.getElementById('users-list');
+                if (!usersList) return;
+
+                usersList.innerHTML = '';
+
+                snapshot.docs.forEach(doc => {
+                    const userData = doc.data();
+                    const userItem = document.createElement('div');
+                    userItem.className = 'flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 dark:bg-gray-600 p-3 rounded-lg space-y-2 sm:space-y-0';
+                    userItem.innerHTML = `
+                        <div class="min-w-0 flex-1">
+                            <p class="font-medium dark:text-white truncate">${userData.name || userData.email}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">${userData.email}</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                            <select data-user-id="${doc.id}" class="user-role-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
+                                <option value="viewer" ${userData.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                                <option value="scorer" ${userData.role === 'scorer' ? 'selected' : ''}>Scorer</option>
+                                <option value="member" ${userData.role === 'member' ? 'selected' : ''}>Member</option>
+                                <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                            <select data-user-id="${doc.id}" class="user-player-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
+                                <option value="">No Player</option>
+                                ${state.players.map(p => `<option value="${p.id}" ${userData.playerId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                    usersList.appendChild(userItem);
+                });
+
+                // Add event listeners for role and player changes
+                document.querySelectorAll('.user-role-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const userId = e.target.dataset.userId;
+                        const newRole = e.target.value;
+                        await updateUserRole(userId, newRole);
+                    });
+                });
+
+                document.querySelectorAll('.user-player-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const userId = e.target.dataset.userId;
+                        const newPlayerId = e.target.value || null;
+                        await updateUserPlayer(userId, newPlayerId);
+                    });
+                });
+            });
+        }
+
+        async function updateUserRole(userId, newRole) {
+            try {
+                // Get the target user's document to capture their name and old role
+                const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
+                const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
+
+                // Add enhanced audit logging
+                await safeFirebaseCall('auditLog', async () => {
+                    return await addDoc(collection(state.db, 'audit_logs'), {
+                        action: 'role_change',
+                        targetUserId: userId,
+                        targetUserName: targetUserData.name || 'Unknown',
+                        targetUserEmail: targetUserData.email || 'Unknown',
+                        oldRole: targetUserData.role || 'unknown',
+                        newRole: newRole,
+                        adminUserId: state.userId,
+                        adminUserName: state.userName || 'Unknown',
+                        adminEmail: state.userEmail,
+                        timestamp: serverTimestamp(),
+                        userAgent: navigator.userAgent
+                    });
+                });
+
+                await safeFirebaseCall('updateUserRole', async () => {
+                    return await updateDoc(doc(state.db, 'users', userId), {
+                        role: newRole,
+                        updatedAt: serverTimestamp()
+                    });
+                });
+
+                // If updating current user's role, update local state
+                if (userId === state.userId) {
+                    state.userRole = newRole;
+                    localStorage.setItem('userRole', newRole);
+                    render();
+                }
+
+                showToast('User role updated successfully.');
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, true);
+                } else {
+                    console.error('Error updating user role:', error);
+                    showToast('Failed to update user role.', true);
+                }
+            }
+        }
+        async function updateUserPlayer(userId, newPlayerId) {
+            try {
+                // Get the target user's document and player information
+                const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
+                const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
+
+                const oldPlayer = state.players.find(p => p.id === targetUserData.playerId);
+                const newPlayer = newPlayerId ? state.players.find(p => p.id === newPlayerId) : null;
+
+                // Add enhanced audit logging for player links
+                await safeFirebaseCall('auditLog', async () => {
+                    return await addDoc(collection(state.db, 'audit_logs'), {
+                        action: 'player_link_change',
+                        targetUserId: userId,
+                        targetUserName: targetUserData.name || 'Unknown',
+                        targetUserEmail: targetUserData.email || 'Unknown',
+                        oldPlayerId: targetUserData.playerId || null,
+                        oldPlayerName: oldPlayer?.name || null,
+                        newPlayerId: newPlayerId,
+                        newPlayerName: newPlayer?.name || null,
+                        adminUserId: state.userId,
+                        adminUserName: state.userName || 'Unknown',
+                        adminEmail: state.userEmail,
+                        timestamp: serverTimestamp(),
+                        userAgent: navigator.userAgent
+                    });
+                });
+
+
+                await safeFirebaseCall('updateUserPlayer', async () => {
+                    return await updateDoc(doc(state.db, 'users', userId), {
+                        playerId: newPlayerId,
+                        updatedAt: serverTimestamp()
+                    });
+                });
+
+                // If updating current user's player link, update local state
+                if (userId === state.userId) {
+                    state.userPlayerId = newPlayerId;
+                    render();
+                }
+
+                showToast('User player link updated successfully.');
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, true);
+                } else {
+                    console.error('Error updating user player link:', error);
+                    showToast('Failed to update user player link.', true);
+                }
+            }
+        }
+
+
+
+        function openConfirmModal(title, text, action, data) {
+            state.confirmation = { action, data };
+            ui.confirmModal.title.textContent = title;
+            ui.confirmModal.text.textContent = text;
+            ui.confirmModal.overlay.classList.remove('hidden');
+            ui.confirmModal.overlay.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            state.confirmation = { action: null, data: null };
+            ui.confirmModal.overlay.classList.add('hidden');
+            ui.confirmModal.overlay.classList.remove('flex');
+        }
+
+        async function handleConfirmation() {
+            const { action, data } = state.confirmation;
+            if (action === 'deletePlayer') {
+                try {
+                    await deleteDoc(doc(state.db, PLAYERS_COLLECTION, data));
+                    showToast("Player removed.");
+                } catch (error) {
+                    console.error("Error deleting player: ", error);
+                    showToast("Could not remove player.", true);
+                }
+            } else if (action === 'deleteFixture') {
+                 try {
+                    const fixtureIdToDelete = data;
+                    await deleteDoc(doc(state.db, FIXTURES_COLLECTION, fixtureIdToDelete));
+                    if (state.selectedPreviousFixtureId === fixtureIdToDelete) {
+                        state.selectedPreviousFixtureId = null;
+                    }
+                    showToast("Match deleted successfully.");
+                    render();
+                } catch (error) {
+                    console.error("Error deleting fixture:", error);
+                    showToast("Could not delete the match.", true);
+                }
+            }
+            closeConfirmModal();
+        }
+
+        function openMobileMenu() {
+            ui.mobileMenuOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                ui.mobileMenuOverlay.classList.remove('opacity-0');
+                ui.mobileMenuOverlay.querySelector('#mobile-menu').classList.remove('translate-x-full');
+            }, 10);
+        }
+
+        function closeMobileMenu() {
+            ui.mobileMenuOverlay.classList.add('opacity-0');
+            ui.mobileMenuOverlay.querySelector('#mobile-menu').classList.add('translate-x-full');
+            setTimeout(() => {
+                ui.mobileMenuOverlay.classList.add('hidden');
+            }, 300);
+        }
+
+        function switchTab(tabName) {
+            // Prevent non-admins from accessing admin tab
+            if (tabName === 'admin' && state.userRole !== 'admin') {
+                showToast("Access denied. Admin privileges required.", true);
+                return;
+            }
+
+            state.activeTab = tabName;
+            render();
+            closeMobileMenu();
+        }
+        async function addPlayer() {
+            try {
+                const name = validateInput(ui.newPlayerInput.value, 50); // ✅ ADD validation
+                if (!name) {
+                    showToast("Player name cannot be empty.", true);
+                    return;
+                }
+
+                await safeFirebaseCall('addPlayer', async () => {
+                    return await addDoc(collection(state.db, PLAYERS_COLLECTION), {
+                        name: name,
+                        nickname: '',
+                        stats: {}
+                    });
+                });
+
+                showToast(`${name} added to the roster.`);
+                ui.newPlayerInput.value = '';
+            } catch (error) {
+                if (error.message.includes('Invalid characters') || error.message.includes('Input too long')) {
+                    showToast(error.message, true);
+                } else if (error.message.includes('Rate limit')) {
+                    showToast(error.message, true);
+                } else {
+                    console.error("Error adding player: ", error);
+                    showToast("Could not add player.", true);
+                }
+            }
+        }
+        function deletePlayer(playerId) {
+            const player = state.players.find(p => p.id === playerId);
+            openConfirmModal(
+                `Remove ${player?.name || 'Player'}?`,
+                'This will permanently remove the player from the roster. This action cannot be undone.',
+                'deletePlayer',
+                playerId
+            );
+        }
+
+        function deleteFixture(fixtureId) {
+            const fixture = state.previousFixtures.find(f => f.id === fixtureId);
+            if (!fixture) return;
+            openConfirmModal(
+                'Delete Match?',
+                `Are you sure you want to delete the match against ${fixture.oppositionName}? This action cannot be undone.`,
+                'deleteFixture',
+                fixtureId
+            );
+        }
+
+        async function createFixture() {
+            if (state.userRole === 'viewer' || state.userRole === 'scorer') {
+                showToast("You don't have permission to create matches.", true);
+                return;
+            }
+            if (!state.isLoggedIn) {
+                showToast("You must be logged in to create a match.", true);
+                return;
+            }
+            if (!state.activeSeasonId) {
+                showToast("Please set an active season before creating a match.", true);
+                return;
+            }
+            const oppositionName = ui.oppositionNameInput.value.trim();
+            if(!oppositionName) {
+                showToast("Please enter an opposition name.", true);
+                return;
+            }
+
+            const dateValue = ui.matchDateInput.value;
+            let createdAt;
+
+            if (dateValue) {
+                const parts = dateValue.split('-');
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const day = parseInt(parts[2], 10);
+                const selectedDate = new Date(year, month, day);
+                createdAt = Timestamp.fromDate(selectedDate);
+            } else {
+                createdAt = serverTimestamp();
+            }
+
+            const games = [];
+            for (let i = 0; i < GAME_TITLES.length; i++) {
+                const title = GAME_TITLES[i];
+                const isDoubles = title.includes("Doubles");
+
+                const p1Select = document.getElementById(`game-${i}-p1`);
+                const p1 = p1Select.value;
+
+                const playerIds = [p1];
+                if (isDoubles) {
+                    const p2Select = document.getElementById(`game-${i}-p2`);
+                    const p2 = p2Select.value;
+                    if (p1 && p2 && p1 === p2) {
+                        showToast(`A player cannot play with themselves in ${title}.`, true);
+                        return;
+                    }
+                    if (p2) playerIds.push(p2);
+                }
+
+                if (playerIds.some(id => !id)) {
+                    showToast(`Please select players for ${title}.`, true);
+                    return;
+                }
+
+                const playerScores = playerIds.map(() => ({
+                    scores100: 0,
+                    scores140: 0,
+                    scores180: 0,
+                    sillyThings: 0,
+                }));
+
+                games.push({
+                    title: title,
+                    type: isDoubles ? 'doubles' : 'singles', // Add game type
+                    playerIds: playerIds,
+                    legsWon: 0,
+                    legsLost: 0,
+                    highCheckout: 0,
+                    fines: 0,
+                    finesList: [], // Track individual fines with details
+                    playerScores: playerScores
+                });
+            }
+
+            try {
+                await safeFirebaseCall('createFixture', async () => {
+                    return await addDoc(collection(state.db, FIXTURES_COLLECTION), {
+                        seasonId: state.activeSeasonId,
+                        oppositionName: oppositionName,
+                        games: games,
+                        status: 'live',
+                        createdAt: createdAt
+                    });
+                });
+                showToast("Fixture created! Let's play darts!");
+                ui.oppositionNameInput.value = '';
+                ui.matchDateInput.value = '';
+                switchTab('live');
+            } catch (error) {
+                console.error("Error creating fixture: ", error);
+                showToast("Could not create the fixture.", true);
+            }
+        }
+
+        async function updateGameData() {
+            if (!state.fixture.id) return;
+            const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
+            try {
+                await safeFirebaseCall('updateGame', async () => {
+                    return await updateDoc(fixtureRef, {
+                        games: state.fixture.games
+                    });
+                });
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, true);
+                } else {
+                    console.error("Error updating game data:", error);
+                    showToast("Could not save latest score, check connection.", true);
+                }
+            }
+        }
+
+        function updateStat(stat, value, playerIndex = 0) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) return;
+
+            if (stat === 'legsWon' || stat === 'legsLost') {
+                if (value > 0) {
+                    if ((game.legsWon || 0) + (game.legsLost || 0) >= 3) {
+                        showToast("Cannot play more than 3 legs in a game.", true);
+                        return;
+                    }
+                }
+            }
+
+            if (!game.playerScores) game.playerScores = [{}, {}];
+
+            if(stat.startsWith('scores') || stat === 'sillyThings') {
+                const playerScores = game.playerScores[playerIndex] || {};
+                playerScores[stat] = Math.max(0, (playerScores[stat] || 0) + value);
+                game.playerScores[playerIndex] = playerScores;
+            } else {
+                 game[stat] = Math.max(0, (game[stat] || 0) + value);
+            }
+            render();
+            updateGameData();
+        }
+
+        function addFine(amount, reason) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) return;
+
+            // Initialize finesList if it doesn't exist
+            if (!game.finesList) game.finesList = [];
+
+            // Add the individual fine with a unique ID
+            const fineId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            game.finesList.push({
+                id: fineId,
+                amount: amount,
+                reason: reason,
+                timestamp: new Date().toISOString()
+            });
+
+            // Update total fines
+            game.fines = (game.fines || 0) + amount;
+            showToast(`Fine added: ${reason} (+£${(amount/100).toFixed(2)})`);
+            render();
+            updateGameData();
+        }
+
+        // --- FIX STARTS HERE ---
+        // This function saves the final stats to the database.
+        // It's been updated to be more robust, ensuring the singles/doubles
+        // categories exist in Firestore before trying to save stats to them.
+        async function finishMatch(dotdPlayerId) {
+            const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
+            const seasonId = state.fixture.seasonId;
+
+            try {
+                state.fixture.games.forEach(game => {
+                    if (!game.playerNames) {
+                        game.playerNames = game.playerIds.map(id =>
+                            state.players.find(p => p.id === id)?.name || 'Unknown'
+                        );
+                    }
+                });
+
+                await runTransaction(state.db, async (transaction) => {
+                    const allPlayerIds = [...new Set(state.fixture.games.flatMap(game => game.playerIds))];
+                    if (dotdPlayerId && !allPlayerIds.includes(dotdPlayerId)) {
+                        allPlayerIds.push(dotdPlayerId);
+                    }
+
+                    // 1. READS: Get all player documents first.
+                    const playerRefs = allPlayerIds.map(id => doc(state.db, PLAYERS_COLLECTION, id));
+                    const playerDocs = await Promise.all(playerRefs.map(ref => transaction.get(ref)));
+
+                    // Create enhanced audit log for match completion
+                    const matchAuditData = {
+                        action: 'match_completed',
+                        fixtureId: state.fixture.id,
+                        oppositionName: state.fixture.oppositionName,
+                        seasonId: seasonId,
+                        seasonName: state.seasons.find(s => s.id === seasonId)?.name || 'Unknown Season',
+                        completedBy: state.userName || state.userEmail || 'Unknown',
+                        completedByUserId: state.userId,
+                        players: allPlayerIds.map(playerId => {
+                            const playerDoc = playerDocs.find(doc => doc.id === playerId);
+                            const playerData = playerDoc?.exists() ? playerDoc.data() : {};
+                            return {
+                                playerId: playerId,
+                                playerName: playerData.name || 'Unknown'
+                            };
+                        }),
+                        dotdWinner: dotdPlayerId ? {
+                            playerId: dotdPlayerId,
+                            playerName: state.players.find(p => p.id === dotdPlayerId)?.name || 'Unknown'
+                        } : null,
+                        gameResults: state.fixture.games.map(game => ({
+                            title: game.title,
+                            type: game.type,
+                            playerNames: game.playerIds.map(id =>
+                                state.players.find(p => p.id === id)?.name || 'Unknown'
+                            ),
+                            legsWon: game.legsWon || 0,
+                            legsLost: game.legsLost || 0
+                        })),
+                        timestamp: serverTimestamp(),
+                        userAgent: navigator.userAgent
+                    };
+
+                    // Add the audit log
+                    const auditRef = doc(collection(state.db, 'audit_logs'));
+                    transaction.set(auditRef, matchAuditData);
+
+                    const playerUpdates = {};
+
+                    // 2. CALCULATIONS: Prepare updates in memory.
+                    for (let i = 0; i < allPlayerIds.length; i++) {
+                        const playerId = allPlayerIds[i];
+                        const playerDoc = playerDocs[i];
+
+                        if (!playerDoc.exists()) continue;
+
+                        const playerData = playerDoc.data();
+                        const newStats = JSON.parse(JSON.stringify(playerData.stats || {}));
+
+                        // Ensure data structure exists
+                        if (!newStats[seasonId]) newStats[seasonId] = {};
+                        if (!newStats[seasonId].singles) newStats[seasonId].singles = {};
+                        if (!newStats[seasonId].doubles) newStats[seasonId].doubles = {};
+
+                        state.fixture.games.forEach(game => {
+                            if (!game.playerIds.includes(playerId)) return;
+
+                            const playerIndex = game.playerIds.indexOf(playerId);
+                            const pScores = game.playerScores?.[playerIndex] || {};
+                            const gameType = game.type;
+                            const gameWon = game.legsWon > game.legsLost;
+
+                            const seasonStats = newStats[seasonId][gameType];
+
+                            seasonStats.gamesWon = (seasonStats.gamesWon || 0) + (gameWon ? 1 : 0);
+                            seasonStats.gamesLost = (seasonStats.gamesLost || 0) + (!gameWon ? 1 : 0);
+                            seasonStats.legsWon = (seasonStats.legsWon || 0) + (game.legsWon || 0);
+                            seasonStats.legsLost = (seasonStats.legsLost || 0) + (game.legsLost || 0);
+                            seasonStats.scores100 = (seasonStats.scores100 || 0) + (pScores.scores100 || 0);
+                            seasonStats.scores140 = (seasonStats.scores140 || 0) + (pScores.scores140 || 0);
+                            seasonStats.scores180 = (seasonStats.scores180 || 0) + (pScores.scores180 || 0);
+
+                            if (gameType === 'singles') {
+                                const singlesSeasonStats = newStats[seasonId].singles;
+                                singlesSeasonStats.outstandingFines = (singlesSeasonStats.outstandingFines || 0) + (game.fines || 0);
+                                singlesSeasonStats.totalFines = (singlesSeasonStats.totalFines || 0) + (game.fines || 0);
+                                if (game.highCheckout > (singlesSeasonStats.highCheckout || 0)) {
+                                    singlesSeasonStats.highCheckout = game.highCheckout;
+                                }
+                            } else if (gameType === 'doubles') {
+                                // For doubles, check individual player high checkouts
+                                const playerHighCheckout = pScores.highCheckout || 0;
+                                if (playerHighCheckout > (seasonStats.highCheckout || 0)) {
+                                    seasonStats.highCheckout = playerHighCheckout;
+                                }
+                            }
+                        });
+
+                        if (dotdPlayerId === playerId) {
+                            const singlesSeasonStats = newStats[seasonId].singles;
+                            singlesSeasonStats.outstandingFines = (singlesSeasonStats.outstandingFines || 0) + 250;
+                            singlesSeasonStats.totalFines = (singlesSeasonStats.totalFines || 0) + 250;
+                        }
+
+                        playerUpdates[playerId] = { stats: newStats };
+                    }
+
+                    // 3. WRITES: Perform all writes at the end.
+                    transaction.update(fixtureRef, { status: 'finished' });
+                    for (const playerId in playerUpdates) {
+                        const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
+                        transaction.update(playerRef, playerUpdates[playerId]);
+                    }
+                });
+
+                showToast("Match finished and all stats saved! Well played.", false);
+                ui.dotdModal.overlay.classList.add('hidden');
+                ui.dotdModal.overlay.classList.remove('flex');
+                state.fixture = { id: null, games: [] };
+                state.currentGameIndex = 0;
+                switchTab('match');
+
+            } catch (e) {
+                console.error("Transaction failed: ", e);
+                showToast("Failed to save match stats. Please try again.", true);
+            }
+        }
+        // --- FIX ENDS HERE ---
+
+        async function markFinesAsPaid(playerId) {
+            const playerRef = doc(state.db, "players", playerId);
+            try {
+                const player = state.players.find(p => p.id === playerId);
+                if (!player || !player.stats) {
+                    showToast("Player has no stats to clear.", true);
+                    return;
+                }
+                const updates = {};
+                for (const seasonId in player.stats) {
+                    updates[`stats.${seasonId}.singles.outstandingFines`] = 0;
+                }
+                await updateDoc(playerRef, updates);
+                showToast("Fines cleared for player.", false);
+            } catch (error) {
+                console.error("Error clearing fines: ", error);
+                showToast("Could not clear fines.", true);
+            }
+        }
+
+        function openLowScoreModal() {
+            ui.lowScoreModal.overlay.classList.remove('hidden');
+            ui.lowScoreModal.overlay.classList.add('flex');
+            ui.lowScoreModal.input.focus();
+        }
+        function closeLowScoreModal() {
+            ui.lowScoreModal.overlay.classList.add('hidden');
+            ui.lowScoreModal.overlay.classList.remove('flex');
+            ui.lowScoreModal.input.value = '';
+        }
+        function submitLowScoreFine() {
+            const score = parseInt(ui.lowScoreModal.input.value);
+            if (score >= 1 && score <= 9) {
+                addFine((10 - score) * 10, `Score of ${score}`);
+                closeLowScoreModal();
+            } else {
+                showToast("Please enter a score between 1 and 9.", true);
+            }
+        }
+
+        function removeFine(fineId) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game || !game.finesList) return;
+
+            const fineIndex = game.finesList.findIndex(f => f.id === fineId);
+            if (fineIndex === -1) return;
+
+            const removedFine = game.finesList[fineIndex];
+            game.finesList.splice(fineIndex, 1);
+
+            // Update total fines
+            game.fines = Math.max(0, (game.fines || 0) - removedFine.amount);
+
+            showToast(`Fine removed: ${removedFine.reason} (-£${(removedFine.amount/100).toFixed(2)})`);
+            render();
+            updateGameData();
+        }
+
+        function openDotdModal() {
+            const allPlayerIdsInFixture = [...new Set(state.fixture.games.flatMap(game => game.playerIds))];
+
+            ui.dotdModal.list.innerHTML = '';
+            allPlayerIdsInFixture.forEach(playerId => {
+                const player = state.players.find(p => p.id === playerId);
+                if (!player) return;
+
+                let sillyThingsCount = 0;
+                state.fixture.games.forEach(game => {
+                    if (game.playerIds.includes(playerId)) {
+                        const playerIndex = game.playerIds.indexOf(playerId);
+                        sillyThingsCount += game.playerScores?.[playerIndex]?.sillyThings || 0;
+                    }
+                });
+
+                const playerEl = document.createElement('div');
+                playerEl.className = 'flex items-center justify-between';
+                playerEl.innerHTML = `
+                    <div>
+                        <input id="dotd-${player.id}" name="dotd-vote" type="radio" value="${player.id}" class="h-4 w-4 text-emerald-600 border-gray-300 focus:ring-emerald-500">
+                        <label for="dotd-${player.id}" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">${player.name}</label>
+                    </div>
+                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">? x ${sillyThingsCount}</span>
+                `;
+                ui.dotdModal.list.appendChild(playerEl);
+            });
+
+            ui.dotdModal.overlay.classList.remove('hidden');
+            ui.dotdModal.overlay.classList.add('flex');
+        }
+
+        function renderH2HTab() {
+            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            ui.h2h.player1Select.innerHTML = `<option value="">Select Player 1</option>${playerOptions}`;
+            ui.h2h.player2Select.innerHTML = `<option value="">Select Player 2</option>${playerOptions}`;
+
+            if(state.h2h.player1) ui.h2h.player1Select.value = state.h2h.player1;
+            if(state.h2h.player2) ui.h2h.player2Select.value = state.h2h.player2;
+        }
+
+        function calculateAndRenderH2H() {
+            const p1Id = state.h2h.player1;
+            const p2Id = state.h2h.player2;
+            const container = ui.h2h.resultsContainer;
+
+            if (!p1Id || !p2Id || p1Id === p2Id) {
+                container.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400">Select two different players to compare their stats.</p>';
+                return;
+            }
+
+            const player1 = state.players.find(p => p.id === p1Id);
+            const player2 = state.players.find(p => p.id === p2Id);
+
+            const p1Stats = getPlayerStats(player1, 'all-time', 'combined');
+            const p2Stats = getPlayerStats(player2, 'all-time', 'combined');
+
+            const renderStatRow = (label, val1, val2) => {
+                const isP1Winner = val1 > val2;
+                const isP2Winner = val2 > val1;
+                return `
+                    <div class="flex justify-between items-center py-2">
+                        <span class="font-semibold ${isP1Winner ? 'text-emerald-500' : 'dark:text-white'}">${val1}</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">${label}</span>
+                        <span class="font-semibold ${isP2Winner ? 'text-emerald-500' : 'dark:text-white'}">${val2}</span>
+                    </div>
+                `;
+            };
+
+            container.innerHTML = `
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                     <div class="text-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                         <h3 class="text-lg font-bold text-emerald-600 dark:text-emerald-400">${player1.name}</h3>
+                     </div>
+                     <div class="text-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                         <h3 class="text-lg font-bold text-emerald-600 dark:text-emerald-400">${player2.name}</h3>
+                     </div>
+                </div>
+                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                    ${renderStatRow('Games Won', p1Stats.gamesWon, p2Stats.gamesWon)}
+                    ${renderStatRow('Legs Won', p1Stats.legsWon, p2Stats.legsWon)}
+                    ${renderStatRow('Leg Win %', parseFloat(((p1Stats.legsWon + p1Stats.legsLost > 0) ? (p1Stats.legsWon / (p1Stats.legsWon + p1Stats.legsLost) * 100) : 0).toFixed(1)), parseFloat(((p2Stats.legsWon + p2Stats.legsLost > 0) ? (p2Stats.legsWon / (p2Stats.legsWon + p2Stats.legsLost) * 100) : 0).toFixed(1)))}
+                    ${renderStatRow('100+', p1Stats.scores100, p2Stats.scores100)}
+                    ${renderStatRow('140+', p1Stats.scores140, p2Stats.scores140)}
+                    ${renderStatRow('180s', p1Stats.scores180, p2Stats.scores180)}
+                    ${renderStatRow('High Checkout', p1Stats.highCheckout, p2Stats.highCheckout)}
+                    ${renderStatRow('Total Fines (£)', (p1Stats.totalFines/100).toFixed(2), (p2Stats.totalFines/100).toFixed(2))}
+                </div>
+                <p class="text-xs text-center text-gray-400 mt-4">* Singles stats shown for wins/legs/HC/fines. All scores included.</p>
+            `;
+        }
+
+         function setupProfileTabs(container) {
+            const singlesTab = container.querySelector('#profile-tab-singles');
+            const doublesTab = container.querySelector('#profile-tab-doubles');
+            const singlesContent = container.querySelector('#profile-content-singles');
+            const doublesContent = container.querySelector('#profile-content-doubles');
+
+            if (!singlesTab || !doublesTab || !singlesContent || !doublesContent) return;
+
+            singlesTab.addEventListener('click', () => {
+                singlesTab.classList.add('text-emerald-600', 'border-emerald-500');
+                singlesTab.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                doublesTab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                doublesTab.classList.remove('text-emerald-600', 'border-emerald-500');
+                singlesContent.classList.remove('hidden');
+                doublesContent.classList.add('hidden');
+            });
+
+            doublesTab.addEventListener('click', () => {
+                doublesTab.classList.add('text-emerald-600', 'border-emerald-500');
+                doublesTab.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                singlesTab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                singlesTab.classList.remove('text-emerald-600', 'border-emerald-500');
+                doublesContent.classList.remove('hidden');
+                singlesContent.classList.add('hidden');
+            });
+        }
+
+        function renderMyProfile() {
+            // If user is logged in and has a linked player ID, show their profile automatically
+            if (state.isLoggedIn && state.userPlayerId) {
+                state.myProfile.selectedPlayerId = state.userPlayerId;
+                const player = state.players.find(p => p.id === state.userPlayerId);
+                if (player) {
+                    // Hide the player selector since we already know who they are
+                    ui.myProfile.playerSelect.parentElement.classList.add('hidden');
+
+                    ui.myProfile.nameInput.value = player.name;
+                    ui.myProfile.nicknameInput.value = player.nickname || '';
+                    ui.myProfile.editArea.classList.remove('hidden');
+                    ui.myProfile.statsArea.classList.remove('hidden');
+
+                    const cardHTML = generatePlayerCardHTML(player.id, 'all-time');
+                    ui.myProfile.statsArea.innerHTML = cardHTML;
+
+                    ui.myProfile.statsArea.querySelector('#player-card-season-select')?.remove();
+
+                    // Set up tab switching for the profile stats
+                    setupProfileTabs(ui.myProfile.statsArea);
+                    return;
+                }
+            }
+
+            // Fallback: Show player selector for manual selection (for users without linked profiles)
+            ui.myProfile.playerSelect.parentElement.classList.remove('hidden');
+            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            ui.myProfile.playerSelect.innerHTML = `<option value="">Select a player...</option>${playerOptions}`;
+
+            if (state.myProfile.selectedPlayerId) {
+                ui.myProfile.playerSelect.value = state.myProfile.selectedPlayerId;
+                const player = state.players.find(p => p.id === state.myProfile.selectedPlayerId);
+                if (player) {
+                    ui.myProfile.nameInput.value = player.name;
+                    ui.myProfile.nicknameInput.value = player.nickname || '';
+                    ui.myProfile.editArea.classList.remove('hidden');
+                    ui.myProfile.statsArea.classList.remove('hidden');
+
+                    const cardHTML = generatePlayerCardHTML(player.id, 'all-time');
+                    ui.myProfile.statsArea.innerHTML = cardHTML;
+
+                    ui.myProfile.statsArea.querySelector('#player-card-season-select')?.remove();
+
+                    // Set up tab switching for the profile stats
+                    setupProfileTabs(ui.myProfile.statsArea);
+                }
+            } else {
+                ui.myProfile.editArea.classList.add('hidden');
+                ui.myProfile.statsArea.classList.add('hidden');
+            }
+        }
+        async function handleUpdateProfile() {
+            const playerId = state.myProfile.selectedPlayerId;
+            if (!playerId || state.userRole === 'viewer') {
+                showToast("You must be logged in and select a profile to make changes.", true);
+                return;
+            }
+
+            const newName = ui.myProfile.nameInput.value.trim();
+            const newNickname = ui.myProfile.nicknameInput.value.trim();
+
+            if (!newName) {
+                showToast("Player name cannot be empty.", true);
+                return;
+            }
+
+            try {
+                const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
+                await updateDoc(playerRef, {
+                    name: newName,
+                    nickname: newNickname
+                });
+                showToast("Profile updated successfully!");
+            } catch (error) {
+                console.error("Error updating profile:", error);
+                showToast("Could not update profile.", true);
+            }
+        }
+
+
+        function handleThemeToggle() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            ui.themeIconsMobile.sun.classList.toggle('hidden', isDark);
+            ui.themeIconsMobile.moon.classList.toggle('hidden', !isDark);
+        }
+
+        async function init() {
+            const storedTheme = localStorage.getItem('theme');
+            const hasStoredTheme = localStorage.getItem('theme') !== null;
+            if (storedTheme === 'dark' || (!hasStoredTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                ui.themeIconsMobile.sun.classList.add('hidden');
+                ui.themeIconsMobile.moon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                ui.themeIconsMobile.sun.classList.remove('hidden');
+                ui.themeIconsMobile.moon.classList.add('hidden');
+            }
+
+            // Validate storage before using it
+            validateStoredData();
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyCU66DqSCzkwaEhTLEOftEJtKbt9y4xVeI",
+                authDomain: "darts-app-9e752.firebaseapp.com",
+                databaseURL: "https://darts-app-9e752-default-rtdb.europe-west1.firebasedatabase.app",
+                projectId: "darts-app-9e752",
+                storageBucket: "darts-app-9e752.appspot.com",
+                messagingSenderId: "520662271304",
+                appId: "1:520662271304:web:abb1ca68445511c8bb1f7d"
+            };
+
+            const app = initializeApp(firebaseConfig);
+            state.db = getFirestore(app);
+            state.auth = getAuth(app);
+
+            ui.connectionStatus.classList.remove('hidden');
+
+            try {
+                // const userCredential = await signInAnonymously(state.auth);
+                //state.userId = userCredential.user.uid;
+                console.log("Authentication successful. UID:", state.userId);
+            } catch (error) {
+                console.error("Firebase Authentication Failed:", error);
+                ui.connectionStatus.textContent = "Authentication failed. App may not work.";
+                ui.connectionStatus.classList.replace('bg-yellow-100', 'bg-red-100');
+                ui.connectionStatus.classList.replace('text-yellow-800', 'text-red-800');
+                ui.loadingOverlay.classList.add('hidden');
+                return;
+            }
+
+            const handleError = (error, type) => {
+                 console.error(`Error fetching ${type}: `, error);
+                 ui.connectionStatus.innerHTML = `<strong>Database Error:</strong> Could not load ${type}. Please check Firestore security rules.`;
+                 ui.connectionStatus.classList.replace('bg-yellow-100', 'bg-red-100');
+                 ui.connectionStatus.classList.replace('text-yellow-800', 'text-red-800');
+                 ui.connectionStatus.classList.remove('hidden');
+            };
+
+            // Wait for auth state before setting up Firestore listeners
+            // Wait for auth state and properly handle session restoration
+            const unsubscribe = onAuthStateChanged(state.auth, async (user) => {
+                unsubscribe(); // Only run this once
+
+                try {
+                    if (user) {
+                        state.userId = user.uid;
+
+                        try {
+                            // Check if this user has a role in Firestore
+                            const userDoc = await getDoc(doc(state.db, 'users', user.uid));
+                            if (userDoc.exists()) {
+                                const userData = userDoc.data();
+                                state.userRole = userData.role;
+                                state.userEmail = userData.email;
+                                state.userName = userData.name;
+                                state.userPlayerId = userData.playerId;
+                                state.isLoggedIn = true;
+
+                                // Update localStorage with fresh data
+                                localStorage.setItem('userRole', userData.role);
+                                localStorage.setItem('isLoggedIn', 'true');
+                                localStorage.setItem('userEmail', userData.email);
+                                localStorage.setItem('userId', user.uid);
+
+                                // Start logout timer
+                                startLogoutTimer();
+                            }
+                        } catch (error) {
+                            console.log('Error fetching user document:', error);
+                            // If we can't get user data, clear everything
+                            state.isLoggedIn = false;
+                            state.userRole = null;
+                            localStorage.removeItem('userRole');
+                            localStorage.removeItem('isLoggedIn');
+                            localStorage.removeItem('loginTimestamp');
+                            localStorage.removeItem('userEmail');
+                            localStorage.removeItem('userId');
+                        }
+                    } else {
+                        // Not authenticated - check if we should show viewer mode
+                        const savedRole = localStorage.getItem('userRole');
+                        if (savedRole === 'viewer') {
+                            state.userRole = 'viewer';
+                            state.isLoggedIn = false;
+                        } else {
+                            // Clear everything if not authenticated and not viewer
+                            state.isLoggedIn = false;
+                            state.userRole = null;
+                            localStorage.removeItem('userRole');
+                            localStorage.removeItem('isLoggedIn');
+                            localStorage.removeItem('loginTimestamp');
+                            localStorage.removeItem('userEmail');
+                            localStorage.removeItem('userId');
+                        }
+                    }
+
+                    // Show appropriate UI based on auth state
+                    if (user) {
+                        ui.roleSelectionOverlay.classList.add('hidden');
+                        ui.mainApp.classList.remove('hidden');
+                    } else {
+                        ui.roleSelectionOverlay.classList.remove('hidden');
+                        ui.mainApp.classList.add('hidden');
+                    }
+
+                    setupFirestoreListeners();
+                    render();
+                } catch (error) {
+                    console.error('Error during auth initialization:', error);
+                    ui.roleSelectionOverlay.classList.remove('hidden');
+                    ui.mainApp.classList.add('hidden');
+                } finally {
+                    ui.loadingOverlay.classList.add('hidden');
+                }
+            });
+            function setupFirestoreListeners() {
+                onSnapshot(query(collection(state.db, SEASONS_COLLECTION)), (snapshot) => {
+                    state.seasons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    state.seasons.sort((a,b) => a.name.localeCompare(b.name));
+                    const activeSeason = state.seasons.find(s => s.status === 'active');
+                    state.activeSeasonId = activeSeason ? activeSeason.id : null;
+                    render();
+                }, (error) => handleError(error, 'seasons'));
+
+                onSnapshot(query(collection(state.db, PLAYERS_COLLECTION)), (snapshot) => {
+                    ui.connectionStatus.classList.add('hidden');
+                    state.players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    state.players.sort((a, b) => a.name.localeCompare(b.name));
+                    render();
+                }, (error) => handleError(error, 'players'));
+
+                onSnapshot(query(collection(state.db, FIXTURES_COLLECTION)), (snapshot) => {
+                    ui.connectionStatus.classList.add('hidden');
+                    const allFixtures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allFixtures.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+
+                    const activeFixture = allFixtures.find(f => f.status === 'live');
+
+                    if (activeFixture) {
+                         if (state.fixture.id !== activeFixture.id) {
+                              state.fixture = activeFixture;
+                              state.currentGameIndex = 0;
+                         } else {
+                              state.fixture.games = activeFixture.games;
+                         }
+                    } else {
+                        state.fixture = { id: null, games: [] };
+                    }
+
+                    state.previousFixtures = allFixtures.filter(f => f.status === 'finished');
+                    render();
+                }, (error) => handleError(error, 'fixtures'));
+            }
+
+            ui.themeToggleBtnMobile.addEventListener('click', handleThemeToggle);
+
+            document.querySelector('[data-role="viewer"]').addEventListener('click', () => {
+                state.userRole = 'viewer';
+                state.isLoggedIn = false;
+                localStorage.setItem('userRole', 'viewer');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('loginTimestamp');
+                ui.roleSelectionOverlay.classList.add('hidden');
+                ui.mainApp.classList.remove('hidden');
+                render();
+            });
+
+            document.getElementById('google-signin-btn').addEventListener('click', handleGoogleSignIn);
+
+
+            Object.keys(ui.tabs).forEach(tabName => {
+                ui.tabs[tabName].addEventListener('click', () => switchTab(tabName));
+            });
+            ui.addPlayerBtn.addEventListener('click', addPlayer);
+            ui.newPlayerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addPlayer(); });
+            ui.addSeasonBtn.addEventListener('click', async () => {
+                const name = ui.newSeasonInput.value.trim();
+                if (!name) return showToast("Season name cannot be empty.", true);
+                try {
+                    await safeFirebaseCall('addSeason', async () => {
+                        return await addDoc(collection(state.db, SEASONS_COLLECTION), { name, status: 'archived' });
+                    });
+                    showToast(`Season "${name}" added.`);
+                    ui.newSeasonInput.value = '';
+                } catch(e) {
+                    if (e.message.includes('Rate limit')) {
+                        showToast(e.message, true);
+                    } else {
+                        showToast("Could not add season.", true);
+                    }
+                }
+            });
+            ui.seasonsList.addEventListener('click', async (e) => {
+                const setActiveBtn = e.target.closest('.set-active-season-btn');
+                if (setActiveBtn) {
+                    const newActiveId = setActiveBtn.dataset.seasonId;
+                    const batch = writeBatch(state.db);
+                    state.seasons.forEach(season => {
+                        const seasonRef = doc(state.db, SEASONS_COLLECTION, season.id);
+                        batch.update(seasonRef, { status: season.id === newActiveId ? 'active' : 'archived' });
+                    });
+                    await batch.commit();
+                    showToast("Active season updated.");
+                }
+            });
+            ui.createFixtureBtn.addEventListener('click', createFixture);
+
+            // Add the update teams function
+            window.updateTeamSelections = async function() {
+                if (!state.fixture.id) return;
+
+                // Validate all games have players selected
+                const games = [];
+                for (let i = 0; i < GAME_TITLES.length; i++) {
+                    const title = GAME_TITLES[i];
+                    const isDoubles = title.includes("Doubles");
+
+                    const p1Select = document.getElementById(`game-${i}-p1`);
+                    const p1 = p1Select.value;
+
+                    const playerIds = [p1];
+                    if (isDoubles) {
+                        const p2Select = document.getElementById(`game-${i}-p2`);
+                        const p2 = p2Select.value;
+                        if (p1 && p2 && p1 === p2) {
+                            showToast(`A player cannot play with themselves in ${title}.`, true);
+                            return;
+                        }
+                        if (p2) playerIds.push(p2);
+                    }
+
+                    if (playerIds.some(id => !id)) {
+                        showToast(`Please select players for ${title}.`, true);
+                        return;
+                    }
+
+                    // Keep existing game data but update player selections
+                    const existingGame = state.fixture.games[i];
+                    const updatedGame = {
+                        ...existingGame,
+                        playerIds: playerIds,
+                        type: isDoubles ? 'doubles' : 'singles'
+                    };
+
+                    // If player selection changed, reset player-specific scores but keep game stats
+                    if (JSON.stringify(existingGame.playerIds) !== JSON.stringify(playerIds)) {
+                        updatedGame.playerScores = playerIds.map(() => ({
+                            scores100: 0,
+                            scores140: 0,
+                            scores180: 0,
+                            sillyThings: 0,
+                        }));
+                    }
+
+                    games.push(updatedGame);
+                }
+
+                try {
+                    const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
+                    await updateDoc(fixtureRef, { games: games });
+                    showToast("Team selections updated successfully!");
+                } catch (error) {
+                    console.error("Error updating teams:", error);
+                    showToast("Could not update team selections.", true);
+                }
+            };
+            ui.prevGameBtn.addEventListener('click', () => { if (state.currentGameIndex > 0) { state.currentGameIndex--; render(); } });
+            ui.nextGameBtn.addEventListener('click', () => { if (state.currentGameIndex < state.fixture.games.length - 1) { state.currentGameIndex++; render(); } });
+
+            ui.liveMatchContent.addEventListener('click', (e) => {
+                const statBtn = e.target.closest('.stat-btn');
+                if (statBtn) {
+                     const playerIndex = statBtn.hasAttribute('data-player-index') ? parseInt(statBtn.dataset.playerIndex) : 0;
+                     updateStat(statBtn.dataset.stat, parseInt(statBtn.dataset.op), playerIndex);
+                }
+            });
+
+            ui.playerRoster.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.delete-player-btn');
+                if (deleteBtn) deletePlayer(deleteBtn.dataset.playerId);
+            });
+
+            ui.previousMatchesList.addEventListener('click', (e) => {
+                const matchBtn = e.target.closest('.select-match-btn');
+                const deleteBtn = e.target.closest('.delete-fixture-btn');
+
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    deleteFixture(deleteBtn.dataset.fixtureId);
+                    return;
+                }
+
+                if (matchBtn) {
+                    state.selectedPreviousFixtureId = matchBtn.dataset.fixtureId;
+                    render();
+                }
+            });
+
+            ui.finesList.addEventListener('click', (e) => {
+                const payBtn = e.target.closest('.pay-fines-btn');
+                if (payBtn) markFinesAsPaid(payBtn.dataset.playerId);
+            });
+
+            ui.seasonFilterSelect.addEventListener('change', (e) => {
+                state.selectedStatsSeasonId = e.target.value;
+                renderLeaderboard();
+            });
+
+            ui.leaderboardBody.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (row && row.dataset.playerId) {
+                    state.playerCard = { isOpen: true, playerId: row.dataset.playerId, selectedSeasonId: state.selectedStatsSeasonId };
+                    renderPlayerCard();
+                }
+            });
+
+            ui.playerCardModal.closeBtn.addEventListener('click', () => {
+                state.playerCard.isOpen = false;
+                renderPlayerCard();
+            });
+
+            ui.playerCardModal.content.addEventListener('change', (e) => {
+                if (e.target.id === 'player-card-season-select') {
+                    state.playerCard.selectedSeasonId = e.target.value;
+                    renderPlayerCard();
+                }
+            });
+
+            ui.highCheckoutInput.addEventListener('input', (e) => {
+                const game = state.fixture.games[state.currentGameIndex];
+                if (game) {
+                    game.highCheckout = parseInt(e.target.value) || 0;
+                    updateGameData();
+                }
+            });
+            ui.liveMatchContent.addEventListener('input', (e) => {
+                if (e.target.classList.contains('player-high-checkout-input')) {
+                    const game = state.fixture.games[state.currentGameIndex];
+                    if (game && game.playerScores) {
+                        const playerIndex = parseInt(e.target.dataset.playerIndex);
+                        if (!game.playerScores[playerIndex]) game.playerScores[playerIndex] = {};
+                        game.playerScores[playerIndex].highCheckout = parseInt(e.target.value) || 0;
+                        updateGameData();
+                    }
+                }
+            });
+            ui.fineBtn26.addEventListener('click', () => addFine(26, 'Score of 26'));
+            ui.fineBtnMiss.addEventListener('click', () => addFine(50, 'Missed Board'));
+            ui.fineBtnLowScore.addEventListener('click', openLowScoreModal);
+            ui.lowScoreModal.cancel.addEventListener('click', closeLowScoreModal);
+            ui.lowScoreModal.submit.addEventListener('click', submitLowScoreFine);
+            ui.lowScoreModal.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitLowScoreFine(); });
+            ui.finesPanel.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.remove-fine-btn');
+                if (removeBtn) {
+                    removeFine(removeBtn.dataset.fineId);
+                }
+            });
+            ui.gameActionButtons.addEventListener('click', (e) => {
+                if (e.target.id === 'finish-match-btn') openDotdModal();
+            });
+
+            ui.dotdModal.finish.addEventListener('click', () => {
+                const selectedPlayer = document.querySelector('input[name="dotd-vote"]:checked');
+                finishMatch(selectedPlayer ? selectedPlayer.value : null);
+            });
+
+            ui.confirmModal.cancel.addEventListener('click', closeConfirmModal);
+            ui.confirmModal.confirm.addEventListener('click', handleConfirmation);
+
+            ui.hamburgerBtn.addEventListener('click', openMobileMenu);
+            ui.closeMenuBtn.addEventListener('click', closeMobileMenu);
+            ui.mobileMenuOverlay.addEventListener('click', (e) => {
+                if (e.target === ui.mobileMenuOverlay) {
+                    closeMobileMenu();
+                }
+            });
+            ui.mobileNavLinks.addEventListener('click', (e) => {
+                e.preventDefault();
+                const link = e.target.closest('a[data-tab-name]');
+                if (link) {
+                    switchTab(link.dataset.tabName);
+                }
+            });
+
+            ui.h2h.player1Select.addEventListener('change', (e) => {
+                state.h2h.player1 = e.target.value;
+                calculateAndRenderH2H();
+            });
+            ui.h2h.player2Select.addEventListener('change', (e) => {
+                state.h2h.player2 = e.target.value;
+                calculateAndRenderH2H();
+            });
+            
+            // My Profile Listeners
+            ui.myProfile.playerSelect.addEventListener('change', async (e) => {
+                const newPlayerId = e.target.value;
+
+                // If user is logged in, update their player link in the database
+                if (state.isLoggedIn && state.userId) {
+                    try {
+                        await updateDoc(doc(state.db, 'users', state.userId), {
+                            playerId: newPlayerId || null,
+                            updatedAt: serverTimestamp()
+                        });
+                        state.userPlayerId = newPlayerId || null;
+                        showToast('Player profile linked successfully!');
+                    } catch (error) {
+                        console.error('Error linking player profile:', error);
+                        showToast('Failed to link player profile.', true);
+                    }
+                } else {
+                    // Fallback for manual selection
+                    state.myProfile.selectedPlayerId = newPlayerId;
+                }
+
+                renderMyProfile();
+            });
+            ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
+        }
+        ui.headerSignoutBtn.addEventListener('click', handleHeaderButtonClick);
+        ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
+        init();
