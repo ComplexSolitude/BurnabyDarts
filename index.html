@@ -2364,6 +2364,26 @@
                     showToast("Player has no stats to clear.", true);
                     return;
                 }
+
+                // Calculate total outstanding fines before clearing
+                const allTimeStats = getPlayerStats(player, 'all-time', 'singles');
+                const totalOutstandingFines = allTimeStats.outstandingFines;
+
+                // Add enhanced audit logging for fines clearing
+                await safeFirebaseCall('auditLog', async () => {
+                    return await addDoc(collection(state.db, 'audit_logs'), {
+                        action: 'fines_cleared',
+                        targetPlayerId: playerId,
+                        targetPlayerName: player.name,
+                        finesCleared: totalOutstandingFines,
+                        clearedBy: state.userName || state.userEmail || 'Unknown',
+                        clearedByUserId: state.userId,
+                        clearedByEmail: state.userEmail,
+                        timestamp: serverTimestamp(),
+                        userAgent: navigator.userAgent
+                    });
+                });
+
                 const updates = {};
                 for (const seasonId in player.stats) {
                     updates[`stats.${seasonId}.singles.outstandingFines`] = 0;
