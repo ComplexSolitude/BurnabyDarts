@@ -2514,8 +2514,8 @@
         }
 
         function openDotdModal() {
-            if (typeof confetti === 'function') {
-                confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+            if (window.confetti) {
+                window.confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
             }
             showToast('Match Complete!');
             playMatchCompleteSound();
