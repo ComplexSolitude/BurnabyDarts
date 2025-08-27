@@ -25,7 +25,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
        #toast-notification {
-            transition: all 0.5s ease-in-out;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         .toast-hidden {
@@ -562,7 +562,8 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast-notification" class="fixed top-0 left-1/2 bg-emerald-500 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center whitespace-nowrap" role="alert">
+    <div id="toast-notification" class="fixed top-0 left-1/2 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center whitespace-nowrap flex items-center gap-2" role="alert">
+        <svg id="toast-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"></svg>
         <span id="toast-message"></span>
     </div>
 
@@ -724,7 +725,7 @@
             tabs: { match: document.getElementById('tab-btn-match'), live: document.getElementById('tab-btn-live'), previous: document.getElementById('tab-btn-previous'), fines: document.getElementById('tab-btn-fines'), stats: document.getElementById('tab-btn-stats'), h2h: document.getElementById('tab-btn-h2h'), 'my-profile': document.getElementById('tab-btn-my-profile'), setup: document.getElementById('tab-btn-setup'), admin: document.getElementById('tab-btn-admin') },
             headerSignoutBtn: document.getElementById('header-signout-btn'),
             content: { match: document.getElementById('tab-content-match'), live: document.getElementById('tab-content-live'), previous: document.getElementById('tab-content-previous'), fines: document.getElementById('tab-content-fines'), stats: document.getElementById('tab-content-stats'), h2h: document.getElementById('tab-content-h2h'), 'my-profile': document.getElementById('tab-content-my-profile'), setup: document.getElementById('tab-content-setup'), admin: document.getElementById('tab-content-admin') },
-            toast: { element: document.getElementById('toast-notification'), message: document.getElementById('toast-message') },
+            toast: { element: document.getElementById('toast-notification'), message: document.getElementById('toast-message'), icon: document.getElementById('toast-icon') },
             mainApp: document.getElementById('main-app'),
             roleSelectionOverlay: document.getElementById('role-selection-overlay'),
             hamburgerBtn: document.getElementById('hamburger-btn'),
@@ -1605,12 +1606,30 @@
             setupProfileTabs(ui.playerCardModal.content);
         }
 
-        function showToast(message, isError = false) {
+        function showToast(message, type = 'success') {
+            if (typeof type === 'boolean') type = type ? 'error' : 'success';
             ui.toast.message.textContent = message;
 
-            // Update the background color
-            ui.toast.element.classList.remove('bg-emerald-500', 'bg-red-500');
-            ui.toast.element.classList.add(isError ? 'bg-red-500' : 'bg-emerald-500');
+            const configs = {
+                success: {
+                    color: 'bg-emerald-500',
+                    icon: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+                },
+                error: {
+                    color: 'bg-red-500',
+                    icon: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                },
+                warning: {
+                    color: 'bg-yellow-500',
+                    icon: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+                }
+            };
+
+            const { color, icon } = configs[type] || configs.success;
+
+            ui.toast.element.classList.remove('bg-emerald-500', 'bg-red-500', 'bg-yellow-500');
+            ui.toast.element.classList.add(color);
+            ui.toast.icon.innerHTML = icon;
 
             // Show the toast
             ui.toast.element.classList.remove('toast-hidden');
@@ -1701,11 +1720,11 @@
                 signInText.textContent = 'Sign in with Google';
                 signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
                 if (error.code === 'auth/popup-closed-by-user') {
-                    showToast('Sign-in cancelled.', true);
+                    showToast('Sign-in cancelled.', 'warning');
                 } else if (error.code === 'auth/cancelled-popup-request') {
-                    showToast('Sign-in already in progress.', true);
+                    showToast('Sign-in already in progress.', 'warning');
                 } else {
-                    showToast('Sign-in failed. Please try again.', true);
+                    showToast('Sign-in failed. Please try again.', 'error');
                 }
             } finally {
                 state.signingIn = false;
@@ -1871,10 +1890,10 @@
                 showToast('User role updated successfully.');
             } catch (error) {
                 if (error.message.includes('Rate limit')) {
-                    showToast(error.message, true);
+                    showToast(error.message, 'error');
                 } else {
                     console.error('Error updating user role:', error);
-                    showToast('Failed to update user role.', true);
+                    showToast('Failed to update user role.', 'error');
                 }
             }
         }
@@ -1923,10 +1942,10 @@
                 showToast('User player link updated successfully.');
             } catch (error) {
                 if (error.message.includes('Rate limit')) {
-                    showToast(error.message, true);
+                    showToast(error.message, 'error');
                 } else {
                     console.error('Error updating user player link:', error);
-                    showToast('Failed to update user player link.', true);
+                    showToast('Failed to update user player link.', 'error');
                 }
             }
         }
@@ -1955,7 +1974,7 @@
                     showToast("Player removed.");
                 } catch (error) {
                     console.error("Error deleting player: ", error);
-                    showToast("Could not remove player.", true);
+                    showToast("Could not remove player.", 'error');
                 }
             } else if (action === 'deleteFixture') {
                  try {
@@ -1968,15 +1987,15 @@
                     render();
                 } catch (error) {
                     console.error("Error deleting fixture:", error);
-                    showToast("Could not delete the match.", true);
+                    showToast("Could not delete the match.", 'error');
                 }
             } else if (action === 'clearPlayerFines') {
                 try {
                     await markFinesAsPaid(data);
-                    showToast("Fines cleared for player.", false);
+                    showToast("Fines cleared for player.", 'success');
                 } catch (error) {
                     console.error("Error clearing fines:", error);
-                    showToast("Could not clear fines.", true);
+                    showToast("Could not clear fines.", 'error');
                 }
             }
             closeConfirmModal();
@@ -2000,7 +2019,7 @@
         function switchTab(tabName) {
             // Prevent non-admins from accessing admin tab
             if (tabName === 'admin' && state.userRole !== 'admin') {
-                showToast("Access denied. Admin privileges required.", true);
+                showToast("Access denied. Admin privileges required.", 'error');
                 return;
             }
 
@@ -2012,7 +2031,7 @@
             try {
                 const name = validateInput(ui.newPlayerInput.value, 50); // ✅ ADD validation
                 if (!name) {
-                    showToast("Player name cannot be empty.", true);
+                    showToast("Player name cannot be empty.", 'error');
                     return;
                 }
 
@@ -2028,12 +2047,12 @@
                 ui.newPlayerInput.value = '';
             } catch (error) {
                 if (error.message.includes('Invalid characters') || error.message.includes('Input too long')) {
-                    showToast(error.message, true);
+                    showToast(error.message, 'error');
                 } else if (error.message.includes('Rate limit')) {
-                    showToast(error.message, true);
+                    showToast(error.message, 'error');
                 } else {
                     console.error("Error adding player: ", error);
-                    showToast("Could not add player.", true);
+                    showToast("Could not add player.", 'error');
                 }
             }
         }
@@ -2060,20 +2079,20 @@
 
         async function createFixture() {
             if (state.userRole === 'viewer' || state.userRole === 'scorer') {
-                showToast("You don't have permission to create matches.", true);
+                showToast("You don't have permission to create matches.", 'error');
                 return;
             }
             if (!state.isLoggedIn) {
-                showToast("You must be logged in to create a match.", true);
+                showToast("You must be logged in to create a match.", 'error');
                 return;
             }
             if (!state.activeSeasonId) {
-                showToast("Please set an active season before creating a match.", true);
+                showToast("Please set an active season before creating a match.", 'warning');
                 return;
             }
             const oppositionName = ui.oppositionNameInput.value.trim();
             if(!oppositionName) {
-                showToast("Please enter an opposition name.", true);
+                showToast("Please enter an opposition name.", 'warning');
                 return;
             }
 
@@ -2104,7 +2123,7 @@
                     const p2Select = document.getElementById(`game-${i}-p2`);
                     const p2 = p2Select.value;
                     if (p1 && p2 && p1 === p2) {
-                        showToast(`A player cannot play with themselves in ${title}.`, true);
+                        showToast(`A player cannot play with themselves in ${title}.`, 'error');
                         return;
                     }
                     if (p2) playerIds.push(p2);
@@ -2146,7 +2165,7 @@
                 switchTab('live');
             } catch (error) {
                 console.error("Error creating fixture: ", error);
-                showToast("Could not create the fixture.", true);
+                showToast("Could not create the fixture.", 'error');
             }
         }
 
@@ -2161,10 +2180,10 @@
                 });
             } catch (error) {
                 if (error.message.includes('Rate limit')) {
-                    showToast(error.message, true);
+                    showToast(error.message, 'error');
                 } else {
                     console.error("Error updating game data:", error);
-                    showToast("Could not save latest score, check connection.", true);
+                    showToast("Could not save latest score, check connection.", 'error');
                 }
             }
         }
@@ -2176,7 +2195,7 @@
             if (stat === 'legsWon' || stat === 'legsLost') {
                 if (value > 0) {
                     if ((game.legsWon || 0) + (game.legsLost || 0) >= 3) {
-                        showToast("Cannot play more than 3 legs in a game.", true);
+                        showToast("Cannot play more than 3 legs in a game.", 'error');
                         return;
                     }
                 }
@@ -2351,14 +2370,14 @@
                     }
                 });
 
-                showToast("Match finished and all stats saved! Well played.", false);
+                showToast("Match finished and all stats saved! Well played.", 'success');
                 ui.dotdModal.overlay.classList.add('hidden');
                 ui.dotdModal.overlay.classList.remove('flex');
                 switchTab('match');
 
             } catch (e) {
                 console.error("Transaction failed: ", e);
-                showToast("Failed to save match stats. Please try again.", true);
+                showToast("Failed to save match stats. Please try again.", 'error');
             }
         }
         // --- FIX ENDS HERE ---
@@ -2368,7 +2387,7 @@
             try {
                 const player = state.players.find(p => p.id === playerId);
                 if (!player || !player.stats) {
-                    showToast("Player has no stats to clear.", true);
+                    showToast("Player has no stats to clear.", 'error');
                     return;
                 }
 
@@ -2398,7 +2417,7 @@
                 await updateDoc(playerRef, updates);
             } catch (error) {
                 console.error("Error clearing fines: ", error);
-                showToast("Could not clear fines.", true);
+                showToast("Could not clear fines.", 'error');
             }
         }
 
@@ -2418,7 +2437,7 @@
                 addFine((10 - score) * 10, `Score of ${score}`);
                 closeLowScoreModal();
             } else {
-                showToast("Please enter a score between 1 and 9.", true);
+                showToast("Please enter a score between 1 and 9.", 'warning');
             }
         }
 
@@ -2614,7 +2633,7 @@
         async function handleUpdateProfile() {
             const playerId = state.myProfile.selectedPlayerId;
             if (!playerId || state.userRole === 'viewer') {
-                showToast("You must be logged in and select a profile to make changes.", true);
+                showToast("You must be logged in and select a profile to make changes.", 'error');
                 return;
             }
 
@@ -2622,7 +2641,7 @@
             const newNickname = ui.myProfile.nicknameInput.value.trim();
 
             if (!newName) {
-                showToast("Player name cannot be empty.", true);
+                showToast("Player name cannot be empty.", 'warning');
                 return;
             }
 
@@ -2635,7 +2654,7 @@
                 showToast("Profile updated successfully!");
             } catch (error) {
                 console.error("Error updating profile:", error);
-                showToast("Could not update profile.", true);
+                showToast("Could not update profile.", 'error');
             }
         }
 
@@ -2828,7 +2847,7 @@
             ui.newPlayerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addPlayer(); });
             ui.addSeasonBtn.addEventListener('click', async () => {
                 const name = ui.newSeasonInput.value.trim();
-                if (!name) return showToast("Season name cannot be empty.", true);
+                if (!name) return showToast("Season name cannot be empty.", 'warning');
                 try {
                     await safeFirebaseCall('addSeason', async () => {
                         return await addDoc(collection(state.db, SEASONS_COLLECTION), { name, status: 'archived' });
@@ -2837,9 +2856,9 @@
                     ui.newSeasonInput.value = '';
                 } catch(e) {
                     if (e.message.includes('Rate limit')) {
-                        showToast(e.message, true);
+                        showToast(e.message, 'error');
                     } else {
-                        showToast("Could not add season.", true);
+                        showToast("Could not add season.", 'error');
                     }
                 }
             });
@@ -2876,7 +2895,7 @@
                         const p2Select = document.getElementById(`game-${i}-p2`);
                         const p2 = p2Select.value;
                         if (p1 && p2 && p1 === p2) {
-                            showToast(`A player cannot play with themselves in ${title}.`, true);
+                            showToast(`A player cannot play with themselves in ${title}.`, 'error');
                             return;
                         }
                         if (p2) playerIds.push(p2);
@@ -2910,7 +2929,7 @@
                     switchTab('live');
                 } catch (error) {
                     console.error("Error updating teams:", error);
-                    showToast("Could not update team selections.", true);
+                    showToast("Could not update team selections.", 'error');
                 }
             };
             ui.prevGameBtn.addEventListener('click', () => { if (state.currentGameIndex > 0) { state.currentGameIndex--; render(); } });
@@ -3072,7 +3091,7 @@
                         showToast('Player profile linked successfully!');
                     } catch (error) {
                         console.error('Error linking player profile:', error);
-                        showToast('Failed to link player profile.', true);
+                        showToast('Failed to link player profile.', 'error');
                     }
                 } else {
                     // Fallback for manual selection
