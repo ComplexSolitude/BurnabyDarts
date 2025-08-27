@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Burnaby Arms - Darts Scorer</title>
-    <link rel="apple-touch-icon" href="darts-icon-v3.png">
+    <link rel="apple-touch-icon" href="darts-icon-v2.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // noinspection JSUnresolvedReference
@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://cdnjs.cloudflare.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com; frame-src https://accounts.google.com https://darts-app-9e752.firebaseapp.com; manifest-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://cdnjs.cloudflare.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com; frame-src https://accounts.google.com https://darts-app-9e752.firebaseapp.com;">
     <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
@@ -60,7 +60,7 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
-    <div id="loading-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-60 flex items-center justify-center">
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 z-60 flex items-center justify-center hidden">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
             <div class="spinner mx-auto mb-4"></div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Signing you in...</h3>
@@ -68,7 +68,7 @@
         </div>
     </div>
     <!-- Role Selection Overlay -->
-    <div id="role-selection-overlay" class="fixed inset-0 bg-gray-800 z-50 flex items-center justify-center p-4 hidden">
+    <div id="role-selection-overlay" class="fixed inset-0 bg-gray-800 z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm text-center">
             <h1 class="text-4xl font-bold text-white mb-2">Burnaby Arms B</h1>
             <p class="text-lg text-gray-300 mb-8">Darts Scorer</p>
@@ -87,37 +87,6 @@
         </div>
     </div>
 
-    <!-- Fail-safe: ensure loading and role selection overlays stay in sync -->
-    <script>
-        // This block keeps the loading, role selection and main app overlays in parity.
-        // 1) If a persisted auth state exists (localStorage or Firebase session),
-        //    skip the timeout and immediately reveal the main app.
-        // 2) Otherwise, after 8s show the role selection overlay if loading is still visible.
-        window.addEventListener('DOMContentLoaded', () => {
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const roleSelectionOverlay = document.getElementById('role-selection-overlay');
-            const mainApp = document.getElementById('main-app');
-
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            const currentUser = window.firebase?.auth?.().currentUser;
-            if (isLoggedIn || currentUser) {
-                loadingOverlay.classList.add('hidden');
-                roleSelectionOverlay.classList.add('hidden');
-                mainApp.classList.remove('hidden');
-                return; // Auth already confirmed; no need for fail-safe timeout.
-            }
-
-            setTimeout(() => {
-                // Maintain parity between overlays: if loading is still visible
-                // and role selection is hidden, toggle them.
-                if (!loadingOverlay.classList.contains('hidden') && roleSelectionOverlay.classList.contains('hidden')) {
-                    loadingOverlay.classList.add('hidden');
-                    roleSelectionOverlay.classList.remove('hidden');
-                }
-            }, 8000); // 8s timeout acts as a fail-safe
-        });
-    </script>
-
     <!-- Main App Container (Initially Hidden) -->
     <div id="main-app" class="hidden max-w-4xl mx-auto p-2 sm:p-4 lg:p-8">
 
@@ -131,10 +100,7 @@
             </div>
 
             <!-- Title (center) -->
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                Darts Scorer
-                <span id="dev-indicator" class="hidden text-xs bg-orange-500 text-white px-2 py-1 rounded ml-2">DEV</span>
-            </h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Darts Scorer</h1>
 
             <!-- Hamburger button (right) for mobile -->
             <div class="md:hidden">
@@ -2666,20 +2632,7 @@
             // Validate storage before using it
             validateStoredData();
 
-            const isDevelopment = window.location.hostname === 'localhost' ||
-                                 window.location.hostname === '127.0.0.1';
-
-            const firebaseConfig = isDevelopment ? {
-                // Development Firebase config (paste your dev config here)
-                apiKey: "AIzaSyDf4GMyPJP6MvGo2hycKGSiKe-w5xJF_fw",
-                authDomain: "darts-app-dev.firebaseapp.com",
-                projectId: "darts-app-dev",
-                storageBucket: "darts-app-dev.firebasestorage.app",
-                messagingSenderId: "540400402942",
-                appId: "1:540400402942:web:f5399eb48c04fd129180af",
-                measurementId: "G-GGKKH0RGNM"
-            } : {
-                // Production Firebase config
+            const firebaseConfig = {
                 apiKey: "AIzaSyCU66DqSCzkwaEhTLEOftEJtKbt9y4xVeI",
                 authDomain: "darts-app-9e752.firebaseapp.com",
                 databaseURL: "https://darts-app-9e752-default-rtdb.europe-west1.firebasedatabase.app",
@@ -2688,6 +2641,7 @@
                 messagingSenderId: "520662271304",
                 appId: "1:520662271304:web:abb1ca68445511c8bb1f7d"
             };
+
             const app = initializeApp(firebaseConfig);
             state.db = getFirestore(app);
             state.auth = getAuth(app);
@@ -2698,15 +2652,6 @@
                 // const userCredential = await signInAnonymously(state.auth);
                 //state.userId = userCredential.user.uid;
                 console.log("Authentication successful. UID:", state.userId);
-
-                // Show dev indicator and update title
-                if (isDevelopment) {
-                    const devIndicator = document.getElementById('dev-indicator');
-                    if (devIndicator) devIndicator.classList.remove('hidden');
-                    document.title = '[DEV] ' + document.title;
-                    console.log('🚀 Running in DEVELOPMENT mode');
-                    console.log('Firebase Project:', firebaseConfig.projectId);
-                }
             } catch (error) {
                 console.error("Firebase Authentication Failed:", error);
                 ui.connectionStatus.textContent = "Authentication failed. App may not work.";
