@@ -1677,6 +1677,23 @@
             setupProfileTabs(ui.playerCardModal.content);
         }
 
+        // Haptic feedback utility
+        function triggerHaptic(pattern = 'light') {
+            if (!('vibrate' in navigator)) return;
+
+            const patterns = {
+                light: 10,      // Light tap
+                medium: 25,     // Medium tap
+                heavy: 50,      // Heavy tap
+                double: [20, 50, 20], // Double tap
+                success: [20, 100, 30], // Success pattern
+                error: [100, 30, 100, 30, 100], // Error pattern
+                warning: [30, 20, 30] // Warning pattern
+            };
+
+            navigator.vibrate(patterns[pattern] || patterns.light);
+        }
+
         function showToast(message, type = 'success') {
             if (typeof type === 'boolean') type = type ? 'error' : 'success';
             ui.toast.message.textContent = message;
@@ -1697,6 +1714,11 @@
             };
 
             const { color, icon } = configs[type] || configs.success;
+
+            // Add haptic feedback based on toast type
+            if (type === 'success') triggerHaptic('success');
+            else if (type === 'error') triggerHaptic('error');
+            else if (type === 'warning') triggerHaptic('warning');
 
             ui.toast.element.classList.remove('bg-emerald-500', 'bg-red-500', 'bg-yellow-500');
             ui.toast.element.classList.add(color);
@@ -2254,6 +2276,7 @@
             const currentPanel = ui.content[currentTab];
             const newPanel = ui.content[tabName];
 
+            triggerHaptic('light');
             state.activeTab = tabName;
             render();
 
@@ -2327,6 +2350,7 @@
         }
 
         async function createFixture() {
+            triggerHaptic('medium');
             if (state.userRole === 'viewer' || state.userRole === 'scorer') {
                 showToast("You don't have permission to create matches.", 'error');
                 return;
@@ -3256,6 +3280,7 @@
             };
             ui.prevGameBtn.addEventListener('click', () => {
                 if (state.currentGameIndex > 0) {
+                    triggerHaptic('light');
                     state.currentGameIndex--;
                     state.fixture.activeGameIndex = state.currentGameIndex;
                     const game = state.fixture.games[state.currentGameIndex];
@@ -3266,6 +3291,7 @@
             });
             ui.nextGameBtn.addEventListener('click', () => {
                 if (state.currentGameIndex < state.fixture.games.length - 1) {
+                    triggerHaptic('light');
                     state.currentGameIndex++;
                     state.fixture.activeGameIndex = state.currentGameIndex;
                     const game = state.fixture.games[state.currentGameIndex];
@@ -3278,6 +3304,7 @@
             ui.liveMatchContent.addEventListener('click', (e) => {
                 const statBtn = e.target.closest('.stat-btn');
                 if (statBtn) {
+                     triggerHaptic('light');
                      const playerIndex = statBtn.hasAttribute('data-player-index') ? parseInt(statBtn.dataset.playerIndex) : 0;
                      updateStat(statBtn.dataset.stat, parseInt(statBtn.dataset.op), playerIndex);
                 }
@@ -3363,9 +3390,18 @@
                     }
                 }
             });
-            ui.fineBtn26.addEventListener('click', () => addFine(26, 'Score of 26'));
-            ui.fineBtnMiss.addEventListener('click', () => addFine(50, 'Missed Board'));
-            ui.fineBtnLowScore.addEventListener('click', openLowScoreModal);
+            ui.fineBtn26.addEventListener('click', () => {
+                triggerHaptic('medium');
+                addFine(26, 'Score of 26');
+            });
+            ui.fineBtnMiss.addEventListener('click', () => {
+                triggerHaptic('medium');
+                addFine(50, 'Missed Board');
+            });
+            ui.fineBtnLowScore.addEventListener('click', () => {
+                triggerHaptic('light');
+                openLowScoreModal();
+            });
             ui.lowScoreModal.cancel.addEventListener('click', closeLowScoreModal);
             ui.lowScoreModal.submit.addEventListener('click', submitLowScoreFine);
             ui.lowScoreModal.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitLowScoreFine(); });
@@ -3380,6 +3416,7 @@
             });
 
             ui.dotdModal.finish.addEventListener('click', () => {
+                triggerHaptic('heavy');
                 const selectedPlayer = document.querySelector('input[name="dotd-vote"]:checked');
                 finishMatch(selectedPlayer ? selectedPlayer.value : null);
             });
