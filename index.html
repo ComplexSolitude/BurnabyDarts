@@ -99,7 +99,6 @@
                         <input type="email" id="email-input" placeholder="Email" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900">
                         <input type="password" id="password-input" placeholder="Password" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900">
                         <button id="email-signin-btn" class="w-full bg-green-600 text-white py-3 px-4 rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors">Sign In with Email</button>
-                        <button id="email-signup-btn" class="w-full bg-gray-600 text-white py-2 px-4 rounded-xl font-medium hover:bg-gray-700 transition-colors">Create Account</button>
                     </div>
                     <div class="relative">
                         <div class="absolute inset-0 flex items-center">
@@ -118,6 +117,7 @@
                         </svg>
                         <span id="signin-btn-text">Sign in with Google</span>
                     </button>
+                    <button id="create-account-btn" class="w-full bg-gray-600 text-white py-2 px-4 rounded-xl font-medium hover:bg-gray-700 transition-colors">Create Account</button>
                 </div>
             </div>
         </div>
@@ -591,6 +591,34 @@
             <div class="flex justify-end space-x-3 mt-4">
                 <button id="confirm-modal-cancel" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
                 <button id="confirm-modal-confirm" class="bg-red-600 text-white py-2 px-4 rounded-xl">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Account Modal -->
+    <div id="signup-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold dark:text-white">Create Account</h3>
+                <button id="signup-modal-close" class="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label for="signup-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input type="email" id="signup-email" placeholder="Enter your email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label for="signup-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <input type="password" id="signup-password" placeholder="Enter password" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div>
+                    <label for="signup-confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+                    <input type="password" id="signup-confirm-password" placeholder="Confirm password" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button id="signup-modal-cancel" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
+                    <button id="signup-modal-submit" class="bg-green-600 text-white py-2 px-4 rounded-xl hover:bg-green-700 transition-colors">Create Account</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1834,23 +1862,43 @@
             }
         }
 
+        function openSignupModal() {
+            document.getElementById('signup-modal').classList.remove('hidden');
+            document.getElementById('signup-modal').classList.add('flex');
+            document.getElementById('signup-email').focus();
+        }
+
+        function closeSignupModal() {
+            document.getElementById('signup-modal').classList.add('hidden');
+            document.getElementById('signup-modal').classList.remove('flex');
+            // Clear form
+            document.getElementById('signup-email').value = '';
+            document.getElementById('signup-password').value = '';
+            document.getElementById('signup-confirm-password').value = '';
+        }
+
         async function handleEmailSignUp() {
             if (state.signingIn) return;
             state.signingIn = true;
 
             const loadingOverlay = document.getElementById('loading-overlay');
-            const signUpBtn = document.getElementById('email-signup-btn');
+            const signUpBtn = document.getElementById('signup-modal-submit');
 
-            loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
-            loadingOverlay.classList.add('opacity-100');
             signUpBtn.disabled = true;
             signUpBtn.textContent = 'Creating account...';
 
-            const email = document.getElementById('email-input').value.trim();
-            const password = document.getElementById('password-input').value;
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
 
-            if (!email || !password) {
-                showToast('Please enter both email and password.', 'warning');
+            if (!email || !password || !confirmPassword) {
+                showToast('Please fill in all fields.', 'warning');
+                resetEmailSignUpState();
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match.', 'warning');
                 resetEmailSignUpState();
                 return;
             }
@@ -1861,9 +1909,13 @@
                 return;
             }
 
+            loadingOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            loadingOverlay.classList.add('opacity-100');
+
             try {
                 const userCredential = await createUserWithEmailAndPassword(state.auth, email, password);
                 await handleSuccessfulSignIn(userCredential.user);
+                closeSignupModal();
                 showToast('Account created successfully!');
             } catch (error) {
                 console.error('Email Sign-Up error:', error);
@@ -1876,6 +1928,8 @@
                 } else {
                     showToast('Account creation failed. Please try again.', 'error');
                 }
+                loadingOverlay.classList.remove('opacity-100');
+                loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
                 resetEmailSignUpState();
             }
         }
@@ -1936,16 +1990,11 @@
         }
 
         function resetEmailSignUpState() {
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const signUpBtn = document.getElementById('email-signup-btn');
-
-            loadingOverlay.classList.remove('opacity-100');
-            loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+            const signUpBtn = document.getElementById('signup-modal-submit');
             signUpBtn.disabled = false;
             signUpBtn.textContent = 'Create Account';
             state.signingIn = false;
         }
-
         function startLogoutTimer(duration = SESSION_DURATION_MS) {
             if (state.logoutTimer) {
                 clearTimeout(state.logoutTimer);
@@ -3048,8 +3097,11 @@
             });
 
             document.getElementById('google-signin-btn').addEventListener('click', handleGoogleSignIn);
-                document.getElementById('email-signin-btn').addEventListener('click', handleEmailSignIn);
-                document.getElementById('email-signup-btn').addEventListener('click', handleEmailSignUp);
+            document.getElementById('email-signin-btn').addEventListener('click', handleEmailSignIn);
+            document.getElementById('create-account-btn').addEventListener('click', openSignupModal);
+            document.getElementById('signup-modal-close').addEventListener('click', closeSignupModal);
+            document.getElementById('signup-modal-cancel').addEventListener('click', closeSignupModal);
+            document.getElementById('signup-modal-submit').addEventListener('click', handleEmailSignUp);
 
 
             Object.keys(ui.tabs).forEach(tabName => {
