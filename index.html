@@ -655,6 +655,7 @@
             db: null,
             auth: null,
             userId: null,
+            unsubscribeFunctions: null,
             userEmail: null,
             userName: null,
             userRole: null, // null, 'viewer', 'member', 'admin'
@@ -2968,10 +2969,58 @@
                  ui.connectionStatus.classList.remove('hidden');
             };
 
+            // Add multiple event handlers for better mobile support
+            function handleAppReturn() {
+                if (state.isLoggedIn || state.userRole === 'viewer') {
+                    console.log('App became active, refreshing connections...');
+
+                    // Small delay to ensure connection is stable
+                    setTimeout(() => {
+                        setupFirestoreListeners();
+                        render();
+                    }, 1000);
+                }
+            }
+
+            // Desktop/mobile visibility change
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    handleAppReturn();
+                }
+            });
+
+            // Mobile-specific events
+            window.addEventListener('focus', handleAppReturn);
+            window.addEventListener('pageshow', (event) => {
+                // Handle page restore from cache (mobile Safari)
+                if (event.persisted) {
+                    handleAppReturn();
+                }
+            });
+
+            // Mobile app lifecycle events (if available)
+            if ('serviceWorker' in navigator) {
+                // Handle when app comes back from background
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data && event.data.type === 'APP_RESUMED') {
+                        handleAppReturn();
+                    }
+                });
+            }
+
+            // Additional mobile detection - some mobile browsers fire resume events
+            document.addEventListener('resume', handleAppReturn);
+
+            // Handle online/offline status changes (mobile networks)
+            window.addEventListener('online', () => {
+                console.log('Network connection restored');
+                setTimeout(handleAppReturn, 500);
+            });
+
             // Wait for auth state before setting up Firestore listeners
             // Wait for auth state and properly handle session restoration
-            const unsubscribe = onAuthStateChanged(state.auth, async (user) => {
-                unsubscribe(); // Only run this once
+            onAuthStateChanged(state.auth, async (user) => {
+
 
                 if (user) {
                     state.userId = user.uid;
@@ -3045,7 +3094,13 @@
                 }
             });
             function setupFirestoreListeners() {
-                onSnapshot(query(collection(state.db, SEASONS_COLLECTION)), (snapshot) => {
+                // Store unsubscribe functions to clean up previous listeners if they exist
+                if (state.unsubscribeFunctions) {
+                    state.unsubscribeFunctions.forEach(unsub => unsub());
+                }
+                state.unsubscribeFunctions = [];
+
+                const seasonsUnsub = onSnapshot(query(collection(state.db, SEASONS_COLLECTION)), (snapshot) => {
                     state.seasons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     state.seasons.sort((a,b) => a.name.localeCompare(b.name));
                     const activeSeason = state.seasons.find(s => s.status === 'active');
@@ -3053,14 +3108,14 @@
                     render();
                 }, (error) => handleError(error, 'seasons'));
 
-                onSnapshot(query(collection(state.db, PLAYERS_COLLECTION)), (snapshot) => {
+                const playersUnsub = onSnapshot(query(collection(state.db, PLAYERS_COLLECTION)), (snapshot) => {
                     ui.connectionStatus.classList.add('hidden');
                     state.players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     state.players.sort((a, b) => a.name.localeCompare(b.name));
                     render();
                 }, (error) => handleError(error, 'players'));
 
-                onSnapshot(query(collection(state.db, FIXTURES_COLLECTION)), (snapshot) => {
+                const fixturesUnsub = onSnapshot(query(collection(state.db, FIXTURES_COLLECTION)), (snapshot) => {
                     ui.connectionStatus.classList.add('hidden');
                     const allFixtures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     allFixtures.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
@@ -3081,6 +3136,9 @@
                     state.previousFixtures = allFixtures.filter(f => f.status === 'finished');
                     render();
                 }, (error) => handleError(error, 'fixtures'));
+
+                    // Store all unsubscribe functions
+                    state.unsubscribeFunctions.push(seasonsUnsub, playersUnsub, fixturesUnsub);
             }
 
             ui.themeToggleBtnMobile.addEventListener('click', handleThemeToggle);
