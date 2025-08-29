@@ -1199,19 +1199,19 @@
             if (type === 'singles') return aggregated.singles;
             if (type === 'doubles') return aggregated.doubles;
             if (type === 'combined') {
-                // For the leaderboard, we combine stats from singles and doubles.
-                // Note: legs won/lost, fines, and high checkout are only tracked for singles games in this app.
+                // For the main leaderboard, we show game/leg stats from singles ONLY,
+                // but combine the scoring stats from both singles and doubles.
                 return {
-                    gamesWon: aggregated.singles.gamesWon + aggregated.doubles.gamesWon,
-                    gamesLost: aggregated.singles.gamesLost + aggregated.doubles.gamesLost,
-                    legsWon: aggregated.singles.legsWon, // From singles only
-                    legsLost: aggregated.singles.legsLost, // From singles only
+                    gamesWon: aggregated.singles.gamesWon,
+                    gamesLost: aggregated.singles.gamesLost,
+                    legsWon: aggregated.singles.legsWon,
+                    legsLost: aggregated.singles.legsLost,
                     scores100: aggregated.singles.scores100 + aggregated.doubles.scores100,
                     scores140: aggregated.singles.scores140 + aggregated.doubles.scores140,
                     scores180: aggregated.singles.scores180 + aggregated.doubles.scores180,
-                    highCheckout: Math.max(aggregated.singles.highCheckout, aggregated.doubles.highCheckout),
-                    outstandingFines: aggregated.singles.outstandingFines, // From singles only
-                    totalFines: aggregated.singles.totalFines, // From singles only
+                    highCheckout: aggregated.singles.highCheckout, // H/C is only from singles
+                    outstandingFines: aggregated.singles.outstandingFines,
+                    totalFines: aggregated.singles.totalFines,
                 };
             }
             return defaultStats;
@@ -1226,10 +1226,29 @@
             ui.seasonFilterSelect.value = state.selectedStatsSeasonId;
 
             ui.leaderboardBody.innerHTML = '';
-            const playersWithStats = state.players.map(p => ({
-                ...p,
-                displayStats: getPlayerStats(p, state.selectedStatsSeasonId, 'singles')
-            }));
+            const playersWithStats = state.players.map(p => {
+                const singlesStats = getPlayerStats(p, state.selectedStatsSeasonId, 'singles');
+                const combinedStats = getPlayerStats(p, state.selectedStatsSeasonId, 'combined');
+
+                // Create a custom stats object for the leaderboard view as per request
+                const displayStats = {
+                    gamesWon: singlesStats.gamesWon,
+                    gamesLost: singlesStats.gamesLost,
+                    legsWon: singlesStats.legsWon,
+                    legsLost: singlesStats.legsLost,
+                    scores100: combinedStats.scores100,
+                    scores140: combinedStats.scores140,
+                    scores180: combinedStats.scores180,
+                    highCheckout: combinedStats.highCheckout,
+                    totalFines: singlesStats.totalFines,
+                    outstandingFines: singlesStats.outstandingFines
+                };
+
+                return {
+                    ...p,
+                    displayStats: displayStats
+                };
+            });
 
             playersWithStats.sort((a,b) => b.displayStats.gamesWon - a.displayStats.gamesWon || b.displayStats.legsWon - a.displayStats.legsWon);
 
