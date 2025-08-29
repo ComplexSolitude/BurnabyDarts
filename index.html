@@ -5,8 +5,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Burnaby Arms - Darts Scorer</title>
-    <link rel="apple-touch-icon" href="darts-icon-v3.png">
-    <link rel="manifest" href="manifest.json">
+    <link id="apple-icon" rel="apple-touch-icon" href="darts-icon-v3.png">
+    <link id="favicon" rel="icon" href="darts-icon-v3.png">
+    <link id="manifest-link" rel="manifest" href="manifest.json">
+    <script>
+        (function() {
+            const host = location.hostname;
+            const isDev = host === 'localhost' || host === '127.0.0.1' ||
+                host.includes('github.dev') || host.includes('codespaces') || host.includes('app.github.dev');
+            if (isDev) {
+                const devIcon = 'darts-icon-dev.svg';
+                document.getElementById('apple-icon').setAttribute('href', devIcon);
+                document.getElementById('favicon').setAttribute('href', devIcon);
+                document.getElementById('manifest-link').setAttribute('href', 'manifest.dev.json');
+                const badge = document.getElementById('dev-badge');
+                if (badge) {
+                    badge.classList.remove('hidden');
+                }
+            }
+        })();
+    </script>
     <meta name="theme-color" content="#10b981">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -80,6 +98,7 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
+    <div id="dev-badge" class="hidden fixed top-2 left-2 z-50 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded shadow">DEV</div>
     <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-green-800/90 to-gray-900/90 backdrop-blur-sm opacity-100 transition-opacity duration-300">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
             <img src="darts-icon-v3.png" alt="Loading..." class="spinner mx-auto mb-4">
