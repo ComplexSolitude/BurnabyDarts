@@ -443,7 +443,7 @@
                 </div>
 
                 <!-- League Stats Tab -->
-                <div id="tab-content-stats" class="hidden">
+                 <div id="tab-content-stats" class="hidden">
                     <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                         <h2 class="text-xl font-semibold dark:text-white">Season Leaderboard</h2>
                         <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
@@ -451,18 +451,18 @@
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
+                                <tr id="stats-table-header">
                                     <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Player</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Games Won">GW</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Games Lost">GL</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Legs Won">LW</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Legs Lost">LL</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Leg Win Percentage">Leg %</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">100+</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">140+</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">180s</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">H/C</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Total Fines Accrued">Fines</th>
+                                    <th scope="col" data-sort="gamesWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Won">GW</th>
+                                    <th scope="col" data-sort="gamesLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Lost">GL</th>
+                                    <th scope="col" data-sort="legsWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Won">LW</th>
+                                    <th scope="col" data-sort="legsLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Lost">LL</th>
+                                    <th scope="col" data-sort="legWinPercent" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Leg Win Percentage">Leg %</th>
+                                    <th scope="col" data-sort="scores100" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">100+</th>
+                                    <th scope="col" data-sort="scores140" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">140+</th>
+                                    <th scope="col" data-sort="scores180" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">180s</th>
+                                    <th scope="col" data-sort="highCheckout" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">H/C</th>
+                                    <th scope="col" data-sort="totalFines" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Total Fines Accrued">Fines</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboard-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
@@ -682,6 +682,10 @@
             },
             myProfile: {
                 selectedPlayerId: null,
+            },
+            leaderboardSort: { // New state for sorting
+                column: 'gamesWon',
+                direction: 'desc' // 'asc' or 'desc'
             }
         };
 
@@ -1226,22 +1230,24 @@
             ui.seasonFilterSelect.value = state.selectedStatsSeasonId;
 
             ui.leaderboardBody.innerHTML = '';
-            const playersWithStats = state.players.map(p => {
+            let playersWithStats = state.players.map(p => {
                 const singlesStats = getPlayerStats(p, state.selectedStatsSeasonId, 'singles');
                 const combinedStats = getPlayerStats(p, state.selectedStatsSeasonId, 'combined');
+                const totalLegs = singlesStats.legsWon + singlesStats.legsLost;
+                const legWinPercent = totalLegs > 0 ? ((singlesStats.legsWon / totalLegs) * 100) : 0;
 
-                // Create a custom stats object for the leaderboard view as per request
+
                 const displayStats = {
                     gamesWon: singlesStats.gamesWon,
                     gamesLost: singlesStats.gamesLost,
                     legsWon: singlesStats.legsWon,
                     legsLost: singlesStats.legsLost,
+                    legWinPercent: legWinPercent,
                     scores100: combinedStats.scores100,
                     scores140: combinedStats.scores140,
                     scores180: combinedStats.scores180,
                     highCheckout: combinedStats.highCheckout,
                     totalFines: singlesStats.totalFines,
-                    outstandingFines: singlesStats.outstandingFines
                 };
 
                 return {
@@ -1250,13 +1256,27 @@
                 };
             });
 
-            playersWithStats.sort((a,b) => b.displayStats.gamesWon - a.displayStats.gamesWon || b.displayStats.legsWon - a.displayStats.legsWon);
+            // Sorting logic
+            const { column, direction } = state.leaderboardSort;
+            playersWithStats.sort((a, b) => {
+                let valA = a.displayStats[column];
+                let valB = b.displayStats[column];
+
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                // As a fallback, sort by games won if the primary sort values are equal
+                if (column !== 'gamesWon') {
+                    return b.displayStats.gamesWon - a.displayStats.gamesWon;
+                }
+                return 0;
+            });
+
 
             playersWithStats.forEach(player => {
                 const stats = player.displayStats;
-                const totalLegs = stats.legsWon + stats.legsLost;
-                const legWinPercent = totalLegs > 0 ? ((stats.legsWon / totalLegs) * 100).toFixed(0) : 0;
-
                 const tr = document.createElement('tr');
                 tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
                 tr.dataset.playerId = player.id;
@@ -1266,17 +1286,33 @@
                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${legWinPercent}%</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legWinPercent.toFixed(0)}%</td>
                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
                     <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${((stats.totalFines) / 100).toFixed(2)}</td>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${(stats.totalFines / 100).toFixed(2)}</td>
                 `;
                 ui.leaderboardBody.appendChild(tr);
             });
-        }
 
+            // Update header arrows
+            document.querySelectorAll('#stats-table-header th').forEach(th => {
+                // Clear existing arrows
+                const existingArrow = th.querySelector('.sort-arrow');
+                if (existingArrow) {
+                    existingArrow.remove();
+                }
+
+                // Add arrow to the sorted column
+                if (th.dataset.sort === column) {
+                    const arrow = document.createElement('span');
+                    arrow.className = 'sort-arrow ml-1';
+                    arrow.innerHTML = direction === 'desc' ? '▼' : '▲';
+                    th.appendChild(arrow);
+                }
+            });
+        }
         function renderOverallScore(container) {
             container.innerHTML = '';
             if (!state.fixture.id) return;
@@ -3532,6 +3568,24 @@
         }
         ui.headerSignoutBtn.addEventListener('click', handleHeaderButtonClick);
         ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
+        document.getElementById('stats-table-header').addEventListener('click', (e) => {
+                const header = e.target.closest('th[data-sort]');
+                if (!header) return;
+
+                triggerHaptic('light');
+                const newColumn = header.dataset.sort;
+                const currentSort = state.leaderboardSort;
+
+                if (newColumn === currentSort.column) {
+                    // Same column, flip direction
+                    currentSort.direction = currentSort.direction === 'desc' ? 'asc' : 'desc';
+                } else {
+                    // New column, default to desc
+                    currentSort.column = newColumn;
+                    currentSort.direction = 'desc';
+                }
+                renderLeaderboard();
+            });
         init();
     </script>
 </body>
