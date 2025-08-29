@@ -987,12 +987,14 @@
 
                 // Hide admin tab for non-admin users
                 if (tabKey === 'admin' && state.userRole !== 'admin') {
+                    console.log('Hiding admin tab - current role:', state.userRole); // Debug log
                     if (tabButton) {
                         tabButton.style.display = 'none';
                     }
                     // Skip adding to mobile menu
                     continue;
                 } else if (tabKey === 'admin' && state.userRole === 'admin') {
+                    console.log('Showing admin tab - current role:', state.userRole); // Debug log
                     // Show admin tab for admins
                     if (tabButton) {
                         tabButton.style.display = '';
@@ -1761,19 +1763,19 @@
                 const userDoc = await getDoc(doc(state.db, 'users', user.uid));
 
                 if (userDoc.exists()) {
-                    // Existing user - use their assigned role and player link
                     const userData = userDoc.data();
-                    state.userRole = userData.role || 'viewer'; // Default to member
-                    state.userPlayerId = userData.playerId || null; // Get linked player ID
+                    state.userRole = userData.role || 'viewer';
+                    state.userPlayerId = userData.playerId || null;
+                    console.log('User role set to:', state.userRole); // Debug log
                 } else {
-                    // New user - default to member role and create user document
                     state.userRole = 'viewer';
                     state.userPlayerId = null;
+                    console.log('New user created with viewer role'); // Debug log
                     await setDoc(doc(state.db, 'users', user.uid), {
                         email: email,
-                        name: user.displayName,
+                        name: user.displayName || email.split('@')[0],
                         role: 'viewer',
-                        playerId: null, // No player linked initially
+                        playerId: null,
                         createdAt: serverTimestamp()
                     });
                 }
@@ -3071,6 +3073,8 @@
                             state.userName = userData.name;
                             state.userPlayerId = userData.playerId;
                             state.isLoggedIn = true;
+
+                            console.log('Auth state changed - role:', userData.role); // Debug log
 
                             // Update localStorage with fresh data
                             localStorage.setItem('userRole', userData.role);
