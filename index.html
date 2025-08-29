@@ -2960,7 +2960,7 @@
             validateStoredData();
 
             // Use dev Firebase when in Codespaces, production otherwise
-            const firebaseConfig = (location.hostname.includes('github.dev') || location.hostname.includes('codespaces') || location.hostname.includes('app.github.dev'))
+            const firebaseConfig = (location.hostname.includes('github.dev') || location.hostname.includes('codespaces') || location.hostname.includes('app.github.dev')|| location.hostname.includes('localhost'))
                 ? {
                     // DEV PROJECT CONFIG - Get these from your dev Firebase project
                     apiKey: "AIzaSyC6Ctix8MZtCj6AkWCLkwtZPayOidXLITA",
