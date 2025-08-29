@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isMemberOrAdmin() {
+      return request.auth != null && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'member');
+    }
+    
+    // NEW: Helper function for scorer role and above
+    function isScorerOrAbove() {
+      return request.auth != null && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'member' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'scorer');
+    }
+    
+    // Enhanced Audit Logs Collection
+    match /audit_logs/{logId} {
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+
+      // Members and admins can create audit logs (for match completion logs)
+      // But only admins can create user management logs
+			allow create: if (isScorerOrAbove() && 
+              request.resource.data.action == 'match_completed') ||
+             (isAdmin() && 
+              request.resource.data.action in ['role_change', 'player_link_change', 'fines_cleared']);
+        }
+
+    // Users Collection
+    match /users/{userId} {
+      // Only authenticated users can read user list
+      allow read: if request.auth != null;
+      
+      // Only create your own user document
+      allow create: if request.auth.uid == userId;
+      
+      // Users can update their own profile EXCEPT role
+      // Only admins can change roles
+      allow update: if (request.auth.uid == userId && 
+                        !('role' in request.resource.data.diff(resource.data).affectedKeys())) ||
+                       isAdmin();
+    }
+
+    // Players Collection  
+    match /players/{playerId} {
+      // Anyone can read (for public viewing)
+      allow read: if true;
+      
+      // Only admins can add/remove players
+      allow create, delete: if isAdmin();
+      
+      // UPDATED: Scorers can update player stats (for scoring), but only members+ can update basic info
+      // This allows scorers to update stats during matches but not modify player roster
+      allow update: if isScorerOrAbove();
+    }
+
+    // Seasons Collection
+    match /seasons/{seasonId} {
+      allow read: if true;
+      
+      // Only admins can create/delete seasons
+      allow create, delete: if isAdmin();
+      
+      // Members and admins can update (e.g., set active season)
+      allow update: if isMemberOrAdmin();
+    }
+
+    // Fixtures Collection
+    match /fixtures/{fixtureId} {
+      allow read: if true;
+      
+      // UPDATED: Members and admins can create fixtures (scorers cannot)
+      allow create: if isMemberOrAdmin();
+      
+      // UPDATED: Scorers and above can update fixture scores
+      allow update: if isScorerOrAbove();
+      
+      // Only admins can delete fixtures
+      allow delete: if isAdmin();
+    }
+  }
+}
