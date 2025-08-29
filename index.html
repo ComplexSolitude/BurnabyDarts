@@ -5,8 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Burnaby Arms - Darts Scorer</title>
-    <link rel="apple-touch-icon" href="darts-icon-v3.png">
-    <link rel="manifest" href="manifest.json">
+    <link id="apple-icon" rel="apple-touch-icon" href="darts-icon-v3.png">
+    <link id="favicon" rel="icon" href="darts-icon-v3.png">
+    <link id="manifest-link" rel="manifest" href="manifest.json">
+    <script>
+        (function() {
+            const host = location.hostname;
+            const isDev = host === 'localhost' || host === '127.0.0.1' ||
+                host.includes('github.dev') || host.includes('codespaces') || host.includes('app.github.dev');
+            if (isDev) {
+                const devIcon = 'darts-icon-dev.svg';
+                document.getElementById('apple-icon').setAttribute('href', devIcon);
+                document.getElementById('favicon').setAttribute('href', devIcon);
+                document.getElementById('manifest-link').setAttribute('href', 'manifest.dev.json');
+            }
+        })();
+    </script>
     <meta name="theme-color" content="#10b981">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
