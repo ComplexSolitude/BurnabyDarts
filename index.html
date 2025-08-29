@@ -18,6 +18,13 @@
                 document.getElementById('apple-icon').setAttribute('href', devIcon);
                 document.getElementById('favicon').setAttribute('href', devIcon);
                 document.getElementById('manifest-link').setAttribute('href', 'manifest.dev.json');
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    const banner = document.createElement('div');
+                    banner.textContent = 'LOCALHOST - DEVELOPMENT BUILD';
+                    banner.setAttribute('style', 'position: fixed; top: 0; left: 0; width: 100%; background: #fcd34d; color: #000; text-align: center; padding: 4px; z-index: 10000;');
+                    document.body.appendChild(banner);
+                });
             }
         })();
     </script>
