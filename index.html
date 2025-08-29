@@ -2857,7 +2857,7 @@
 
         function renderMyProfile() {
             // If user is logged in and has a linked player ID, show their profile automatically
-            if (state.isLoggedIn && state.userPlayerId) {
+            if (state.isLoggedIn && state.userPlayerId && state.userRole !== 'admin') {
                 state.myProfile.selectedPlayerId = state.userPlayerId;
                 const player = state.players.find(p => p.id === state.userPlayerId);
                 if (player) {
@@ -2880,7 +2880,11 @@
                 }
             }
 
-            // Fallback: Show player selector for manual selection (for users without linked profiles)
+            if (state.userRole === 'admin' && state.userPlayerId && !state.myProfile.selectedPlayerId) {
+                state.myProfile.selectedPlayerId = state.userPlayerId;
+            }
+
+            // Fallback: Show player selector for manual selection (or admin selection)
             ui.myProfile.playerSelect.parentElement.classList.remove('hidden');
             const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
             ui.myProfile.playerSelect.innerHTML = `<option value="">Select a player...</option>${playerOptions}`;
@@ -3468,6 +3472,12 @@
             // My Profile Listeners
             ui.myProfile.playerSelect.addEventListener('change', async (e) => {
                 const newPlayerId = e.target.value;
+
+                if (state.userRole === 'admin') {
+                    state.myProfile.selectedPlayerId = newPlayerId;
+                    renderMyProfile();
+                    return;
+                }
 
                 // If user is logged in, update their player link in the database
                 if (state.isLoggedIn && state.userId) {
