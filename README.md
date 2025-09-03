@@ -34,6 +34,14 @@ The Burnaby Arms B Darts Scorer is a web application for managing darts matches 
 - Set up fixtures, record match scores, manage fines, and view player statistics.
 - Data is stored in your configured Firebase project.
 
+
+## HTML Partials
+Sections such as the leaderboard, head-to-head, profile and admin panels are stored as separate files in the `partials/` directory. The corresponding placeholders in `index.html` are empty `<div>` elements that are populated at runtime. The `loadAllPartials()` function fetches each partial and injects it into the page before any section-specific scripts run.
+
+To add or modify a section:
+1. Edit or create the appropriate file in `partials/`.
+2. Ensure `loadAllPartials()` fetches the new file and re-initializes any required UI references or event listeners after injection.
+
 ## Deployment
 1. Log in and initialize Firebase Hosting:
    ```bash

@@ -22,79 +22,7 @@
     <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-       #toast-notification {
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
-
-        .toast-hidden {
-            transform: translateX(-50%) translateY(-100%) !important;
-            opacity: 0 !important;
-        }
-
-        .toast-visible {
-            transform: translateX(-50%) translateY(1.25rem) !important;
-            opacity: 1 !important;
-        }
-         .modal-overlay {
-            transition: opacity 0.3s ease;
-        }
-        .spinner {
-            width: 60px;
-            height: 60px;
-            animation: pulse-effect 0.25s ease-in-out infinite;
-        }
-        @keyframes pulse-effect {
-            0%, 100% {
-             transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);  
-            }
-        }
-        .tab-enter {
-            animation: tabEnter 0.3s ease forwards;
-        }
-        .tab-leave {
-            animation: tabLeave 0.3s ease forwards;
-        }
-        @keyframes tabEnter {
-            from { opacity: 0; transform: translateY(0.5rem); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes tabLeave {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(-0.5rem); }
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); color: inherit; }
-            50% { transform: scale(1.05); color: #fbbf24; }
-        }
-        #current-player-names.animate-pulse {
-            animation: pulse 0.6s ease;
-        }
-        #main-app {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('burnaby-logo.png');
-  background-repeat: no-repeat;
-  background-position: center 65%;
-  background-size: 350px;
-  opacity: 0.05;
-  z-index: -1;
-}
-    </style>
+    <link rel="stylesheet" href="styles/custom.css">
     <!-- HTTPS Redirect -->
     <script>
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
@@ -480,90 +408,20 @@ body::before {
                 </div>
 
                 <!-- League Stats Tab -->
-                 <div id="tab-content-stats" class="hidden">
-                    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <h2 class="text-xl font-semibold dark:text-white">Season Leaderboard</h2>
-                        <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr id="stats-table-header">
-                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Player</th>
-                                    <th scope="col" data-sort="gamesPlayed" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Played">P</th>
-                                    <th scope="col" data-sort="gamesWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Won">GW</th>
-                                    <th scope="col" data-sort="gamesLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Lost">GL</th>
-                                    <th scope="col" data-sort="legsWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Won">LW</th>
-                                    <th scope="col" data-sort="legsLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Lost">LL</th>
-                                    <th scope="col" data-sort="legWinPercent" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Leg Win Percentage">Leg %</th>
-                                    <th scope="col" data-sort="scores100" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">100+</th>
-                                    <th scope="col" data-sort="scores140" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">140+</th>
-                                    <th scope="col" data-sort="scores180" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">180s</th>
-                                    <th scope="col" data-sort="highCheckout" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">H/C</th>
-                                    <th scope="col" data-sort="totalFines" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Total Fines Accrued">Fines</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div id="tab-content-stats" class="hidden"></div>
 
                 <!-- Head-to-Head Tab Content -->
-                <div id="tab-content-h2h" class="hidden">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">Head-to-Head</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <div>
-                            <label for="h2h-player1-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Player 1</label>
-                            <select id="h2h-player1-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
-                        </div>
-                        <div>
-                            <label for="h2h-player2-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Player 2</label>
-                            <select id="h2h-player2-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
-                        </div>
-                    </div>
-                    <div id="h2h-results-container" class="mt-6">
-                        <p class="text-center text-gray-500 dark:text-gray-400">Select two different players to compare their stats.</p>
-                    </div>
-                </div>
+                <div id="tab-content-h2h" class="hidden"></div>
 
                 <!-- My Profile Tab -->
-                <div id="tab-content-my-profile" class="hidden">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">My Profile</h2>
-                    <div class="space-y-6">
-                        <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                             <div class="mb-4">
-                                <label for="my-profile-player-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Your Profile (for now)</label>
-                                <select id="my-profile-player-select" class="mt-1 block w-full max-w-xs py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
-                             </div>
-                             <div id="my-profile-edit-area" class="hidden space-y-4">
-                                <div>
-                                    <label for="my-profile-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-                                    <input type="text" id="my-profile-name" class="mt-1 w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                </div>
-                                <div>
-                                    <label for="my-profile-nickname" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nickname</label>
-                                    <input type="text" id="my-profile-nickname" placeholder="e.g., The Captain" class="mt-1 w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                </div>
-                                <div class="pt-2">
-                                    <button id="my-profile-save-btn" class="bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-semibold">Save Changes</button>
-                                </div>
-                             </div>
-                        </div>
-                         <div id="my-profile-stats-area" class="hidden">
-                             <!-- Player card content will be injected here -->
-                         </div>
-                    </div>
-                </div>
+                <div id="tab-content-my-profile" class="hidden"></div>
 
                 <!-- Admin Tab -->
-                <div id="tab-content-admin" class="hidden">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h2>
-                    <div id="admin-content-area" class="mt-4"></div>
+                <div id="tab-content-admin" class="hidden"></div>
                 </div>
 
             </div>
         </div>
-    </div>
 
     <!-- Mobile Menu Overlay -->
     <div id="mobile-menu-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 hidden opacity-0 transition-opacity duration-300 ease-in-out">
