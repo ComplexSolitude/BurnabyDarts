@@ -43,11 +43,15 @@
         .spinner {
             width: 60px;
             height: 60px;
-            animation: dart-spin 1.5s linear infinite;
+            animation: pulse-effect 0.25s ease-in-out infinite;
         }
-        @keyframes dart-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes pulse-effect {
+            0%, 100% {
+             transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);  
+            }
         }
         .tab-enter {
             animation: tabEnter 0.3s ease forwards;
@@ -85,7 +89,7 @@
   height: 100%;
   background-image: url('burnaby-logo.png');
   background-repeat: no-repeat;
-  background-position:  center center;
+  background-position:  center 65%;
   background-size: 350px;
   opacity: 0.05;
   z-index: -1;
@@ -160,27 +164,24 @@
     <div id="main-app" class="hidden max-w-4xl mx-auto p-2 sm:p-4 lg:p-8">
 
         <!-- App Header -->
-        <header class="flex justify-between items-center mb-4 px-2">
-            <!-- Sign Out Button (left) -->
-            <div class="flex items-center">
-                <button id="header-signout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200">
-                    Sign Out
-                </button>
-            </div>
+        <header class="relative flex justify-between items-center mb-4 px-2 h-16">
+    <div>
+        <button id="header-signout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200">
+            Sign Out
+        </button>
+    </div>
 
-            <!-- Title (center) -->
-             <div class="flex items-center">
-    <img src="burnaby-logo.png" alt="Logo" class="h-8 w-8 mr-3">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Darts Scorer</h1>
-</div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center">
+        <img src="burnaby-logo.png" alt="Logo" class="h-12 w-12 mr-1"
+        <h1 class="text-l font-semibold text-gray-900 dark:text-white">Darts Scorer</h1>
+    </div>
 
-            <!-- Hamburger button (right) for mobile -->
-            <div class="md:hidden">
-                <button id="hamburger-btn" class="p-2">
-                    <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                </button>
-            </div>
-        </header>
+    <div class="md:hidden">
+        <button id="hamburger-btn" class="p-2">
+            <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+        </button>
+    </div>
+</header>
 
 
         <!-- Connection Status -->
@@ -489,6 +490,7 @@
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr id="stats-table-header">
                                     <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Player</th>
+                                    <th scope="col" data-sort="gamesPlayed" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Played">P</th>
                                     <th scope="col" data-sort="gamesWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Won">GW</th>
                                     <th scope="col" data-sort="gamesLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Lost">GL</th>
                                     <th scope="col" data-sort="legsWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Won">LW</th>
@@ -692,7 +694,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast-notification" class="fixed top-0 left-1/2 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center whitespace-nowrap flex items-center gap-2" role="alert">
+    <div id="toast-notification" class="fixed top-0 left-1/2 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center w-11/12 max-w-md flex items-center gap-2" role="alert">
         <svg id="toast-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"></svg>
         <span id="toast-message"></span>
     </div>
@@ -1068,14 +1070,12 @@
 
                 // Hide admin tab for non-admin users
                 if (tabKey === 'admin' && state.userRole !== 'admin') {
-                    console.log('Hiding admin tab - current role:', state.userRole); // Debug log
                     if (tabButton) {
                         tabButton.style.display = 'none';
                     }
                     // Skip adding to mobile menu
                     continue;
                 } else if (tabKey === 'admin' && state.userRole === 'admin') {
-                    console.log('Showing admin tab - current role:', state.userRole); // Debug log
                     // Show admin tab for admins
                     if (tabButton) {
                         tabButton.style.display = '';
@@ -1314,9 +1314,11 @@
                 const combinedStats = getPlayerStats(p, state.selectedStatsSeasonId, 'combined');
                 const totalLegs = singlesStats.legsWon + singlesStats.legsLost;
                 const legWinPercent = totalLegs > 0 ? ((singlesStats.legsWon / totalLegs) * 100) : 0;
+                const gamesPlayed = singlesStats.gamesWon + singlesStats.gamesLost;
 
 
                 const displayStats = {
+                    gamesPlayed: gamesPlayed,
                     gamesWon: singlesStats.gamesWon,
                     gamesLost: singlesStats.gamesLost,
                     legsWon: singlesStats.legsWon,
@@ -1356,24 +1358,25 @@
 
             playersWithStats.forEach(player => {
                 const stats = player.displayStats;
-                const tr = document.createElement('tr');
-                tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
-                tr.dataset.playerId = player.id;
-                tr.innerHTML = `
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legWinPercent.toFixed(0)}%</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${(stats.totalFines / 100).toFixed(2)}</td>
-                `;
-                ui.leaderboardBody.appendChild(tr);
-            });
+            const tr = document.createElement('tr');
+            tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
+            tr.dataset.playerId = player.id;
+            tr.innerHTML = `
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesPlayed}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legWinPercent.toFixed(0)}%</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${(stats.totalFines / 100).toFixed(2)}</td>
+            `;
+            ui.leaderboardBody.appendChild(tr);
+         });
 
             // Update header arrows
             document.querySelectorAll('#stats-table-header th').forEach(th => {
@@ -1897,17 +1900,15 @@
                 if (userDoc.exists()) {
                     // Existing user - use their assigned role and player link
                     const userData = userDoc.data();
-                    state.userRole = userData.role || 'viewer';
-                    state.userPlayerId = userData.playerId || null;
-                    console.log('User role set to:', state.userRole); // Debug log
+                    state.userRole = userData.role || 'viewer'; // Default to member
+                    state.userPlayerId = userData.playerId || null; // Get linked player ID
                 } else {
                     // New user - default to member role and create user document
                     state.userRole = 'viewer';
                     state.userPlayerId = null;
-                    console.log('New user created with viewer role'); // Debug log
                     await setDoc(doc(state.db, 'users', user.uid), {
                         email: email,
-                        name: user.displayName || email.split('@')[0],
+                        name: user.displayName,
                         role: 'viewer',
                         playerId: null,
                         createdAt: serverTimestamp()
