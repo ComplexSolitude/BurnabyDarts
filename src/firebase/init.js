@@ -159,6 +159,38 @@ export function initFirebase() {
   state.db = db;
   state.auth = auth;
 
+  // Monitor authentication state
+  onAuthStateChanged(auth, (user) => {
+    // Update login state
+    state.isLoggedIn = !!user;
+
+    // Hide the loading overlay
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+      loadingOverlay.classList.add('hidden');
+    }
+
+    // Show appropriate UI based on auth status
+    const roleSelection = document.getElementById('role-selection-overlay');
+    const mainApp = document.getElementById('main-app');
+
+    if (user) {
+      if (roleSelection) {
+        roleSelection.classList.add('hidden');
+      }
+      if (mainApp) {
+        mainApp.classList.remove('hidden');
+      }
+    } else {
+      if (roleSelection) {
+        roleSelection.classList.remove('hidden');
+      }
+      if (mainApp) {
+        mainApp.classList.add('hidden');
+      }
+    }
+  });
+
   return { app, db, auth, state };
 }
 
