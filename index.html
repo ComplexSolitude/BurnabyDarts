@@ -80,6 +80,19 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
+    <!-- Dev Environment Indicator -->
+    <div id="dev-indicator" class="fixed top-4 right-4 z-[9998] bg-orange-500 text-white px-3 py-2 rounded-lg shadow-lg text-xs font-bold hidden">
+        <div class="flex items-center gap-2">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+            </svg>
+            <div>
+                <div>DEV MODE</div>
+                <div id="dev-db-info" class="text-orange-200 text-xs"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-green-800/90 to-gray-900/90 backdrop-blur-sm opacity-100 transition-opacity duration-300">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
             <img src="darts-icon-v3.png" alt="Loading..." class="spinner mx-auto mb-4">
@@ -3076,7 +3089,9 @@
             validateStoredData();
 
             // Use dev Firebase when in Codespaces, production otherwise
-            const firebaseConfig = (location.hostname.includes('github.dev') || location.hostname.includes('codespaces') || location.hostname.includes('app.github.dev')|| location.hostname.includes('localhost'))
+            const isDevelopment = location.hostname.includes('github.dev') || location.hostname.includes('codespaces') || location.hostname.includes('app.github.dev') || location.hostname.includes('localhost');
+
+            const firebaseConfig = isDevelopment
                 ? {
                     // DEV PROJECT CONFIG - Get these from your dev Firebase project
                     apiKey: "AIzaSyC6Ctix8MZtCj6AkWCLkwtZPayOidXLITA",
@@ -3096,6 +3111,14 @@
                     messagingSenderId: "520662271304",
                     appId: "1:520662271304:web:abb1ca68445511c8bb1f7d"
                   };
+
+            // Show dev indicator if in development
+            if (isDevelopment) {
+                const devIndicator = document.getElementById('dev-indicator');
+                const dbInfo = document.getElementById('dev-db-info');
+                devIndicator.classList.remove('hidden');
+                dbInfo.textContent = `DB: ${firebaseConfig.projectId}`;
+            }
 
             const app = initializeApp(firebaseConfig);
             state.db = getFirestore(app);
