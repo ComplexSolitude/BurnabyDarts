@@ -18,9 +18,9 @@ The Burnaby Arms B Darts Scorer is a web application for managing darts matches 
 2. **Configure Firebase**
    - Create a Firebase project in the [Firebase console](https://console.firebase.google.com/).
    - Enable **Authentication** (Google sign-in) and **Firestore**.
-   - From your project settings, copy the web app configuration and replace the `firebaseConfig` object in `index.html` with your project's credentials.
+   - From your project settings, copy the web app configuration and replace the `firebaseConfig` object in `src/firebase/init.js` with your project's credentials.
 3. **Serve the app locally**
-   - You can open `index.html` directly in a browser, but using a local server is recommended:
+   - The app now uses native ES modules. Serve the project over a local web server:
      ```bash
      npx serve .
      # or
