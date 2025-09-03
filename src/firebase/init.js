@@ -48,6 +48,69 @@ export const state = {
   leaderboardSort: { column: 'gamesWon', direction: 'desc' }
 };
 
+// Update UI elements based on authentication status
+function updateAuthUI(isLoggedIn) {
+  const roleSelection = document.getElementById('role-selection-overlay');
+  const loadingOverlay = document.getElementById('loading-overlay');
+  const mainApp = document.getElementById('main-app');
+
+  if (loadingOverlay) {
+    loadingOverlay.classList.add('hidden');
+  }
+
+  if (isLoggedIn) {
+    roleSelection?.classList.add('hidden');
+    mainApp?.classList.remove('hidden');
+  } else {
+    roleSelection?.classList.remove('hidden');
+    mainApp?.classList.add('hidden');
+  }
+}
+
+// Restore authentication state from localStorage if valid
+function restoreAuthFromStorage() {
+  if (!validateStoredData()) return;
+
+  const storedIsLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const storedRole = localStorage.getItem('userRole');
+  const storedEmail = localStorage.getItem('userEmail');
+  const storedId = localStorage.getItem('userId');
+
+  if (storedIsLoggedIn) {
+    state.isLoggedIn = true;
+    state.userRole = storedRole;
+    state.userEmail = storedEmail;
+    state.userId = storedId;
+  }
+}
+
+// Persist current auth state to localStorage
+export function persistAuthState() {
+  if (state.isLoggedIn) {
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('loginTimestamp', Date.now().toString());
+    if (state.userRole) localStorage.setItem('userRole', state.userRole);
+    if (state.userEmail) localStorage.setItem('userEmail', state.userEmail);
+    if (state.userId) localStorage.setItem('userId', state.userId);
+  } else {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('loginTimestamp');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userId');
+  }
+}
+
+// Helper to update role and persist it
+export function setUserRole(role) {
+  const allowedRoles = ['viewer', 'scorer', 'member', 'admin'];
+  if (!allowedRoles.includes(role)) {
+    throw new Error('Invalid role');
+  }
+  state.userRole = role;
+  persistAuthState();
+}
+
 // Simple rate limiter for Firebase operations
 const rateLimiter = {
   requests: new Map(),
@@ -128,6 +191,9 @@ export let auth;
 
 // Initialize Firebase services and populate the state object
 export function initFirebase() {
+  restoreAuthFromStorage();
+  updateAuthUI(state.isLoggedIn);
+
   const isDevelopment = location.hostname.includes('github.dev') ||
     location.hostname.includes('codespaces') ||
     location.hostname.includes('app.github.dev') ||
@@ -161,34 +227,19 @@ export function initFirebase() {
 
   // Monitor authentication state
   onAuthStateChanged(auth, (user) => {
-    // Update login state
     state.isLoggedIn = !!user;
 
-    // Hide the loading overlay
-    const loadingOverlay = document.getElementById('loading-overlay');
-    if (loadingOverlay) {
-      loadingOverlay.classList.add('hidden');
-    }
-
-    // Show appropriate UI based on auth status
-    const roleSelection = document.getElementById('role-selection-overlay');
-    const mainApp = document.getElementById('main-app');
-
     if (user) {
-      if (roleSelection) {
-        roleSelection.classList.add('hidden');
-      }
-      if (mainApp) {
-        mainApp.classList.remove('hidden');
-      }
+      state.userId = user.uid;
+      state.userEmail = user.email || null;
     } else {
-      if (roleSelection) {
-        roleSelection.classList.remove('hidden');
-      }
-      if (mainApp) {
-        mainApp.classList.add('hidden');
-      }
+      state.userId = null;
+      state.userEmail = null;
+      state.userRole = null;
     }
+
+    persistAuthState();
+    updateAuthUI(state.isLoggedIn);
   });
 
   return { app, db, auth, state };
@@ -202,5 +253,7 @@ export {
   createUserWithEmailAndPassword,
   firebaseSignOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  persistAuthState,
+  setUserRole
 };
