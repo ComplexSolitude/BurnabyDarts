@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <!--suppress ALL -->
 <html lang="en">
 <head>
@@ -623,6 +623,38 @@
         </div>
     </div>
 
+        <!-- Profile Management Modal -->
+    <div id="profile-management-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold dark:text-white">Manage Player Profiles</h3>
+                <button id="profile-management-close" class="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label for="profile-player-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Player</label>
+                    <select id="profile-player-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="">Choose a player...</option>
+                    </select>
+                </div>
+                <div id="profile-edit-section" class="hidden space-y-4">
+                    <div>
+                        <label for="profile-edit-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                        <input type="text" id="profile-edit-name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label for="profile-edit-nickname" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
+                        <input type="text" id="profile-edit-nickname" placeholder="Optional nickname" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button id="profile-edit-cancel" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
+                        <button id="profile-edit-save" class="bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast-notification" class="fixed top-0 left-1/2 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center whitespace-nowrap flex items-center gap-2" role="alert">
         <svg id="toast-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"></svg>
@@ -952,6 +984,15 @@
                     loadUsers();
                 }
 
+                // Player Profiles Management button (admin only)
+                if (state.userRole === 'admin') {
+                    const profilesBtn = document.createElement('button');
+                    profilesBtn.textContent = 'Manage Player Profiles';
+                    profilesBtn.className = 'w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium';
+                    profilesBtn.addEventListener('click', openProfilesManagement);
+                    loggedInContainer.appendChild(profilesBtn);
+                }
+
                 // Sign out button
                 const logoutBtn = document.createElement('button');
                 logoutBtn.textContent = 'Sign Out';
@@ -987,12 +1028,14 @@
 
                 // Hide admin tab for non-admin users
                 if (tabKey === 'admin' && state.userRole !== 'admin') {
+                    console.log('Hiding admin tab - current role:', state.userRole); // Debug log
                     if (tabButton) {
                         tabButton.style.display = 'none';
                     }
                     // Skip adding to mobile menu
                     continue;
                 } else if (tabKey === 'admin' && state.userRole === 'admin') {
+                    console.log('Showing admin tab - current role:', state.userRole); // Debug log
                     // Show admin tab for admins
                     if (tabButton) {
                         tabButton.style.display = '';
@@ -1761,19 +1804,19 @@
                 const userDoc = await getDoc(doc(state.db, 'users', user.uid));
 
                 if (userDoc.exists()) {
-                    // Existing user - use their assigned role and player link
                     const userData = userDoc.data();
-                    state.userRole = userData.role || 'viewer'; // Default to member
-                    state.userPlayerId = userData.playerId || null; // Get linked player ID
+                    state.userRole = userData.role || 'viewer';
+                    state.userPlayerId = userData.playerId || null;
+                    console.log('User role set to:', state.userRole); // Debug log
                 } else {
-                    // New user - default to member role and create user document
                     state.userRole = 'viewer';
                     state.userPlayerId = null;
+                    console.log('New user created with viewer role'); // Debug log
                     await setDoc(doc(state.db, 'users', user.uid), {
                         email: email,
-                        name: user.displayName,
+                        name: user.displayName || email.split('@')[0],
                         role: 'viewer',
-                        playerId: null, // No player linked initially
+                        playerId: null,
                         createdAt: serverTimestamp()
                     });
                 }
@@ -2856,50 +2899,55 @@
         }
 
         function renderMyProfile() {
-            // If user is logged in and has a linked player ID, show their profile automatically
+            let selectedPlayerId = null;
+            let hideSelector = false;
+
+            // If user is logged in and has a linked player ID, use that automatically
             if (state.isLoggedIn && state.userPlayerId) {
+                selectedPlayerId = state.userPlayerId;
                 state.myProfile.selectedPlayerId = state.userPlayerId;
-                const player = state.players.find(p => p.id === state.userPlayerId);
-                if (player) {
-                    // Hide the player selector since we already know who they are
-                    ui.myProfile.playerSelect.parentElement.classList.add('hidden');
+                hideSelector = true;
+            } else {
+                // Use manually selected player
+                selectedPlayerId = state.myProfile.selectedPlayerId;
+            }
 
-                    ui.myProfile.nameInput.value = player.name;
-                    ui.myProfile.nicknameInput.value = player.nickname || '';
-                    ui.myProfile.editArea.classList.remove('hidden');
-                    ui.myProfile.statsArea.classList.remove('hidden');
-
-                    const cardHTML = generatePlayerCardHTML(player.id, 'all-time');
-                    ui.myProfile.statsArea.innerHTML = cardHTML;
-
-                    ui.myProfile.statsArea.querySelector('#player-card-season-select')?.remove();
-
-                    // Set up tab switching for the profile stats
-                    setupProfileTabs(ui.myProfile.statsArea);
-                    return;
+            // Show/hide player selector based on whether user has linked profile
+            if (hideSelector) {
+                ui.myProfile.playerSelect.parentElement.classList.add('hidden');
+            } else {
+                ui.myProfile.playerSelect.parentElement.classList.remove('hidden');
+                const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                ui.myProfile.playerSelect.innerHTML = `<option value="">Select a player...</option>${playerOptions}`;
+                if (selectedPlayerId) {
+                    ui.myProfile.playerSelect.value = selectedPlayerId;
                 }
             }
 
-            // Fallback: Show player selector for manual selection (for users without linked profiles)
-            ui.myProfile.playerSelect.parentElement.classList.remove('hidden');
-            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            ui.myProfile.playerSelect.innerHTML = `<option value="">Select a player...</option>${playerOptions}`;
-
-            if (state.myProfile.selectedPlayerId) {
-                ui.myProfile.playerSelect.value = state.myProfile.selectedPlayerId;
-                const player = state.players.find(p => p.id === state.myProfile.selectedPlayerId);
+            // Handle the selected player (whether auto or manual)
+            if (selectedPlayerId) {
+                const player = state.players.find(p => p.id === selectedPlayerId);
                 if (player) {
                     ui.myProfile.nameInput.value = player.name;
                     ui.myProfile.nicknameInput.value = player.nickname || '';
+
+                    // Only admins can edit profiles
+                    if (state.userRole !== 'admin') {
+                        ui.myProfile.nameInput.disabled = true;
+                        ui.myProfile.nicknameInput.disabled = true;
+                        ui.myProfile.saveBtn.style.display = 'none';
+                    } else {
+                        ui.myProfile.nameInput.disabled = false;
+                        ui.myProfile.nicknameInput.disabled = false;
+                        ui.myProfile.saveBtn.style.display = 'block';
+                    }
+
                     ui.myProfile.editArea.classList.remove('hidden');
                     ui.myProfile.statsArea.classList.remove('hidden');
 
                     const cardHTML = generatePlayerCardHTML(player.id, 'all-time');
                     ui.myProfile.statsArea.innerHTML = cardHTML;
-
                     ui.myProfile.statsArea.querySelector('#player-card-season-select')?.remove();
-
-                    // Set up tab switching for the profile stats
                     setupProfileTabs(ui.myProfile.statsArea);
                 }
             } else {
@@ -2908,9 +2956,16 @@
             }
         }
         async function handleUpdateProfile() {
-            const playerId = state.myProfile.selectedPlayerId;
-            if (!playerId || state.userRole === 'viewer') {
-                showToast("You must be logged in and select a profile to make changes.", 'error');
+            const playerId = state.myProfile.selectedPlayerId || state.userPlayerId;
+
+            // Check permissions - only admin can update profiles
+            if (state.userRole !== 'admin') {
+                showToast("Only admins can update player profiles.", 'error');
+                return;
+            }
+
+            if (!playerId) {
+                showToast("Please select a profile to update.", 'error');
                 return;
             }
 
@@ -2932,6 +2987,69 @@
             } catch (error) {
                 console.error("Error updating profile:", error);
                 showToast("Could not update profile.", 'error');
+            }
+        }
+
+        function openProfilesManagement() {
+            const modal = document.getElementById('profile-management-modal');
+            const select = document.getElementById('profile-player-select');
+            const editSection = document.getElementById('profile-edit-section');
+
+            // Reset form
+            select.innerHTML = '<option value="">Choose a player...</option>';
+            state.players.forEach(player => {
+                select.innerHTML += `<option value="${player.id}">${player.name}</option>`;
+            });
+
+            editSection.classList.add('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeProfilesManagement() {
+            const modal = document.getElementById('profile-management-modal');
+            const editSection = document.getElementById('profile-edit-section');
+            const select = document.getElementById('profile-player-select');
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            editSection.classList.add('hidden');
+            select.value = '';
+        }
+
+        async function saveProfileChanges() {
+            const playerId = document.getElementById('profile-player-select').value;
+            const newName = document.getElementById('profile-edit-name').value.trim();
+            const newNickname = document.getElementById('profile-edit-nickname').value.trim();
+
+            if (!playerId) {
+                showToast("Please select a player.", 'warning');
+                return;
+            }
+
+            if (!newName) {
+                showToast("Player name cannot be empty.", 'warning');
+                return;
+            }
+
+            try {
+                await safeFirebaseCall('updatePlayerProfile', async () => {
+                    const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
+                    return await updateDoc(playerRef, {
+                        name: newName,
+                        nickname: newNickname
+                    });
+                });
+
+                showToast("Player profile updated successfully!");
+                closeProfilesManagement();
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error updating player profile:", error);
+                    showToast("Could not update player profile.", 'error');
+                }
             }
         }
 
@@ -2957,15 +3075,27 @@
             // Validate storage before using it
             validateStoredData();
 
-            const firebaseConfig = {
-                apiKey: "AIzaSyCU66DqSCzkwaEhTLEOftEJtKbt9y4xVeI",
-                authDomain: "darts-app-9e752.firebaseapp.com",
-                databaseURL: "https://darts-app-9e752-default-rtdb.europe-west1.firebasedatabase.app",
-                projectId: "darts-app-9e752",
-                storageBucket: "darts-app-9e752.appspot.com",
-                messagingSenderId: "520662271304",
-                appId: "1:520662271304:web:abb1ca68445511c8bb1f7d"
-            };
+            // Use dev Firebase when in Codespaces, production otherwise
+            const firebaseConfig = (location.hostname.includes('github.dev') || location.hostname.includes('codespaces') || location.hostname.includes('app.github.dev')|| location.hostname.includes('localhost'))
+                ? {
+                    // DEV PROJECT CONFIG - Get these from your dev Firebase project
+                    apiKey: "AIzaSyC6Ctix8MZtCj6AkWCLkwtZPayOidXLITA",
+                    authDomain: "burnabydartsdev.firebaseapp.com",
+                    projectId: "burnabydartsdev",
+                    storageBucket: "burnabydartsdev.firebasestorage.app",
+                    messagingSenderId: "372591363063",
+                    appId: "1:372591363063:web:84fee08add7b4d1abce4f2"
+                  }
+                : {
+                    // PRODUCTION CONFIG (your existing)
+                    apiKey: "AIzaSyCU66DqSCzkwaEhTLEOftEJtKbt9y4xVeI",
+                    authDomain: "darts-app-9e752.firebaseapp.com",
+                    databaseURL: "https://darts-app-9e752-default-rtdb.europe-west1.firebasedatabase.app",
+                    projectId: "darts-app-9e752",
+                    storageBucket: "darts-app-9e752.appspot.com",
+                    messagingSenderId: "520662271304",
+                    appId: "1:520662271304:web:abb1ca68445511c8bb1f7d"
+                  };
 
             const app = initializeApp(firebaseConfig);
             state.db = getFirestore(app);
@@ -3059,6 +3189,8 @@
                             state.userName = userData.name;
                             state.userPlayerId = userData.playerId;
                             state.isLoggedIn = true;
+
+                            console.log('Auth state changed - role:', userData.role); // Debug log
 
                             // Update localStorage with fresh data
                             localStorage.setItem('userRole', userData.role);
@@ -3478,6 +3610,27 @@
                 renderMyProfile();
             });
             ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
+
+            // Profile Management Modal Listeners
+            document.getElementById('profile-management-close').addEventListener('click', closeProfilesManagement);
+            document.getElementById('profile-edit-cancel').addEventListener('click', closeProfilesManagement);
+            document.getElementById('profile-edit-save').addEventListener('click', saveProfileChanges);
+
+            document.getElementById('profile-player-select').addEventListener('change', (e) => {
+                const playerId = e.target.value;
+                const editSection = document.getElementById('profile-edit-section');
+
+                if (playerId) {
+                    const player = state.players.find(p => p.id === playerId);
+                    if (player) {
+                        document.getElementById('profile-edit-name').value = player.name || '';
+                        document.getElementById('profile-edit-nickname').value = player.nickname || '';
+                        editSection.classList.remove('hidden');
+                    }
+                } else {
+                    editSection.classList.add('hidden');
+                }
+            });
 
             // Toggle player roster visibility
             document.getElementById('toggle-roster-btn').addEventListener('click', () => {
