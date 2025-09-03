@@ -480,85 +480,16 @@ body::before {
                 </div>
 
                 <!-- League Stats Tab -->
-                 <div id="tab-content-stats" class="hidden">
-                    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <h2 class="text-xl font-semibold dark:text-white">Season Leaderboard</h2>
-                        <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr id="stats-table-header">
-                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Player</th>
-                                    <th scope="col" data-sort="gamesPlayed" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Played">P</th>
-                                    <th scope="col" data-sort="gamesWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Won">GW</th>
-                                    <th scope="col" data-sort="gamesLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Lost">GL</th>
-                                    <th scope="col" data-sort="legsWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Won">LW</th>
-                                    <th scope="col" data-sort="legsLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Lost">LL</th>
-                                    <th scope="col" data-sort="legWinPercent" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Leg Win Percentage">Leg %</th>
-                                    <th scope="col" data-sort="scores100" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">100+</th>
-                                    <th scope="col" data-sort="scores140" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">140+</th>
-                                    <th scope="col" data-sort="scores180" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">180s</th>
-                                    <th scope="col" data-sort="highCheckout" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">H/C</th>
-                                    <th scope="col" data-sort="totalFines" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Total Fines Accrued">Fines</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div id="tab-content-stats" class="hidden"></div>
 
                 <!-- Head-to-Head Tab Content -->
-                <div id="tab-content-h2h" class="hidden">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">Head-to-Head</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <div>
-                            <label for="h2h-player1-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Player 1</label>
-                            <select id="h2h-player1-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
-                        </div>
-                        <div>
-                            <label for="h2h-player2-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Player 2</label>
-                            <select id="h2h-player2-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
-                        </div>
-                    </div>
-                    <div id="h2h-results-container" class="mt-6">
-                        <p class="text-center text-gray-500 dark:text-gray-400">Select two different players to compare their stats.</p>
-                    </div>
-                </div>
+                <div id="tab-content-h2h" class="hidden"></div>
 
                 <!-- My Profile Tab -->
-                <div id="tab-content-my-profile" class="hidden">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">My Profile</h2>
-                    <div class="space-y-6">
-                        <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                             <div class="mb-4">
-                                <label for="my-profile-player-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Your Profile (for now)</label>
-                                <select id="my-profile-player-select" class="mt-1 block w-full max-w-xs py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
-                             </div>
-                             <div id="my-profile-edit-area" class="hidden space-y-4">
-                                <div>
-                                    <label for="my-profile-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-                                    <input type="text" id="my-profile-name" class="mt-1 w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                </div>
-                                <div>
-                                    <label for="my-profile-nickname" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nickname</label>
-                                    <input type="text" id="my-profile-nickname" placeholder="e.g., The Captain" class="mt-1 w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                </div>
-                                <div class="pt-2">
-                                    <button id="my-profile-save-btn" class="bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-semibold">Save Changes</button>
-                                </div>
-                             </div>
-                        </div>
-                         <div id="my-profile-stats-area" class="hidden">
-                             <!-- Player card content will be injected here -->
-                         </div>
-                    </div>
-                </div>
+                <div id="tab-content-my-profile" class="hidden"></div>
 
                 <!-- Admin Tab -->
-                <div id="tab-content-admin" class="hidden">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h2>
-                    <div id="admin-content-area" class="mt-4"></div>
+                <div id="tab-content-admin" class="hidden"></div>
                 </div>
 
             </div>
@@ -3765,8 +3696,35 @@ body::before {
             });
         }
         ui.headerSignoutBtn.addEventListener('click', handleHeaderButtonClick);
-        ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
-        document.getElementById('stats-table-header').addEventListener('click', (e) => {
+
+        async function loadPartial(id, file) {
+            const res = await fetch(`partials/${file}`);
+            const html = await res.text();
+            document.getElementById(id).innerHTML = html;
+        }
+
+        async function loadAllPartials() {
+            await Promise.all([
+                loadPartial('tab-content-stats', 'leaderboard.html'),
+                loadPartial('tab-content-h2h', 'h2h.html'),
+                loadPartial('tab-content-my-profile', 'profile.html'),
+                loadPartial('tab-content-admin', 'admin.html'),
+            ]);
+
+            ui.seasonFilterSelect = document.getElementById('season-filter-select');
+            ui.leaderboardBody = document.getElementById('leaderboard-body');
+            ui.h2h.player1Select = document.getElementById('h2h-player1-select');
+            ui.h2h.player2Select = document.getElementById('h2h-player2-select');
+            ui.h2h.resultsContainer = document.getElementById('h2h-results-container');
+            ui.myProfile.playerSelect = document.getElementById('my-profile-player-select');
+            ui.myProfile.editArea = document.getElementById('my-profile-edit-area');
+            ui.myProfile.statsArea = document.getElementById('my-profile-stats-area');
+            ui.myProfile.nameInput = document.getElementById('my-profile-name');
+            ui.myProfile.nicknameInput = document.getElementById('my-profile-nickname');
+            ui.myProfile.saveBtn = document.getElementById('my-profile-save-btn');
+            ui.adminContentArea = document.getElementById('admin-content-area');
+
+            document.getElementById('stats-table-header').addEventListener('click', (e) => {
                 const header = e.target.closest('th[data-sort]');
                 if (!header) return;
 
@@ -3775,16 +3733,18 @@ body::before {
                 const currentSort = state.leaderboardSort;
 
                 if (newColumn === currentSort.column) {
-                    // Same column, flip direction
                     currentSort.direction = currentSort.direction === 'desc' ? 'asc' : 'desc';
                 } else {
-                    // New column, default to desc
                     currentSort.column = newColumn;
                     currentSort.direction = 'desc';
                 }
                 renderLeaderboard();
             });
-        init();
+
+            init();
+        }
+
+        loadAllPartials();
     </script>
 </body>
 </html>
