@@ -89,7 +89,7 @@
   height: 100%;
   background-image: url('burnaby-logo.png');
   background-repeat: no-repeat;
-  background-position:  center center;
+  background-position:  center 65%;
   background-size: 350px; 
   opacity: 0.05; 
   z-index: -1; 
@@ -161,8 +161,8 @@
 
             <!-- Title (center) -->
              <div class="flex items-center">
-    <img src="burnaby-logo.png" alt="Logo" class="h-8 w-8 mr-3">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Darts Scorer</h1>
+    <img src="burnaby-logo.png" alt="Logo" class="h-12 w-12 mr-3">
+    <h1 class="text-l font-semibold text-gray-900 dark:text-white">Darts Scorer</h1>
 </div>
 
             <!-- Hamburger button (right) for mobile -->
@@ -480,6 +480,7 @@
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr id="stats-table-header">
                                     <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Player</th>
+                                    <th scope="col" data-sort="gamesPlayed" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Played">P</th>
                                     <th scope="col" data-sort="gamesWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Won">GW</th>
                                     <th scope="col" data-sort="gamesLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Lost">GL</th>
                                     <th scope="col" data-sort="legsWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Won">LW</th>
@@ -1262,9 +1263,11 @@
                 const combinedStats = getPlayerStats(p, state.selectedStatsSeasonId, 'combined');
                 const totalLegs = singlesStats.legsWon + singlesStats.legsLost;
                 const legWinPercent = totalLegs > 0 ? ((singlesStats.legsWon / totalLegs) * 100) : 0;
+                const gamesPlayed = singlesStats.gamesWon + singlesStats.gamesLost;
 
 
                 const displayStats = {
+                    gamesPlayed: gamesPlayed,
                     gamesWon: singlesStats.gamesWon,
                     gamesLost: singlesStats.gamesLost,
                     legsWon: singlesStats.legsWon,
@@ -1304,24 +1307,25 @@
 
             playersWithStats.forEach(player => {
                 const stats = player.displayStats;
-                const tr = document.createElement('tr');
-                tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
-                tr.dataset.playerId = player.id;
-                tr.innerHTML = `
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legWinPercent.toFixed(0)}%</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${(stats.totalFines / 100).toFixed(2)}</td>
-                `;
-                ui.leaderboardBody.appendChild(tr);
-            });
+            const tr = document.createElement('tr');
+            tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
+            tr.dataset.playerId = player.id;
+            tr.innerHTML = `
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesPlayed}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legWinPercent.toFixed(0)}%</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${(stats.totalFines / 100).toFixed(2)}</td>
+            `;
+            ui.leaderboardBody.appendChild(tr);
+         });
 
             // Update header arrows
             document.querySelectorAll('#stats-table-header th').forEach(th => {
