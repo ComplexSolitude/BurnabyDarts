@@ -43,11 +43,15 @@
         .spinner {
             width: 60px;
             height: 60px;
-            animation: dart-spin 1.5s linear infinite;
+            animation: pulse-effect 0.25s ease-in-out infinite;
         }
-        @keyframes dart-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes pulse-effect {
+            0%, 100% {
+             transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);  
+            }
         }
         .tab-enter {
             animation: tabEnter 0.3s ease forwards;
@@ -70,6 +74,26 @@
         #current-player-names.animate-pulse {
             animation: pulse 0.6s ease;
         }
+        #main-app {
+  position: relative;
+  z-index: 1; 
+  min-height: 100vh;
+}
+
+#main-app::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('burnaby-logo.png');
+  background-repeat: no-repeat;
+  background-position:  center center;
+  background-size: 350px; 
+  opacity: 0.05; 
+  z-index: -1; 
+}
     </style>
     <!-- HTTPS Redirect -->
     <script>
@@ -82,7 +106,7 @@
 
     <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-green-800/90 to-gray-900/90 backdrop-blur-sm opacity-100 transition-opacity duration-300">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
-            <img src="darts-icon-v3.png" alt="Loading..." class="spinner mx-auto mb-4">
+            <img src="burnaby-logo.png" alt="Loading..." class="spinner mx-auto mb-4">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Signing you in...</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">Please wait a moment</p>
         </div>
@@ -136,7 +160,10 @@
             </div>
 
             <!-- Title (center) -->
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Darts Scorer</h1>
+             <div class="flex items-center">
+    <img src="burnaby-logo.png" alt="Logo" class="h-8 w-8 mr-3">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Darts Scorer</h1>
+</div>
 
             <!-- Hamburger button (right) for mobile -->
             <div class="md:hidden">
