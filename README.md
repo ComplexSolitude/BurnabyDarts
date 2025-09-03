@@ -30,6 +30,7 @@ The Burnaby Arms B Darts Scorer is a web application for managing darts matches 
 
 ## Usage
 - Select your role or sign in with Google to access the app.
+- When creating an account, provide your name; it will appear in the admin user list.
 - Set up fixtures, record match scores, manage fines, and view player statistics.
 - Data is stored in your configured Firebase project.
 
