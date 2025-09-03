@@ -1913,7 +1913,7 @@ body::before {
                     state.userPlayerId = null;
                     await setDoc(doc(state.db, 'users', user.uid), {
                         email: email,
-                        name: user.displayName,
+                        name: user.name,
                         role: 'viewer',
                         playerId: null,
                         createdAt: serverTimestamp()
@@ -2081,7 +2081,7 @@ body::before {
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(state.auth, email, password);
-                await updateProfile(userCredential.user, { displayName: name });
+                await updateProfile(userCredential.user, { name: name });
                 await handleSuccessfulSignIn(userCredential.user);
                 closeSignupModal();
                 showToast('Account created successfully!');
@@ -2115,7 +2115,7 @@ body::before {
                 state.userPlayerId = null;
                 await setDoc(doc(state.db, 'users', user.uid), {
                     email: email,
-                    name: user.displayName,
+                    name: user.name,
                     role: 'viewer',
                     playerId: null,
                     createdAt: serverTimestamp()
@@ -2124,7 +2124,7 @@ body::before {
 
             state.isLoggedIn = true;
             state.userEmail = email;
-            state.userName = user.displayName;
+            state.userName = user.name;
             state.userId = user.uid;
 
             localStorage.setItem('userRole', state.userRole);
@@ -2141,7 +2141,7 @@ body::before {
                 loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
                 ui.roleSelectionOverlay.classList.add('hidden');
                 ui.mainApp.classList.remove('hidden');
-                showToast(`Welcome ${user.displayName}!`);
+                showToast(`Welcome ${user.name}!`);
                 render();
             }, 500);
         }
