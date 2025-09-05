@@ -1961,6 +1961,7 @@ body::before {
                 state.userEmail = null;
                 state.userName = null;
                 state.userPlayerId = null;
+                state.signingIn = false; // Reset signing in state
 
                 localStorage.removeItem('userRole');
                 localStorage.removeItem('isLoggedIn');
@@ -1975,13 +1976,14 @@ body::before {
             } else if (state.userRole === 'viewer') {
                 // Sign in functionality - go back to login screen
                 state.userRole = null;
+                state.signingIn = false; // Reset signing in state
                 localStorage.removeItem('userRole');
+                resetSignInButtonState();
                 ui.mainApp.classList.add('hidden');
                 ui.roleSelectionOverlay.classList.remove('hidden');
                 render();
             }
         }
-
         async function handleLogout() {
             return handleHeaderButtonClick();
         }
@@ -2110,12 +2112,15 @@ body::before {
                 const userData = userDoc.data();
                 state.userRole = userData.role || 'viewer';
                 state.userPlayerId = userData.playerId || null;
+                state.userName = userData.name; // Get name from Firestore
+                console.log('Retrieved name from Firestore:', userData.name); // Debug log
             } else {
                 state.userRole = 'viewer';
                 state.userPlayerId = null;
+                state.userName = user.displayName || 'New User';
                 await setDoc(doc(state.db, 'users', user.uid), {
                     email: email,
-                    name: user.name,
+                    name: state.userName,
                     role: 'viewer',
                     playerId: null,
                     createdAt: serverTimestamp()
@@ -2124,7 +2129,6 @@ body::before {
 
             state.isLoggedIn = true;
             state.userEmail = email;
-            state.userName = user.name;
             state.userId = user.uid;
 
             localStorage.setItem('userRole', state.userRole);
@@ -2141,7 +2145,7 @@ body::before {
                 loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
                 ui.roleSelectionOverlay.classList.add('hidden');
                 ui.mainApp.classList.remove('hidden');
-                showToast(`Welcome ${user.name}!`);
+                showToast(`Welcome ${state.userName}!`);
                 render();
             }, 500);
         }
@@ -2173,6 +2177,7 @@ body::before {
         function resetSignInButtonState() {
             const signInBtn = document.getElementById('google-signin-btn');
             const signInText = document.getElementById('signin-btn-text');
+            const emailSignInBtn = document.getElementById('email-signin-btn');
             const loadingOverlay = document.getElementById('loading-overlay');
 
             if (signInBtn && signInText) {
@@ -2181,10 +2186,18 @@ body::before {
                 signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
             }
 
+            if (emailSignInBtn) {
+                emailSignInBtn.disabled = false;
+                emailSignInBtn.textContent = 'Sign In with Email';
+            }
+
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('opacity-100');
                 loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
             }
+
+            // Reset global signing in state
+            state.signingIn = false;
         }
         async function loadUsers() {
             if (!state.db) return;
