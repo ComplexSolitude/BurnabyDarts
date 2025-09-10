@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ba089fee-2b6f-4b86-81d5-4f68853e9c5f" name="Changes" comment="">
+    <list default="true" id="ba089fee-2b6f-4b86-81d5-4f68853e9c5f" name="Changes" comment="Added fixtures tab with upcoming and past">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
     </list>
@@ -95,7 +95,17 @@
       <workItem from="1756294003380" duration="6128000" />
       <workItem from="1756397817641" duration="2909000" />
       <workItem from="1757061522532" duration="1554000" />
+      <workItem from="1757507262190" duration="3368000" />
     </task>
+    <task id="LOCAL-00001" summary="Added fixtures tab with upcoming and past">
+      <option name="closed" value="true" />
+      <created>1757509909302</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1757509909302</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -123,5 +133,9 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Added fixtures tab with upcoming and past" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added fixtures tab with upcoming and past" />
   </component>
 </project>
