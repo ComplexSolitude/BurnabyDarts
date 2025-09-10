@@ -1548,7 +1548,7 @@ body::before {
                         <button class="flex-grow text-left select-upcoming-match-btn" data-fixture-id="${fixture.id}">
                             <p class="font-semibold dark:text-white">vs ${fixture.oppositionName} ${fixture.location ? `(${fixture.location})` : ''}</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">${scheduledDate.toLocaleDateString()}</p>
-                            <p class="font-semibold dark:text-white">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
                             ${fixture.venue ? (fixture.address ? `<a href="https://www.google.com/maps/place/${encodeURIComponent(fixture.address)}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline cursor-pointer" title="View location on Google Maps">${fixture.venue}</a>` : fixture.venue) : 'TBD'}
                             </p>
                         </button>
