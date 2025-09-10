@@ -1548,7 +1548,10 @@ body::before {
                         <button class="flex-grow text-left select-upcoming-match-btn" data-fixture-id="${fixture.id}">
                             <p class="font-semibold dark:text-white">vs ${fixture.oppositionName}</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">${scheduledDate.toLocaleDateString()}</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500">${fixture.venue || ''} ${fixture.location ? `(${fixture.location})` : ''}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500">
+                                ${fixture.venue ? (fixture.address ? `<a href="https://www.google.com/maps/place/${encodeURIComponent(fixture.address)}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline cursor-pointer" onclick="event.stopPropagation()" title="View location on Google Maps">${fixture.venue}</a>` : fixture.venue) : ''}
+                                ${fixture.location ? `(${fixture.location})` : ''}
+                            </p>
                         </button>
                         <div class="flex items-center space-x-2 flex-shrink-0">
                             ${canStartMatch ? `<button data-fixture-id="${fixture.id}" class="start-match-btn bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700">Start Match</button>` : ''}
@@ -2772,6 +2775,13 @@ body::before {
                     </div>
                     <div class="space-y-4">
                         <div>
+                            <label for="fixture-location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                            <select id="fixture-location" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="Away">Away</option>
+                                <option value="Home">Home</option>
+                            </select>
+                        </div>
+                        <div>
                             <label for="fixture-opposition" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opposition</label>
                             <input type="text" id="fixture-opposition" placeholder="e.g., The King's Arms" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
@@ -2783,12 +2793,9 @@ body::before {
                             <label for="fixture-venue" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Venue (optional)</label>
                             <input type="text" id="fixture-venue" placeholder="e.g., The King's Arms" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
-                        <div>
-                            <label for="fixture-location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
-                            <select id="fixture-location" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="Away">Away</option>
-                                <option value="Home">Home</option>
-                            </select>
+                        <div id="fixture-address-container">
+                            <label for="fixture-address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Address (for maps)</label>
+                            <input type="text" id="fixture-address" placeholder="e.g., 123 High Street, Burnaby Village, BC V5A 1A1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                         <div class="flex justify-end space-x-3 mt-6">
                             <button id="add-fixture-cancel" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
@@ -2806,6 +2813,17 @@ body::before {
             document.getElementById('add-fixture-close').addEventListener('click', closeAddFixtureModal);
             document.getElementById('add-fixture-cancel').addEventListener('click', closeAddFixtureModal);
             document.getElementById('add-fixture-submit').addEventListener('click', submitAddFixture);
+            // Hide/show address field based on location selection
+            document.getElementById('fixture-location').addEventListener('change', (e) => {
+                const addressContainer = document.getElementById('fixture-address-container');
+                const addressInput = document.getElementById('fixture-address');
+                if (e.target.value === 'Home') {
+                    addressContainer.style.display = 'none';
+                    addressInput.value = ''; // Clear the address when hiding
+                } else {
+                    addressContainer.style.display = 'block';
+                }
+            });
         }
 
         function closeAddFixtureModal() {
@@ -2820,6 +2838,7 @@ body::before {
             const fixtureDate = document.getElementById('fixture-date').value;
             const venue = document.getElementById('fixture-venue').value.trim();
             const location = document.getElementById('fixture-location').value;
+            const address = document.getElementById('fixture-address').value.trim();
 
             if (!oppositionName) {
                 showToast("Please enter an opposition name.", 'warning');
@@ -2856,6 +2875,7 @@ body::before {
                         scheduledDate: scheduledDate,
                         venue: venue || null,
                         location: location,
+                        address: address || null,
                         games: games,
                         status: 'scheduled',
                         createdAt: serverTimestamp()
