@@ -1546,11 +1546,10 @@ body::before {
                 item.innerHTML = `
                     <div class="flex justify-between items-center">
                         <button class="flex-grow text-left select-upcoming-match-btn" data-fixture-id="${fixture.id}">
-                            <p class="font-semibold dark:text-white">vs ${fixture.oppositionName}</p>
+                            <p class="font-semibold dark:text-white">vs ${fixture.oppositionName} ${fixture.location ? `(${fixture.location})` : ''}</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">${scheduledDate.toLocaleDateString()}</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500">
-                                ${fixture.venue ? (fixture.address ? `<a href="https://www.google.com/maps/place/${encodeURIComponent(fixture.address)}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline cursor-pointer" onclick="event.stopPropagation()" title="View location on Google Maps">${fixture.venue}</a>` : fixture.venue) : ''}
-                                ${fixture.location ? `(${fixture.location})` : ''}
+                            <p class="font-semibold dark:text-white">
+                                ${fixture.venue ? (fixture.address ? `<a href="https://www.google.com/maps/place/${encodeURIComponent(fixture.address)}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline cursor-pointer" title="View location on Google Maps">${fixture.venue}</a>` : fixture.venue) : 'TBD'}
                             </p>
                         </button>
                         <div class="flex items-center space-x-2 flex-shrink-0">
@@ -1947,7 +1946,10 @@ body::before {
                 modalContent += `
                     <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                         <p class="text-sm text-gray-600 dark:text-gray-400">Venue</p>
-                        <p class="font-semibold dark:text-white">${fixture.venue || 'TBD'} ${fixture.location ? `(${fixture.location})` : ''}</p>
+                        <p class="font-semibold dark:text-white">
+                            ${fixture.venue ? (fixture.address ? `<a href="https://www.google.com/maps/place/${encodeURIComponent(fixture.address)}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline cursor-pointer" title="View location on Google Maps">${fixture.venue}</a>` : fixture.venue) : 'TBD'}
+                            ${fixture.location ? `(${fixture.location})` : ''}
+                        </p>
                     </div>
                 `;
             }
@@ -2813,15 +2815,21 @@ body::before {
             document.getElementById('add-fixture-close').addEventListener('click', closeAddFixtureModal);
             document.getElementById('add-fixture-cancel').addEventListener('click', closeAddFixtureModal);
             document.getElementById('add-fixture-submit').addEventListener('click', submitAddFixture);
-            // Hide/show address field based on location selection
+// Hide/show address field based on location selection
             document.getElementById('fixture-location').addEventListener('change', (e) => {
                 const addressContainer = document.getElementById('fixture-address-container');
                 const addressInput = document.getElementById('fixture-address');
+                const venueInput = document.getElementById('fixture-venue');
+
                 if (e.target.value === 'Home') {
                     addressContainer.style.display = 'none';
                     addressInput.value = ''; // Clear the address when hiding
+                    venueInput.value = 'The Burnaby Arms'; // Auto-fill home venue
                 } else {
                     addressContainer.style.display = 'block';
+                    if (venueInput.value === 'The Burnaby Arms') {
+                        venueInput.value = ''; // Clear venue if it was auto-filled
+                    }
                 }
             });
         }
