@@ -43,11 +43,15 @@
         .spinner {
             width: 60px;
             height: 60px;
-            animation: dart-spin 1.5s linear infinite;
+            animation: pulse-effect 0.25s ease-in-out infinite;
         }
-        @keyframes dart-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes pulse-effect {
+            0%, 100% {
+             transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);  
+            }
         }
         .tab-enter {
             animation: tabEnter 0.3s ease forwards;
@@ -70,6 +74,26 @@
         #current-player-names.animate-pulse {
             animation: pulse 0.6s ease;
         }
+        #main-app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('burnaby-logo.png');
+  background-repeat: no-repeat;
+  background-position: center 65%;
+  background-size: 350px;
+  opacity: 0.05;
+  z-index: -1;
+}
     </style>
     <!-- HTTPS Redirect -->
     <script>
@@ -80,15 +104,28 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
+    <!-- Dev Environment Indicator -->
+    <div id="dev-indicator" class="fixed top-4 right-1/4 z-[9998] bg-orange-500 text-white px-3 py-2 rounded-lg shadow-lg text-xs font-bold hidden">
+        <div class="flex items-center gap-2">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+            </svg>
+            <div>
+                <div>DEV MODE</div>
+                <div id="dev-db-info" class="text-orange-200 text-xs"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-green-800/90 to-gray-900/90 backdrop-blur-sm opacity-100 transition-opacity duration-300">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-xl">
-            <img src="darts-icon-v3.png" alt="Loading..." class="spinner mx-auto mb-4">
+            <img src="burnaby-logo.png" alt="Loading..." class="spinner mx-auto mb-4">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Signing you in...</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">Please wait a moment</p>
         </div>
     </div>
     <!-- Role Selection Overlay -->
-    <div id="role-selection-overlay" class="fixed inset-0 bg-gray-800 z-50 flex items-center justify-center p-4">
+    <div id="role-selection-overlay" class="fixed inset-0 bg-gray-800/70 z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm text-center">
             <h1 class="text-4xl font-bold text-white mb-2">Burnaby Arms B</h1>
             <p class="text-lg text-gray-300 mb-8">Darts Scorer</p>
@@ -127,24 +164,24 @@
     <div id="main-app" class="hidden max-w-4xl mx-auto p-2 sm:p-4 lg:p-8">
 
         <!-- App Header -->
-        <header class="flex justify-between items-center mb-4 px-2">
-            <!-- Sign Out Button (left) -->
-            <div class="flex items-center">
-                <button id="header-signout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200">
-                    Sign Out
-                </button>
-            </div>
+        <header class="relative flex justify-between items-center mb-4 px-2 h-16">
+    <div>
+        <button id="header-signout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200">
+            Sign Out
+        </button>
+    </div>
 
-            <!-- Title (center) -->
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Darts Scorer</h1>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center">
+        <img src="burnaby-logo.png" alt="Logo" class="h-12 w-12 mr-1">
+        <h1 class="text-l font-semibold text-gray-900 dark:text-white">Darts Scorer</h1>
+    </div>
 
-            <!-- Hamburger button (right) for mobile -->
-            <div class="md:hidden">
-                <button id="hamburger-btn" class="p-2">
-                    <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                </button>
-            </div>
-        </header>
+    <div class="md:hidden">
+        <button id="hamburger-btn" class="p-2">
+            <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+        </button>
+    </div>
+</header>
 
 
         <!-- Connection Status -->
@@ -158,7 +195,7 @@
                     <nav class="-mb-px flex justify-center flex-wrap p-4" aria-label="Tabs">
                         <button id="tab-btn-match" class="whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm transition-colors duration-200">Current Match</button>
                         <button id="tab-btn-live" class="whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm transition-colors duration-200">Scoring</button>
-                        <button id="tab-btn-previous" class="whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm transition-colors duration-200">Previous</button>
+                        <button id="tab-btn-fixtures" class="whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm transition-colors duration-200">Fixtures</button>
                         <button id="tab-btn-fines" class="whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm transition-colors duration-200">Fines</button>
                         <button id="tab-btn-stats" class="whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm transition-colors duration-200">Stats</button>
                         <button id="tab-btn-h2h" class="whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm transition-colors duration-200">Head-to-Head</button>
@@ -181,19 +218,34 @@
                     </div>
                 </div>
 
-                <!-- Previous Matches Tab -->
-                <div id="tab-content-previous" class="hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8">
-                        <div class="md:col-span-1">
-                            <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                                <h2 class="text-xl font-semibold mb-4 dark:text-white">Match History</h2>
-                                <div id="previous-matches-list" class="space-y-2"></div>
+                <!-- Fixtures Tab -->
+                <div id="tab-content-fixtures" class="hidden">
+                    <!-- Fixtures Sub-tabs -->
+                    <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+                        <nav class="-mb-px flex justify-center space-x-8" aria-label="Fixture Tabs">
+                            <button id="fixtures-tab-upcoming" class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Upcoming</button>
+                            <button id="fixtures-tab-previous" class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Previous</button>
+                        </nav>
+                    </div>
+
+                    <!-- Upcoming Fixtures Panel -->
+                    <div id="fixtures-content-upcoming">
+                        <p class="text-center text-gray-500 dark:text-gray-400 mb-4">Click on a match to see details</p>
+                        <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-semibold dark:text-white">Upcoming Matches</h2>
+                                <button id="add-fixture-btn" class="bg-emerald-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-emerald-700 transition-colors">+ Add</button>
                             </div>
+                            <div id="upcoming-fixtures-list" class="space-y-2"></div>
                         </div>
-                        <div class="md:col-span-2">
-                            <div id="previous-match-details" class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                                <p class="text-gray-500 dark:text-gray-400">Select a match to see the details.</p>
-                            </div>
+                    </div>
+
+                    <!-- Previous Fixtures Panel -->
+                    <div id="fixtures-content-previous" class="hidden">
+                        <p class="text-center text-gray-500 dark:text-gray-400 mb-4">Click on a match to see details</p>
+                        <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h2 class="text-xl font-semibold mb-4 dark:text-white">Match History</h2>
+                            <div id="previous-fixtures-list" class="space-y-2"></div>
                         </div>
                     </div>
                 </div>
@@ -443,7 +495,7 @@
                 </div>
 
                 <!-- League Stats Tab -->
-                <div id="tab-content-stats" class="hidden">
+                 <div id="tab-content-stats" class="hidden">
                     <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                         <h2 class="text-xl font-semibold dark:text-white">Season Leaderboard</h2>
                         <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
@@ -451,18 +503,19 @@
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
+                                <tr id="stats-table-header">
                                     <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Player</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Games Won">GW</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Games Lost">GL</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Legs Won">LW</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Legs Lost">LL</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Leg Win Percentage">Leg %</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">100+</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">140+</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">180s</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">H/C</th>
-                                    <th scope="col" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" title="Total Fines Accrued">Fines</th>
+                                    <th scope="col" data-sort="gamesPlayed" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Played">P</th>
+                                    <th scope="col" data-sort="gamesWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Won">GW</th>
+                                    <th scope="col" data-sort="gamesLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Games Lost">GL</th>
+                                    <th scope="col" data-sort="legsWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Won">LW</th>
+                                    <th scope="col" data-sort="legsLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Lost">LL</th>
+                                    <th scope="col" data-sort="legWinPercent" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Leg Win Percentage">Leg %</th>
+                                    <th scope="col" data-sort="scores100" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">100+</th>
+                                    <th scope="col" data-sort="scores140" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">140+</th>
+                                    <th scope="col" data-sort="scores180" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">180s</th>
+                                    <th scope="col" data-sort="highCheckout" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">H/C</th>
+                                    <th scope="col" data-sort="totalFines" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Total Fines Accrued">Fines</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboard-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
@@ -596,18 +649,22 @@
     </div>
 
     <!-- Create Account Modal -->
-    <div id="signup-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-semibold dark:text-white">Create Account</h3>
-                <button id="signup-modal-close" class="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-2xl leading-none">&times;</button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label for="signup-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                    <input type="email" id="signup-email" placeholder="Enter your email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <div id="signup-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold dark:text-white">Create Account</h3>
+                    <button id="signup-modal-close" class="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-2xl leading-none">&times;</button>
                 </div>
-                <div>
+                <div class="space-y-4">
+                    <div>
+                        <label for="signup-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                        <input type="text" id="signup-name" placeholder="Enter your name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label for="signup-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                        <input type="email" id="signup-email" placeholder="Enter your email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    <div>
                     <label for="signup-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
                     <input type="password" id="signup-password" placeholder="Enter password" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 </div>
@@ -656,7 +713,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast-notification" class="fixed top-0 left-1/2 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center whitespace-nowrap flex items-center gap-2" role="alert">
+    <div id="toast-notification" class="fixed top-0 left-1/2 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center w-11/12 max-w-md flex items-center gap-2" role="alert">
         <svg id="toast-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"></svg>
         <span id="toast-message"></span>
     </div>
@@ -675,7 +732,8 @@
             createUserWithEmailAndPassword,
             GoogleAuthProvider,
             signOut as firebaseSignOut,
-            onAuthStateChanged
+            onAuthStateChanged,
+            updateProfile
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         const provider = new GoogleAuthProvider();
@@ -702,7 +760,10 @@
             playerCard: { isOpen: false, playerId: null, selectedSeasonId: 'all-time' },
             fixture: { id: null, games: [], activeGameIndex: 0 },
             previousFixtures: [],
+            upcomingFixtures: [],
             selectedPreviousFixtureId: null,
+            selectedUpcomingFixtureId: null,
+            activeFixturesTab: 'upcoming',
             currentGameIndex: 0,
             lastTurnSeq: 0,
             confirmation: { action: null, data: null },
@@ -714,6 +775,10 @@
             },
             myProfile: {
                 selectedPlayerId: null,
+            },
+            leaderboardSort: { // New state for sorting
+                column: 'gamesWon',
+                direction: 'desc' // 'asc' or 'desc'
             }
         };
 
@@ -820,9 +885,9 @@
 
         // --- DOM ELEMENTS ---
         const ui = {
-            tabs: { match: document.getElementById('tab-btn-match'), live: document.getElementById('tab-btn-live'), previous: document.getElementById('tab-btn-previous'), fines: document.getElementById('tab-btn-fines'), stats: document.getElementById('tab-btn-stats'), h2h: document.getElementById('tab-btn-h2h'), 'my-profile': document.getElementById('tab-btn-my-profile'), setup: document.getElementById('tab-btn-setup'), admin: document.getElementById('tab-btn-admin') },
+            tabs: { match: document.getElementById('tab-btn-match'), live: document.getElementById('tab-btn-live'), fixtures: document.getElementById('tab-btn-fixtures'), fines: document.getElementById('tab-btn-fines'), stats: document.getElementById('tab-btn-stats'), h2h: document.getElementById('tab-btn-h2h'), 'my-profile': document.getElementById('tab-btn-my-profile'), setup: document.getElementById('tab-btn-setup'), admin: document.getElementById('tab-btn-admin') },
             headerSignoutBtn: document.getElementById('header-signout-btn'),
-            content: { match: document.getElementById('tab-content-match'), live: document.getElementById('tab-content-live'), previous: document.getElementById('tab-content-previous'), fines: document.getElementById('tab-content-fines'), stats: document.getElementById('tab-content-stats'), h2h: document.getElementById('tab-content-h2h'), 'my-profile': document.getElementById('tab-content-my-profile'), setup: document.getElementById('tab-content-setup'), admin: document.getElementById('tab-content-admin') },
+            content: { match: document.getElementById('tab-content-match'), live: document.getElementById('tab-content-live'), fixtures: document.getElementById('tab-content-fixtures'), fines: document.getElementById('tab-content-fines'), stats: document.getElementById('tab-content-stats'), h2h: document.getElementById('tab-content-h2h'), 'my-profile': document.getElementById('tab-content-my-profile'), setup: document.getElementById('tab-content-setup'), admin: document.getElementById('tab-content-admin') },
             toast: { element: document.getElementById('toast-notification'), message: document.getElementById('toast-message'), icon: document.getElementById('toast-icon') },
             mainApp: document.getElementById('main-app'),
             roleSelectionOverlay: document.getElementById('role-selection-overlay'),
@@ -882,8 +947,13 @@
             currentMatchOpponent: document.getElementById('current-match-opponent'),
             currentMatchScoreContainer: document.getElementById('current-match-score-container'),
             liveScoringScoreContainer: document.getElementById('live-scoring-score-container'),
-            previousMatchesList: document.getElementById('previous-matches-list'),
-            previousMatchDetails: document.getElementById('previous-match-details'),
+            upcomingFixturesList: document.getElementById('upcoming-fixtures-list'),
+            previousFixturesList: document.getElementById('previous-fixtures-list'),
+            addFixtureBtn: document.getElementById('add-fixture-btn'),
+            fixturesTabUpcoming: document.getElementById('fixtures-tab-upcoming'),
+            fixturesTabPrevious: document.getElementById('fixtures-tab-previous'),
+            fixturesContentUpcoming: document.getElementById('fixtures-content-upcoming'),
+            fixturesContentPrevious: document.getElementById('fixtures-content-previous'),
             finesList: document.getElementById('fines-list'),
             payFineContainer: document.getElementById('pay-fine-container'),
             singlesScoringPanel: document.getElementById('singles-scoring-panel'),
@@ -910,6 +980,25 @@
             }
         };
 
+        // --- HELPER FUNCTIONS ---
+        function getNextUpcomingMatch() {
+            if (state.upcomingFixtures.length === 0) return null;
+
+            const now = new Date();
+            const upcoming = state.upcomingFixtures
+                .filter(fixture => {
+                    const matchDate = fixture.scheduledDate?.toDate ? fixture.scheduledDate.toDate() : new Date(fixture.scheduledDate);
+                    return matchDate >= now;
+                })
+                .sort((a, b) => {
+                    const dateA = a.scheduledDate?.toDate ? a.scheduledDate.toDate() : new Date(a.scheduledDate);
+                    const dateB = b.scheduledDate?.toDate ? b.scheduledDate.toDate() : new Date(b.scheduledDate);
+                    return dateA - dateB;
+                });
+
+            return upcoming[0] || null;
+        }
+
         // --- RENDER FUNCTIONS ---
         function render() {
             renderAuth();
@@ -921,7 +1010,7 @@
             renderLiveMatch();
             renderLeaderboard();
             renderCurrentMatch();
-            renderPreviousMatches();
+            renderFixturesTab();
             renderFines();
             renderH2HTab();
             renderMyProfile();
@@ -1028,14 +1117,12 @@
 
                 // Hide admin tab for non-admin users
                 if (tabKey === 'admin' && state.userRole !== 'admin') {
-                    console.log('Hiding admin tab - current role:', state.userRole); // Debug log
                     if (tabButton) {
                         tabButton.style.display = 'none';
                     }
                     // Skip adding to mobile menu
                     continue;
                 } else if (tabKey === 'admin' && state.userRole === 'admin') {
-                    console.log('Showing admin tab - current role:', state.userRole); // Debug log
                     // Show admin tab for admins
                     if (tabButton) {
                         tabButton.style.display = '';
@@ -1242,19 +1329,19 @@
             if (type === 'singles') return aggregated.singles;
             if (type === 'doubles') return aggregated.doubles;
             if (type === 'combined') {
-                // For the leaderboard, we combine stats from singles and doubles.
-                // Note: legs won/lost, fines, and high checkout are only tracked for singles games in this app.
+                // For the main leaderboard, we show game/leg stats from singles ONLY,
+                // but combine the scoring stats from both singles and doubles.
                 return {
-                    gamesWon: aggregated.singles.gamesWon + aggregated.doubles.gamesWon,
-                    gamesLost: aggregated.singles.gamesLost + aggregated.doubles.gamesLost,
-                    legsWon: aggregated.singles.legsWon, // From singles only
-                    legsLost: aggregated.singles.legsLost, // From singles only
+                    gamesWon: aggregated.singles.gamesWon,
+                    gamesLost: aggregated.singles.gamesLost,
+                    legsWon: aggregated.singles.legsWon,
+                    legsLost: aggregated.singles.legsLost,
                     scores100: aggregated.singles.scores100 + aggregated.doubles.scores100,
                     scores140: aggregated.singles.scores140 + aggregated.doubles.scores140,
                     scores180: aggregated.singles.scores180 + aggregated.doubles.scores180,
-                    highCheckout: Math.max(aggregated.singles.highCheckout, aggregated.doubles.highCheckout),
-                    outstandingFines: aggregated.singles.outstandingFines, // From singles only
-                    totalFines: aggregated.singles.totalFines, // From singles only
+                    highCheckout: aggregated.singles.highCheckout, // H/C is only from singles
+                    outstandingFines: aggregated.singles.outstandingFines,
+                    totalFines: aggregated.singles.totalFines,
                 };
             }
             return defaultStats;
@@ -1269,38 +1356,92 @@
             ui.seasonFilterSelect.value = state.selectedStatsSeasonId;
 
             ui.leaderboardBody.innerHTML = '';
-            const playersWithStats = state.players.map(p => ({
-                ...p,
-                displayStats: getPlayerStats(p, state.selectedStatsSeasonId, 'singles')
-            }));
+            let playersWithStats = state.players.map(p => {
+                const singlesStats = getPlayerStats(p, state.selectedStatsSeasonId, 'singles');
+                const combinedStats = getPlayerStats(p, state.selectedStatsSeasonId, 'combined');
+                const totalLegs = singlesStats.legsWon + singlesStats.legsLost;
+                const legWinPercent = totalLegs > 0 ? ((singlesStats.legsWon / totalLegs) * 100) : 0;
+                const gamesPlayed = singlesStats.gamesWon + singlesStats.gamesLost;
 
-            playersWithStats.sort((a,b) => b.displayStats.gamesWon - a.displayStats.gamesWon || b.displayStats.legsWon - a.displayStats.legsWon);
+
+                const displayStats = {
+                    gamesPlayed: gamesPlayed,
+                    gamesWon: singlesStats.gamesWon,
+                    gamesLost: singlesStats.gamesLost,
+                    legsWon: singlesStats.legsWon,
+                    legsLost: singlesStats.legsLost,
+                    legWinPercent: legWinPercent,
+                    scores100: combinedStats.scores100,
+                    scores140: combinedStats.scores140,
+                    scores180: combinedStats.scores180,
+                    highCheckout: combinedStats.highCheckout,
+                    totalFines: singlesStats.totalFines,
+                };
+
+                return {
+                    ...p,
+                    displayStats: displayStats
+                };
+            });
+
+            // Sorting logic
+            const { column, direction } = state.leaderboardSort;
+            playersWithStats.sort((a, b) => {
+                let valA = a.displayStats[column];
+                let valB = b.displayStats[column];
+
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                // As a fallback, sort by games won if the primary sort values are equal
+                if (column !== 'gamesWon') {
+                    return b.displayStats.gamesWon - a.displayStats.gamesWon;
+                }
+                return 0;
+            });
+
 
             playersWithStats.forEach(player => {
                 const stats = player.displayStats;
-                const totalLegs = stats.legsWon + stats.legsLost;
-                const legWinPercent = totalLegs > 0 ? ((stats.legsWon / totalLegs) * 100).toFixed(0) : 0;
+            const tr = document.createElement('tr');
+            tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
+            tr.dataset.playerId = player.id;
+            tr.innerHTML = `
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesPlayed}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legWinPercent.toFixed(0)}%</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
+                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${(stats.totalFines / 100).toFixed(2)}</td>
+            `;
+            ui.leaderboardBody.appendChild(tr);
+         });
 
-                const tr = document.createElement('tr');
-                tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
-                tr.dataset.playerId = player.id;
-                tr.innerHTML = `
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${legWinPercent}%</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
-                    <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${((stats.totalFines) / 100).toFixed(2)}</td>
-                `;
-                ui.leaderboardBody.appendChild(tr);
+            // Update header arrows
+            document.querySelectorAll('#stats-table-header th').forEach(th => {
+                // Clear existing arrows
+                const existingArrow = th.querySelector('.sort-arrow');
+                if (existingArrow) {
+                    existingArrow.remove();
+                }
+
+                // Add arrow to the sorted column
+                if (th.dataset.sort === column) {
+                    const arrow = document.createElement('span');
+                    arrow.className = 'sort-arrow ml-1';
+                    arrow.innerHTML = direction === 'desc' ? '▼' : '▲';
+                    th.appendChild(arrow);
+                }
             });
         }
-
         function renderOverallScore(container) {
             container.innerHTML = '';
             if (!state.fixture.id) return;
@@ -1320,8 +1461,22 @@
 
         function renderCurrentMatch() {
             if (!state.fixture.id) {
-                ui.currentMatchResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No active match.</p>';
-                ui.currentMatchOpponent.textContent = 'Live results as they come in.';
+                // Show next upcoming match if no active match
+                const nextMatch = getNextUpcomingMatch();
+                if (nextMatch) {
+                    const matchDate = nextMatch.scheduledDate?.toDate ? nextMatch.scheduledDate.toDate() : new Date(nextMatch.scheduledDate);
+                    ui.currentMatchOpponent.textContent = `Next: vs ${nextMatch.oppositionName}`;
+                    ui.currentMatchResults.innerHTML = `
+                        <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
+                            <p class="font-semibold dark:text-white">Next Match</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${matchDate.toLocaleDateString()}</p>
+                            ${nextMatch.venue ? `<p class="text-sm text-gray-600 dark:text-gray-400">${nextMatch.venue}</p>` : ''}
+                        </div>
+                    `;
+                } else {
+                    ui.currentMatchResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No active match.</p>';
+                    ui.currentMatchOpponent.textContent = 'Live results as they come in.';
+                }
                 ui.currentMatchScoreContainer.innerHTML = '';
                 return;
             }
@@ -1347,13 +1502,77 @@
             });
         }
 
-        function renderPreviousMatches() {
-            ui.previousMatchesList.innerHTML = '';
-            if (state.previousFixtures.length === 0) {
-                ui.previousMatchesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No finished matches.</p>';
-                ui.previousMatchDetails.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Select a match to see the details.</p>';
+        function renderFixturesTab() {
+            // Handle sub-tab styling
+            if (state.activeFixturesTab === 'upcoming') {
+                ui.fixturesTabUpcoming.classList.add('text-emerald-600', 'border-emerald-500');
+                ui.fixturesTabUpcoming.classList.remove('text-gray-500', 'border-transparent');
+                ui.fixturesTabPrevious.classList.add('text-gray-500', 'border-transparent');
+                ui.fixturesTabPrevious.classList.remove('text-emerald-600', 'border-emerald-500');
+                ui.fixturesContentUpcoming.classList.remove('hidden');
+                ui.fixturesContentPrevious.classList.add('hidden');
+            } else {
+                ui.fixturesTabPrevious.classList.add('text-emerald-600', 'border-emerald-500');
+                ui.fixturesTabPrevious.classList.remove('text-gray-500', 'border-transparent');
+                ui.fixturesTabUpcoming.classList.add('text-gray-500', 'border-transparent');
+                ui.fixturesTabUpcoming.classList.remove('text-emerald-600', 'border-emerald-500');
+                ui.fixturesContentPrevious.classList.remove('hidden');
+                ui.fixturesContentUpcoming.classList.add('hidden');
+            }
+
+            renderUpcomingFixtures();
+            renderPreviousFixtures();
+        }
+
+        function renderUpcomingFixtures() {
+            ui.upcomingFixturesList.innerHTML = '';
+
+            // Show/hide add button based on permissions
+            ui.addFixtureBtn.classList.toggle('hidden', state.userRole === 'viewer' || state.userRole === 'scorer');
+
+            if (state.upcomingFixtures.length === 0) {
+                ui.upcomingFixturesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No upcoming matches.</p>';
                 return;
             }
+
+            state.upcomingFixtures.forEach(fixture => {
+                const item = document.createElement('div');
+                item.className = `w-full text-left p-3 rounded-lg transition-colors duration-200 ${state.selectedUpcomingFixtureId === fixture.id ? 'bg-emerald-100 dark:bg-emerald-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`;
+
+                const isAdmin = state.userRole === 'admin';
+                const canStartMatch = state.userRole === 'admin' || state.userRole === 'member';
+                const scheduledDate = fixture.scheduledDate?.toDate ? fixture.scheduledDate.toDate() : new Date(fixture.scheduledDate);
+
+                item.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <button class="flex-grow text-left select-upcoming-match-btn" data-fixture-id="${fixture.id}">
+                            <p class="font-semibold dark:text-white">vs ${fixture.oppositionName}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${scheduledDate.toLocaleDateString()}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500">
+                                ${fixture.venue ? (fixture.address ? `<a href="https://www.google.com/maps/place/${encodeURIComponent(fixture.address)}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline cursor-pointer" onclick="event.stopPropagation()" title="View location on Google Maps">${fixture.venue}</a>` : fixture.venue) : ''}
+                                ${fixture.location ? `(${fixture.location})` : ''}
+                            </p>
+                        </button>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            ${canStartMatch ? `<button data-fixture-id="${fixture.id}" class="start-match-btn bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700">Start Match</button>` : ''}
+                            ${isAdmin ? `<button data-fixture-id="${fixture.id}" class="delete-upcoming-fixture-btn text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>` : ''}
+                        </div>
+                    </div>
+                `;
+                ui.upcomingFixturesList.appendChild(item);
+            });
+
+        }
+
+        function renderPreviousFixtures() {
+            ui.previousFixturesList.innerHTML = '';
+            if (state.previousFixtures.length === 0) {
+                ui.previousFixturesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No finished matches.</p>';
+                return;
+            }
+
             state.previousFixtures.forEach(fixture => {
                 let burnabyLegs = 0;
                 let oppositionLegs = 0;
@@ -1366,47 +1585,25 @@
                 item.className = `w-full text-left p-3 rounded-lg transition-colors duration-200 ${state.selectedPreviousFixtureId === fixture.id ? 'bg-emerald-100 dark:bg-emerald-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`;
 
                 const isAdmin = state.userRole === 'admin';
+                const matchDate = fixture.scheduledDate?.toDate ? fixture.scheduledDate.toDate() : fixture.createdAt?.toDate();
+
                 item.innerHTML = `
                     <div class="flex justify-between items-center">
-                        <button class="flex-grow text-left select-match-btn" data-fixture-id="${fixture.id}">
+                        <button class="flex-grow text-left select-previous-match-btn" data-fixture-id="${fixture.id}">
                             <p class="font-semibold dark:text-white">vs ${fixture.oppositionName}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">${fixture.createdAt.toDate().toLocaleDateString()}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${matchDate?.toLocaleDateString() || 'Unknown date'}</p>
                         </button>
                         <div class="flex items-center space-x-2 flex-shrink-0">
                             <p class="font-bold text-lg dark:text-white">${burnabyLegs} - ${oppositionLegs}</p>
-                            ${isAdmin ? `<button data-fixture-id="${fixture.id}" class="delete-fixture-btn text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
+                            ${isAdmin ? `<button data-fixture-id="${fixture.id}" class="delete-previous-fixture-btn text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>` : ''}
                         </div>
                     </div>
                 `;
-                ui.previousMatchesList.appendChild(item);
+                ui.previousFixturesList.appendChild(item);
             });
 
-            const selectedFixture = state.previousFixtures.find(f => f.id === state.selectedPreviousFixtureId);
-            if (selectedFixture) {
-                ui.previousMatchDetails.innerHTML = '';
-                 let burnabyLegs = 0;
-                 let oppositionLegs = 0;
-                 selectedFixture.games.forEach(game => {
-                      burnabyLegs += game.legsWon || 0;
-                      oppositionLegs += game.legsLost || 0;
-                 });
-                ui.previousMatchDetails.innerHTML += `<h3 class="text-xl font-bold mb-4 dark:text-white">vs ${selectedFixture.oppositionName} (Total Legs: ${burnabyLegs}-${oppositionLegs})</h3>`;
-                selectedFixture.games.forEach(game => {
-                     const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
-                     ui.previousMatchDetails.innerHTML += `
-                          <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg mb-2">
-                               <div class="flex justify-between items-center">
-                                    <div><p class="font-semibold dark:text-white">${game.title}</p><p class="text-sm text-gray-500 dark:text-gray-400">${playerNames}</p></div>
-                                    <p class="font-bold dark:text-white">${game.legsWon} - ${game.legsLost}</p>
-                               </div>
-                          </div>
-                     `;
-                });
-            } else {
-                ui.previousMatchDetails.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Select a match to see the details.</p>';
-            }
         }
 
         function renderFines() {
@@ -1720,6 +1917,86 @@
             setupProfileTabs(ui.playerCardModal.content);
         }
 
+        function openFixtureModal(fixtureId, type) {
+            const fixture = type === 'upcoming'
+                ? state.upcomingFixtures.find(f => f.id === fixtureId)
+                : state.previousFixtures.find(f => f.id === fixtureId);
+
+            if (!fixture) return;
+
+            const scheduledDate = fixture.scheduledDate?.toDate ? fixture.scheduledDate.toDate() : new Date(fixture.scheduledDate);
+
+            let modalContent = `
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold dark:text-white">vs ${fixture.oppositionName}</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Date</p>
+                            <p class="font-semibold dark:text-white">${scheduledDate.toLocaleDateString()}</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Season</p>
+                            <p class="font-semibold dark:text-white">${state.seasons.find(s => s.id === fixture.seasonId)?.name || 'Unknown'}</p>
+                        </div>
+                    </div>
+            `;
+
+            if (fixture.venue || fixture.location) {
+                modalContent += `
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Venue</p>
+                        <p class="font-semibold dark:text-white">${fixture.venue || 'TBD'} ${fixture.location ? `(${fixture.location})` : ''}</p>
+                    </div>
+                `;
+            }
+
+            if (type === 'previous') {
+                // Show match results for finished games
+                let burnabyLegs = 0;
+                let oppositionLegs = 0;
+                fixture.games.forEach(game => {
+                    burnabyLegs += game.legsWon || 0;
+                    oppositionLegs += game.legsLost || 0;
+                });
+
+                modalContent += `
+                    <div class="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Final Score</p>
+                        <p class="font-bold text-xl dark:text-white">${burnabyLegs} - ${oppositionLegs}</p>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="font-semibold dark:text-white">Game Results</h4>
+                `;
+
+                fixture.games.forEach(game => {
+                    const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
+                    modalContent += `
+                        <div class="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+                            <div>
+                                <p class="font-medium dark:text-white">${game.title}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">${playerNames}</p>
+                            </div>
+                            <p class="font-bold dark:text-white">${game.legsWon} - ${game.legsLost}</p>
+                        </div>
+                    `;
+                });
+                modalContent += '</div>';
+            }
+
+            modalContent += '</div>';
+
+            ui.playerCardModal.content.innerHTML = modalContent;
+            ui.playerCardModal.overlay.classList.remove('hidden');
+            ui.playerCardModal.overlay.classList.add('flex');
+        }
+
+        function closeFixtureModal() {
+            ui.playerCardModal.overlay.classList.add('hidden');
+            ui.playerCardModal.overlay.classList.remove('flex');
+        }
+
         // Haptic feedback utility
         function triggerHaptic(pattern = 'light') {
             if (!('vibrate' in navigator)) return;
@@ -1804,17 +2081,17 @@
                 const userDoc = await getDoc(doc(state.db, 'users', user.uid));
 
                 if (userDoc.exists()) {
+                    // Existing user - use their assigned role and player link
                     const userData = userDoc.data();
-                    state.userRole = userData.role || 'viewer';
-                    state.userPlayerId = userData.playerId || null;
-                    console.log('User role set to:', state.userRole); // Debug log
+                    state.userRole = userData.role || 'viewer'; // Default to member
+                    state.userPlayerId = userData.playerId || null; // Get linked player ID
                 } else {
+                    // New user - default to member role and create user document
                     state.userRole = 'viewer';
                     state.userPlayerId = null;
-                    console.log('New user created with viewer role'); // Debug log
                     await setDoc(doc(state.db, 'users', user.uid), {
                         email: email,
-                        name: user.displayName || email.split('@')[0],
+                        name: user.name,
                         role: 'viewer',
                         playerId: null,
                         createdAt: serverTimestamp()
@@ -1862,6 +2139,7 @@
                 state.userEmail = null;
                 state.userName = null;
                 state.userPlayerId = null;
+                state.signingIn = false; // Reset signing in state
 
                 localStorage.removeItem('userRole');
                 localStorage.removeItem('isLoggedIn');
@@ -1876,13 +2154,14 @@
             } else if (state.userRole === 'viewer') {
                 // Sign in functionality - go back to login screen
                 state.userRole = null;
+                state.signingIn = false; // Reset signing in state
                 localStorage.removeItem('userRole');
+                resetSignInButtonState();
                 ui.mainApp.classList.add('hidden');
                 ui.roleSelectionOverlay.classList.remove('hidden');
                 render();
             }
         }
-
         async function handleLogout() {
             return handleHeaderButtonClick();
         }
@@ -1931,13 +2210,14 @@
         function openSignupModal() {
             document.getElementById('signup-modal').classList.remove('hidden');
             document.getElementById('signup-modal').classList.add('flex');
-            document.getElementById('signup-email').focus();
+            document.getElementById('signup-name').focus();
         }
 
         function closeSignupModal() {
             document.getElementById('signup-modal').classList.add('hidden');
             document.getElementById('signup-modal').classList.remove('flex');
             // Clear form
+            document.getElementById('signup-name').value = '';
             document.getElementById('signup-email').value = '';
             document.getElementById('signup-password').value = '';
             document.getElementById('signup-confirm-password').value = '';
@@ -1953,11 +2233,12 @@
             signUpBtn.disabled = true;
             signUpBtn.textContent = 'Creating account...';
 
+            const name = document.getElementById('signup-name').value.trim();
             const email = document.getElementById('signup-email').value.trim();
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm-password').value;
 
-            if (!email || !password || !confirmPassword) {
+            if (!name || !email || !password || !confirmPassword) {
                 showToast('Please fill in all fields.', 'warning');
                 resetEmailSignUpState();
                 return;
@@ -1980,6 +2261,7 @@
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(state.auth, email, password);
+                await updateProfile(userCredential.user, { name: name });
                 await handleSuccessfulSignIn(userCredential.user);
                 closeSignupModal();
                 showToast('Account created successfully!');
@@ -2008,12 +2290,15 @@
                 const userData = userDoc.data();
                 state.userRole = userData.role || 'viewer';
                 state.userPlayerId = userData.playerId || null;
+                state.userName = userData.name; // Get name from Firestore
+                console.log('Retrieved name from Firestore:', userData.name); // Debug log
             } else {
                 state.userRole = 'viewer';
                 state.userPlayerId = null;
+                state.userName = user.displayName || 'New User';
                 await setDoc(doc(state.db, 'users', user.uid), {
                     email: email,
-                    name: user.displayName || email.split('@')[0],
+                    name: state.userName,
                     role: 'viewer',
                     playerId: null,
                     createdAt: serverTimestamp()
@@ -2022,7 +2307,6 @@
 
             state.isLoggedIn = true;
             state.userEmail = email;
-            state.userName = user.displayName || email.split('@')[0];
             state.userId = user.uid;
 
             localStorage.setItem('userRole', state.userRole);
@@ -2039,7 +2323,7 @@
                 loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
                 ui.roleSelectionOverlay.classList.add('hidden');
                 ui.mainApp.classList.remove('hidden');
-                showToast(`Welcome ${user.displayName || email.split('@')[0]}!`);
+                showToast(`Welcome ${state.userName}!`);
                 render();
             }, 500);
         }
@@ -2071,6 +2355,7 @@
         function resetSignInButtonState() {
             const signInBtn = document.getElementById('google-signin-btn');
             const signInText = document.getElementById('signin-btn-text');
+            const emailSignInBtn = document.getElementById('email-signin-btn');
             const loadingOverlay = document.getElementById('loading-overlay');
 
             if (signInBtn && signInText) {
@@ -2079,10 +2364,18 @@
                 signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
             }
 
+            if (emailSignInBtn) {
+                emailSignInBtn.disabled = false;
+                emailSignInBtn.textContent = 'Sign In with Email';
+            }
+
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('opacity-100');
                 loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
             }
+
+            // Reset global signing in state
+            state.signingIn = false;
         }
         async function loadUsers() {
             if (!state.db) return;
@@ -2263,18 +2556,21 @@
                     console.error("Error deleting player: ", error);
                     showToast("Could not remove player.", 'error');
                 }
-            } else if (action === 'deleteFixture') {
+            } else if (action === 'deleteFixture' || action === 'deleteUpcomingFixture' || action === 'deletePreviousFixture') {
                  try {
                     const fixtureIdToDelete = data;
                     await deleteDoc(doc(state.db, FIXTURES_COLLECTION, fixtureIdToDelete));
                     if (state.selectedPreviousFixtureId === fixtureIdToDelete) {
                         state.selectedPreviousFixtureId = null;
                     }
-                    showToast("Match deleted successfully.");
+                    if (state.selectedUpcomingFixtureId === fixtureIdToDelete) {
+                        state.selectedUpcomingFixtureId = null;
+                    }
+                    showToast("Fixture deleted successfully.");
                     render();
                 } catch (error) {
                     console.error("Error deleting fixture:", error);
-                    showToast("Could not delete the match.", 'error');
+                    showToast("Could not delete the fixture.", 'error');
                 }
             } else if (action === 'clearPlayerFines') {
                 try {
@@ -2388,6 +2684,236 @@
                 'Delete Match?',
                 `Are you sure you want to delete the match against ${fixture.oppositionName}? This action cannot be undone.`,
                 'deleteFixture',
+                fixtureId
+            );
+        }
+        async function addScheduledFixture() {
+            if (state.userRole === 'viewer' || state.userRole === 'scorer') {
+                showToast("You don't have permission to add fixtures.", 'error');
+                return;
+            }
+            if (!state.isLoggedIn) {
+                showToast("You must be logged in to add a fixture.", 'error');
+                return;
+            }
+            if (!state.activeSeasonId) {
+                showToast("Please set an active season before adding a fixture.", 'warning');
+                return;
+            }
+
+            // Show a modal for adding fixture details
+            showAddFixtureModal();
+        }
+
+        async function startMatchFromScheduled(fixtureId) {
+            if (state.userRole === 'viewer' || state.userRole === 'scorer') {
+                showToast("You don't have permission to start matches.", 'error');
+                return;
+            }
+
+            const scheduledFixture = state.upcomingFixtures.find(f => f.id === fixtureId);
+            if (!scheduledFixture) {
+                showToast("Fixture not found.", 'error');
+                return;
+            }
+
+            try {
+                // Update the fixture status to live and set up games with empty player selections
+                const games = GAME_TITLES.map((title, i) => {
+                    const isDoubles = title.includes("Doubles");
+                    return {
+                        title: title,
+                        type: isDoubles ? 'doubles' : 'singles',
+                        playerIds: [],
+                        legsWon: 0,
+                        legsLost: 0,
+                        highCheckout: 0,
+                        fines: 0,
+                        finesList: [],
+                        playerScores: []
+                    };
+                });
+
+                await safeFirebaseCall('startMatch', async () => {
+                    const fixtureRef = doc(state.db, FIXTURES_COLLECTION, fixtureId);
+                    return await updateDoc(fixtureRef, {
+                        status: 'live',
+                        games: games,
+                        activeGameIndex: 0,
+                        createdAt: serverTimestamp() // Update to when match actually started
+                    });
+                });
+
+                // Pre-fill the setup form with the fixture details
+                ui.oppositionNameInput.value = scheduledFixture.oppositionName;
+                if (scheduledFixture.scheduledDate) {
+                    const matchDate = scheduledFixture.scheduledDate.toDate();
+                    ui.matchDateInput.value = matchDate.toISOString().split('T')[0];
+                }
+
+                showToast("Match started! Please set up your team.", 'success');
+                switchTab('setup');
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error starting match:", error);
+                    showToast("Could not start the match.", 'error');
+                }
+            }
+        }
+
+        function showAddFixtureModal() {
+            const modal = document.createElement('div');
+            modal.id = 'add-fixture-modal';
+            modal.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold dark:text-white">Add Fixture</h3>
+                        <button id="add-fixture-close" class="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="fixture-location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                            <select id="fixture-location" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="Away">Away</option>
+                                <option value="Home">Home</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="fixture-opposition" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opposition</label>
+                            <input type="text" id="fixture-opposition" placeholder="e.g., The King's Arms" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="fixture-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Match Date</label>
+                            <input type="date" id="fixture-date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="fixture-venue" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Venue (optional)</label>
+                            <input type="text" id="fixture-venue" placeholder="e.g., The King's Arms" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div id="fixture-address-container">
+                            <label for="fixture-address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Address (for maps)</label>
+                            <input type="text" id="fixture-address" placeholder="e.g., 123 High Street, Burnaby Village, BC V5A 1A1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button id="add-fixture-cancel" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
+                            <button id="add-fixture-submit" class="bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors">Add Fixture</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Set default date to today
+            document.getElementById('fixture-date').value = new Date().toISOString().split('T')[0];
+
+            // Event listeners
+            document.getElementById('add-fixture-close').addEventListener('click', closeAddFixtureModal);
+            document.getElementById('add-fixture-cancel').addEventListener('click', closeAddFixtureModal);
+            document.getElementById('add-fixture-submit').addEventListener('click', submitAddFixture);
+            // Hide/show address field based on location selection
+            document.getElementById('fixture-location').addEventListener('change', (e) => {
+                const addressContainer = document.getElementById('fixture-address-container');
+                const addressInput = document.getElementById('fixture-address');
+                if (e.target.value === 'Home') {
+                    addressContainer.style.display = 'none';
+                    addressInput.value = ''; // Clear the address when hiding
+                } else {
+                    addressContainer.style.display = 'block';
+                }
+            });
+        }
+
+        function closeAddFixtureModal() {
+            const modal = document.getElementById('add-fixture-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function submitAddFixture() {
+            const oppositionName = validateInput(document.getElementById('fixture-opposition').value);
+            const fixtureDate = document.getElementById('fixture-date').value;
+            const venue = document.getElementById('fixture-venue').value.trim();
+            const location = document.getElementById('fixture-location').value;
+            const address = document.getElementById('fixture-address').value.trim();
+
+            if (!oppositionName) {
+                showToast("Please enter an opposition name.", 'warning');
+                return;
+            }
+            if (!fixtureDate) {
+                showToast("Please select a match date.", 'warning');
+                return;
+            }
+
+            try {
+                const scheduledDate = Timestamp.fromDate(new Date(fixtureDate));
+
+                // Create empty games structure for scheduled fixture
+                const games = GAME_TITLES.map((title) => {
+                    const isDoubles = title.includes("Doubles");
+                    return {
+                        title: title,
+                        type: isDoubles ? 'doubles' : 'singles',
+                        playerIds: [],
+                        legsWon: 0,
+                        legsLost: 0,
+                        highCheckout: 0,
+                        fines: 0,
+                        finesList: [],
+                        playerScores: []
+                    };
+                });
+
+                await safeFirebaseCall('addScheduledFixture', async () => {
+                    return await addDoc(collection(state.db, FIXTURES_COLLECTION), {
+                        seasonId: state.activeSeasonId,
+                        oppositionName: oppositionName,
+                        scheduledDate: scheduledDate,
+                        venue: venue || null,
+                        location: location,
+                        address: address || null,
+                        games: games,
+                        status: 'scheduled',
+                        createdAt: serverTimestamp()
+                    });
+                });
+
+                showToast(`Fixture against ${oppositionName} added!`);
+                closeAddFixtureModal();
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else if (error.message.includes('Invalid characters') || error.message.includes('Input too long')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error adding fixture:", error);
+                    showToast("Could not add fixture.", 'error');
+                }
+            }
+        }
+
+        function deleteUpcomingFixture(fixtureId) {
+            const fixture = state.upcomingFixtures.find(f => f.id === fixtureId);
+            if (!fixture) return;
+            openConfirmModal(
+                'Delete Fixture?',
+                `Are you sure you want to delete the fixture against ${fixture.oppositionName}? This action cannot be undone.`,
+                'deleteUpcomingFixture',
+                fixtureId
+            );
+        }
+
+        function deletePreviousFixture(fixtureId) {
+            const fixture = state.previousFixtures.find(f => f.id === fixtureId);
+            if (!fixture) return;
+            openConfirmModal(
+                'Delete Match?',
+                `Are you sure you want to delete the match against ${fixture.oppositionName}? This action cannot be undone.`,
+                'deletePreviousFixture',
                 fixtureId
             );
         }
@@ -3076,7 +3602,9 @@
             validateStoredData();
 
             // Use dev Firebase when in Codespaces, production otherwise
-            const firebaseConfig = (location.hostname.includes('github.dev') || location.hostname.includes('codespaces') || location.hostname.includes('app.github.dev')|| location.hostname.includes('localhost'))
+            const isDevelopment = location.hostname.includes('github.dev') || location.hostname.includes('codespaces') || location.hostname.includes('app.github.dev') || location.hostname.includes('localhost');
+
+            const firebaseConfig = isDevelopment
                 ? {
                     // DEV PROJECT CONFIG - Get these from your dev Firebase project
                     apiKey: "AIzaSyC6Ctix8MZtCj6AkWCLkwtZPayOidXLITA",
@@ -3096,6 +3624,14 @@
                     messagingSenderId: "520662271304",
                     appId: "1:520662271304:web:abb1ca68445511c8bb1f7d"
                   };
+
+            // Show dev indicator if in development
+            if (isDevelopment) {
+                const devIndicator = document.getElementById('dev-indicator');
+                const dbInfo = document.getElementById('dev-db-info');
+                devIndicator.classList.remove('hidden');
+                dbInfo.textContent = `DB: ${firebaseConfig.projectId}`;
+            }
 
             const app = initializeApp(firebaseConfig);
             state.db = getFirestore(app);
@@ -3274,7 +3810,6 @@
                 const fixturesUnsub = onSnapshot(query(collection(state.db, FIXTURES_COLLECTION)), (snapshot) => {
                     ui.connectionStatus.classList.add('hidden');
                     const allFixtures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    allFixtures.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
                     const activeFixture = allFixtures.find(f => f.status === 'live');
 
@@ -3289,7 +3824,22 @@
                         state.lastTurnSeq = 0;
                     }
 
-                    state.previousFixtures = allFixtures.filter(f => f.status === 'finished');
+                    state.previousFixtures = allFixtures
+                        .filter(f => f.status === 'finished')
+                        .sort((a, b) => {
+                            const dateA = a.scheduledDate?.toMillis ? a.scheduledDate.toMillis() : (a.createdAt?.toMillis() || 0);
+                            const dateB = b.scheduledDate?.toMillis ? b.scheduledDate.toMillis() : (b.createdAt?.toMillis() || 0);
+                            return dateB - dateA;
+                        });
+
+                    state.upcomingFixtures = allFixtures
+                        .filter(f => f.status === 'scheduled')
+                        .sort((a, b) => {
+                            const dateA = a.scheduledDate?.toMillis ? a.scheduledDate.toMillis() : 0;
+                            const dateB = b.scheduledDate?.toMillis ? b.scheduledDate.toMillis() : 0;
+                            return dateA - dateB;
+                        });
+
                     render();
                 }, (error) => handleError(error, 'fixtures'));
 
@@ -3447,19 +3997,57 @@
                 if (deleteBtn) deletePlayer(deleteBtn.dataset.playerId);
             });
 
-            ui.previousMatchesList.addEventListener('click', (e) => {
-                const matchBtn = e.target.closest('.select-match-btn');
-                const deleteBtn = e.target.closest('.delete-fixture-btn');
+            // Fixtures tab event listeners
+            ui.fixturesTabUpcoming.addEventListener('click', () => {
+                state.activeFixturesTab = 'upcoming';
+                render();
+            });
+
+            ui.fixturesTabPrevious.addEventListener('click', () => {
+                state.activeFixturesTab = 'previous';
+                render();
+            });
+
+            ui.addFixtureBtn.addEventListener('click', addScheduledFixture);
+
+            // Upcoming fixtures list events
+            ui.upcomingFixturesList.addEventListener('click', (e) => {
+                const selectBtn = e.target.closest('.select-upcoming-match-btn');
+                const startBtn = e.target.closest('.start-match-btn');
+                const deleteBtn = e.target.closest('.delete-upcoming-fixture-btn');
 
                 if (deleteBtn) {
                     e.stopPropagation();
-                    deleteFixture(deleteBtn.dataset.fixtureId);
+                    deleteUpcomingFixture(deleteBtn.dataset.fixtureId);
                     return;
                 }
 
-                if (matchBtn) {
-                    state.selectedPreviousFixtureId = matchBtn.dataset.fixtureId;
-                    render();
+                if (startBtn) {
+                    e.stopPropagation();
+                    startMatchFromScheduled(startBtn.dataset.fixtureId);
+                    return;
+                }
+
+                if (selectBtn) {
+                    const fixtureId = selectBtn.dataset.fixtureId;
+                    openFixtureModal(fixtureId, 'upcoming');
+                }
+            });
+
+            // Previous fixtures list events
+            ui.previousFixturesList.addEventListener('click', (e) => {
+                const selectBtn = e.target.closest('.select-previous-match-btn');
+                const deleteBtn = e.target.closest('.delete-previous-fixture-btn');
+
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    deletePreviousFixture(deleteBtn.dataset.fixtureId);
+                    return;
+                }
+
+                if (selectBtn) {
+                    const fixtureId = selectBtn.dataset.fixtureId;
+                    openFixtureModal(fixtureId, 'previous');
                 }
             });
 
@@ -3495,6 +4083,7 @@
             ui.playerCardModal.closeBtn.addEventListener('click', () => {
                 state.playerCard.isOpen = false;
                 renderPlayerCard();
+                closeFixtureModal();
             });
 
             ui.playerCardModal.content.addEventListener('change', (e) => {
@@ -3654,6 +4243,24 @@
         }
         ui.headerSignoutBtn.addEventListener('click', handleHeaderButtonClick);
         ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
+        document.getElementById('stats-table-header').addEventListener('click', (e) => {
+                const header = e.target.closest('th[data-sort]');
+                if (!header) return;
+
+                triggerHaptic('light');
+                const newColumn = header.dataset.sort;
+                const currentSort = state.leaderboardSort;
+
+                if (newColumn === currentSort.column) {
+                    // Same column, flip direction
+                    currentSort.direction = currentSort.direction === 'desc' ? 'asc' : 'desc';
+                } else {
+                    // New column, default to desc
+                    currentSort.column = newColumn;
+                    currentSort.direction = 'desc';
+                }
+                renderLeaderboard();
+            });
         init();
     </script>
 </body>
