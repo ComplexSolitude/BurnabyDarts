@@ -1585,7 +1585,12 @@ body::before {
                         </div>
                     `;
                 } else {
-                    ui.currentMatchResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No active match.</p>';
+                    ui.currentMatchResults.innerHTML = `
+                        <p class="text-gray-500 dark:text-gray-400">No active match.</p>
+                        <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
+                         <p class="font-semibold dark:text-white">No Upcoming Matches</p>
+                        </div>
+                    `;
                 }
                 ui.currentMatchScoreContainer.innerHTML = '';
                 return;
@@ -3177,27 +3182,74 @@ body::before {
             updateGameData();
         }
 
-        function addFine(amount, reason) {
+        async function addFine(amount, reason) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game) return;
-
-            // Initialize finesList if it doesn't exist
-            if (!game.finesList) game.finesList = [];
-
-            // Add the individual fine with a unique ID
-            const fineId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-            game.finesList.push({
+        
+            // Create unique fine with timestamp + user ID for better uniqueness
+            const fineId = `${Date.now()}-${state.userId || 'anon'}-${Math.random().toString(36).substr(2, 9)}`;
+            const newFine = {
                 id: fineId,
                 amount: amount,
                 reason: reason,
-                timestamp: new Date().toISOString()
-            });
-
-            // Update total fines
-            game.fines = (game.fines || 0) + amount;
-            showToast(`Fine added: ${reason} (+£${(amount/100).toFixed(2)})`);
-            render();
-            updateGameData();
+                timestamp: new Date().toISOString(),
+                addedBy: state.userId || 'anonymous'
+            };
+        
+            try {
+                const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
+                
+                await safeFirebaseCall('addFine', async () => {
+                    return await runTransaction(state.db, async (transaction) => {
+                        const fixtureDoc = await transaction.get(fixtureRef);
+                        if (!fixtureDoc.exists()) {
+                            throw new Error("Fixture document does not exist!");
+                        }
+                        
+                        const serverData = fixtureDoc.data();
+                        const currentGame = serverData.games[state.currentGameIndex];
+                        
+                        // Check if this exact fine already exists (prevent duplicates)
+                        const existingFines = currentGame.finesList || [];
+                        const duplicateFine = existingFines.find(f => 
+                            f.reason === reason && 
+                            f.amount === amount && 
+                            Math.abs(new Date(f.timestamp).getTime() - new Date(newFine.timestamp).getTime()) < 5000 // Within 5 seconds
+                        );
+                        
+                        if (duplicateFine) {
+                            throw new Error('DUPLICATE_FINE');
+                        }
+                        
+                        // Add fine to server data
+                        const updatedFinesList = [...existingFines, newFine];
+                        const updatedFinesTotal = (currentGame.fines || 0) + amount;
+                        
+                        const updatedGames = [...serverData.games];
+                        updatedGames[state.currentGameIndex] = {
+                            ...currentGame,
+                            finesList: updatedFinesList,
+                            fines: updatedFinesTotal
+                        };
+                        
+                        return transaction.update(fixtureRef, {
+                            games: updatedGames
+                        });
+                    });
+                });
+                
+                showToast(`Fine added: ${reason} (+£${(amount/100).toFixed(2)})`);
+                
+            } catch (error) {
+                if (error.message === 'DUPLICATE_FINE') {
+                    showToast(`Fine already added by another scorer!`, 'warning');
+                } else if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error adding fine:", error);
+                    showToast("Could not add fine, please try again.", 'error');
+                }
+            }
         }
 
         // --- FIX STARTS HERE ---
@@ -4230,11 +4282,24 @@ body::before {
                     }
                 }
             });
+            let fineDebounce = {};
             ui.fineBtn26.addEventListener('click', () => {
+                const key = 'fine-26';
+                if (fineDebounce[key]) return; // Prevent rapid clicks
+                
+                fineDebounce[key] = true;
+                setTimeout(() => delete fineDebounce[key], 2000); // 2 second cooldown
+                
                 triggerHaptic('medium');
                 addFine(26, 'Score of 26');
             });
             ui.fineBtnMiss.addEventListener('click', () => {
+                const key = 'fine-miss';
+                if (fineDebounce[key]) return; // Prevent rapid clicks
+                
+                fineDebounce[key] = true;
+                setTimeout(() => delete fineDebounce[key], 2000); // 2 second cooldown
+                
                 triggerHaptic('medium');
                 addFine(50, 'Missed Board');
             });
