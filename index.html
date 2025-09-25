@@ -1568,21 +1568,24 @@ body::before {
 
         function renderCurrentMatch() {
             if (!state.fixture.id) {
-                // Show next upcoming match if no active match
+                // Show "No active match" message
+                ui.currentMatchOpponent.textContent = 'Live results as they come in.';
+                
+                // Show next upcoming match if available
                 const nextMatch = getNextUpcomingMatch();
                 if (nextMatch) {
                     const matchDate = nextMatch.scheduledDate?.toDate ? nextMatch.scheduledDate.toDate() : new Date(nextMatch.scheduledDate);
-                    ui.currentMatchOpponent.textContent = `Next: vs ${nextMatch.oppositionName}`;
                     ui.currentMatchResults.innerHTML = `
+                        <p class="text-gray-500 dark:text-gray-400 mb-4">No active match.</p>
                         <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
                             <p class="font-semibold dark:text-white">Next Match</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">vs ${nextMatch.oppositionName}</p>
                             <p class="text-sm text-gray-600 dark:text-gray-400">${matchDate.toLocaleDateString()}</p>
                             ${nextMatch.venue ? `<p class="text-sm text-gray-600 dark:text-gray-400">${nextMatch.venue}</p>` : ''}
                         </div>
                     `;
                 } else {
                     ui.currentMatchResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No active match.</p>';
-                    ui.currentMatchOpponent.textContent = 'Live results as they come in.';
                 }
                 ui.currentMatchScoreContainer.innerHTML = '';
                 return;
