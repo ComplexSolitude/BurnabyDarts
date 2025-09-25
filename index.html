@@ -3000,14 +3000,15 @@ body::before {
             }
 
             try {
-                await safeFirebaseCall('createFixture', async () => {
+                 await safeFirebaseCall('createFixture', async () => {
                     return await addDoc(collection(state.db, FIXTURES_COLLECTION), {
                         seasonId: state.activeSeasonId,
                         oppositionName: oppositionName,
                         games: games,
                         activeGameIndex: 0,
                         status: 'live',
-                        createdAt: createdAt
+                        createdAt: createdAt,
+                        scheduledDate: createdAt
                     });
                 });
                 showToast("Fixture created! Let's play darts!");
