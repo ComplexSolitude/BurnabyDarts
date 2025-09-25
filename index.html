@@ -500,9 +500,73 @@ body::before {
 
                 <!-- League Stats Tab -->
                  <div id="tab-content-stats" class="hidden">
-                    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <h2 class="text-xl font-semibold dark:text-white">Season Leaderboard</h2>
-                        <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
+                    <div class="px-4 sm:px-6 py-4 space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <h2 class="text-xl font-semibold dark:text-white">Season Leaderboard</h2>
+                            <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center">
+                                <button id="toggle-columns-btn" class="bg-gray-600 dark:bg-gray-700 text-white px-3 py-2 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors text-sm">
+                                    Show/Hide Columns
+                                </button>
+                                <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
+                            </div>
+                        </div>
+                        
+                        <!-- Column Visibility Controls -->
+                        <div id="column-controls" class="hidden bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Choose Columns to Display</h3>
+                                <div class="flex gap-2">
+                                    <button id="select-all-columns" class="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 transition-colors">Select All</button>
+                                    <button id="deselect-all-columns" class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors">Clear All</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="gamesPlayed" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                    <span class="dark:text-gray-300">Games Played</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="gamesWon" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
+                                    <span class="dark:text-gray-300">Games Won</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="gamesLost" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                    <span class="dark:text-gray-300">Games Lost</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="legsWon" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
+                                    <span class="dark:text-gray-300">Legs Won</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="legsLost" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                    <span class="dark:text-gray-300">Legs Lost</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="legWinPercent" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
+                                    <span class="dark:text-gray-300">Leg Win %</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="scores100" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
+                                    <span class="dark:text-gray-300">100+ Scores</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="scores140" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                    <span class="dark:text-gray-300">140+ Scores</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="scores180" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
+                                    <span class="dark:text-gray-300">180 Scores</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="highCheckout" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
+                                    <span class="dark:text-gray-300">High Checkout</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="totalFines" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                    <span class="dark:text-gray-300">Total Fines</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -783,6 +847,19 @@ body::before {
             leaderboardSort: { // New state for sorting
                 column: 'gamesWon',
                 direction: 'desc' // 'asc' or 'desc'
+            },
+            columnVisibility: { // New state for column visibility
+                gamesPlayed: false,
+                gamesWon: true,
+                gamesLost: false,
+                legsWon: true,
+                legsLost: false,
+                legWinPercent: true,
+                scores100: true,
+                scores140: false,
+                scores180: true,
+                highCheckout: true,
+                totalFines: false
             }
         };
 
@@ -1359,7 +1436,15 @@ body::before {
             });
             ui.seasonFilterSelect.value = state.selectedStatsSeasonId;
 
-            ui.leaderboardBody.innerHTML = '';
+           // Update column visibility controls
+           document.querySelectorAll('.column-checkbox').forEach(checkbox => {
+               checkbox.checked = state.columnVisibility[checkbox.dataset.column];
+           });
+           
+           ui.leaderboardBody.innerHTML = '';
+           
+           // Get visible columns
+           const visibleColumns = Object.keys(state.columnVisibility).filter(col => state.columnVisibility[col]);
             let playersWithStats = state.players.map(p => {
                 const singlesStats = getPlayerStats(p, state.selectedStatsSeasonId, 'singles');
                 const combinedStats = getPlayerStats(p, state.selectedStatsSeasonId, 'combined');
@@ -1407,27 +1492,45 @@ body::before {
             });
 
 
+            // Update table headers visibility
+            document.querySelectorAll('#stats-table-header th[data-sort]').forEach(header => {
+                const column = header.dataset.sort;
+                header.style.display = state.columnVisibility[column] ? '' : 'none';
+            });
+            
             playersWithStats.forEach(player => {
                 const stats = player.displayStats;
-            const tr = document.createElement('tr');
-            tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
-            tr.dataset.playerId = player.id;
-            tr.innerHTML = `
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesPlayed}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesWon}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.gamesLost}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsWon}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legsLost}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.legWinPercent.toFixed(0)}%</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores100}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores140}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.scores180}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${stats.highCheckout}</td>
-                <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">£${(stats.totalFines / 100).toFixed(2)}</td>
-            `;
-            ui.leaderboardBody.appendChild(tr);
-         });
+                const tr = document.createElement('tr');
+                tr.className = 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700';
+                tr.dataset.playerId = player.id;
+                
+                // Player name column (always visible)
+                let cellsHTML = `<td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${player.name}</td>`;
+                
+                // Add cells for visible columns only
+                const columnData = {
+                    gamesPlayed: stats.gamesPlayed,
+                    gamesWon: stats.gamesWon,
+                    gamesLost: stats.gamesLost,
+                    legsWon: stats.legsWon,
+                    legsLost: stats.legsLost,
+                    legWinPercent: `${stats.legWinPercent.toFixed(0)}%`,
+                    scores100: stats.scores100,
+                    scores140: stats.scores140,
+                    scores180: stats.scores180,
+                    highCheckout: stats.highCheckout,
+                    totalFines: `£${(stats.totalFines / 100).toFixed(2)}`
+                };
+                
+                Object.keys(columnData).forEach(column => {
+                    if (state.columnVisibility[column]) {
+                        cellsHTML += `<td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${columnData[column]}</td>`;
+                    }
+                });
+                
+                tr.innerHTML = cellsHTML;
+                ui.leaderboardBody.appendChild(tr);
+            });
 
             // Update header arrows
             document.querySelectorAll('#stats-table-header th').forEach(th => {
@@ -4252,6 +4355,40 @@ body::before {
                     container.classList.add('pb-4');
                     container.classList.remove('sm:p-6');
                 }
+            });
+        
+            // Column visibility controls
+            document.getElementById('toggle-columns-btn').addEventListener('click', () => {
+                const controls = document.getElementById('column-controls');
+                const isHidden = controls.classList.contains('hidden');
+                
+                if (isHidden) {
+                    controls.classList.remove('hidden');
+                } else {
+                    controls.classList.add('hidden');
+                }
+            });
+
+            document.getElementById('select-all-columns').addEventListener('click', () => {
+                Object.keys(state.columnVisibility).forEach(column => {
+                    state.columnVisibility[column] = true;
+                });
+                renderLeaderboard();
+            });
+
+            document.getElementById('deselect-all-columns').addEventListener('click', () => {
+                Object.keys(state.columnVisibility).forEach(column => {
+                    state.columnVisibility[column] = false;
+                });
+                renderLeaderboard();
+            });
+
+            document.querySelectorAll('.column-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const column = e.target.dataset.column;
+                    state.columnVisibility[column] = e.target.checked;
+                    renderLeaderboard();
+                });
             });
         }
         ui.headerSignoutBtn.addEventListener('click', handleHeaderButtonClick);
