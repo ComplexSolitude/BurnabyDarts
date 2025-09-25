@@ -502,69 +502,7 @@ body::before {
                  <div id="tab-content-stats" class="hidden">
                     <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                         <h2 class="text-xl font-semibold dark:text-white">Season Leaderboard</h2>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <div class="relative">
-                                <button id="column-chooser-btn" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-sm flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 002-2M9 7a2 2 0 00-2 2v10m12 0V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7m0 0a2 2 0 00-2-2H9a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7z"></path>
-                                    </svg>
-                                    Columns
-                                </button>
-                                <div id="column-chooser-dropdown" class="hidden absolute right-0 mt-2 w-64 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 z-50 p-3">
-                                    <div class="space-y-2 max-h-64 overflow-y-auto">
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-gamesPlayed" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="gamesPlayed" checked>
-                                            <label for="col-gamesPlayed" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Games Played</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-gamesWon" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="gamesWon" checked>
-                                            <label for="col-gamesWon" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Games Won</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-gamesLost" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="gamesLost" checked>
-                                            <label for="col-gamesLost" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Games Lost</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-legsWon" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="legsWon" checked>
-                                            <label for="col-legsWon" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Legs Won</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-legsLost" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="legsLost" checked>
-                                            <label for="col-legsLost" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Legs Lost</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-legWinPercent" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="legWinPercent" checked>
-                                            <label for="col-legWinPercent" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Leg Win %</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-scores100" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="scores100" checked>
-                                            <label for="col-scores100" class="ml-2 text-sm text-gray-700 dark:text-gray-300">100+ Scores</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-scores140" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="scores140" checked>
-                                            <label for="col-scores140" class="ml-2 text-sm text-gray-700 dark:text-gray-300">140+ Scores</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-scores180" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="scores180" checked>
-                                            <label for="col-scores180" class="ml-2 text-sm text-gray-700 dark:text-gray-300">180s</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-highCheckout" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="highCheckout" checked>
-                                            <label for="col-highCheckout" class="ml-2 text-sm text-gray-700 dark:text-gray-300">High Checkout</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="col-totalFines" class="column-toggle h-4 w-4 text-emerald-600 border-gray-300 dark:border-gray-500 rounded focus:ring-emerald-500" data-column="totalFines" checked>
-                                            <label for="col-totalFines" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Total Fines</label>
-                                        </div>
-                                    </div>
-                                    <div class="border-t border-gray-200 dark:border-gray-600 mt-3 pt-3 flex gap-2">
-                                        <button id="select-all-columns" class="flex-1 text-xs px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700">All</button>
-                                        <button id="select-mobile-columns" class="flex-1 text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Mobile</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
-                        </div>
+                        <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
