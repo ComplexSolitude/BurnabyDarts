@@ -222,8 +222,8 @@
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Current Match</h2>
                             <div class="flex gap-2">
-                                <button id="match-view-team-a" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">Team A</button>
-                                <button id="match-view-team-b" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">Team B</button>
+                                <button id="match-view-team-a" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">A Team</button>
+                                <button id="match-view-team-b" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">B Team</button>
                             </div>
                         </div>
                         <p id="current-match-opponent" class="mt-1 text-sm text-gray-600 dark:text-gray-400">Live results as they come in.</p>
@@ -241,8 +241,8 @@
                             <button id="fixtures-tab-previous" class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Previous</button>
                         </nav>
                         <div class="flex gap-2 mb-2">
-                            <button id="fixtures-view-team-a" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">Team A</button>
-                            <button id="fixtures-view-team-b" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">Team B</button>
+                            <button id="fixtures-view-team-a" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">A Team</button>
+                            <button id="fixtures-view-team-b" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">B Team</button>
                         </div>
                     </div>
 
@@ -511,8 +511,8 @@
                                 </button>
                                 <select id="team-filter-select" aria-label="Team Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <option value="all">All Teams</option>
-                                    <option value="A">Team A</option>
-                                    <option value="B">Team B</option>
+                                    <option value="A">A Team</option>
+                                    <option value="B">B Team</option>
                                 </select>
                                 <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
                             </div>
@@ -782,8 +782,8 @@
                         <label for="profile-edit-team" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Team</label>
                         <select id="profile-edit-team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option value="">No Team</option>
-                            <option value="A">Team A</option>
-                            <option value="B">Team B</option>
+                            <option value="A">A Team</option>
+                            <option value="B">B Team</option>
                         </select>
                     </div>
                     <div class="flex justify-end space-x-3 mt-6">
@@ -1196,8 +1196,8 @@
                             <input type="text" id="admin-new-player-nickname" placeholder="Nickname (optional)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <select id="admin-new-player-team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 <option value="">No Team</option>
-                                <option value="A">Team A</option>
-                                <option value="B">Team B</option>
+                                <option value="A">A Team</option>
+                                <option value="B">B Team</option>
                             </select>
                             <button id="admin-add-player-btn" class="w-full bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-medium">Add Player</button>
                         </div>
@@ -1759,7 +1759,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                         </svg>
                         <p class="font-semibold text-lg text-yellow-900 dark:text-yellow-100 mb-2">No Team Assigned</p>
-                        <p class="text-yellow-800 dark:text-yellow-200">Please contact an admin to assign you to Team A or Team B.</p>
+                        <p class="text-yellow-800 dark:text-yellow-200">Please contact an admin to assign you to A Team or B Team.</p>
                     </div>
                 `;
                 ui.currentMatchScoreContainer.innerHTML = '';
@@ -2740,8 +2740,8 @@
                         <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
                             <select data-user-id="${doc.id}" class="user-team-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
                                 <option value="">No Team</option>
-                                <option value="A" ${userData.team === 'A' ? 'selected' : ''}>Team A</option>
-                                <option value="B" ${userData.team === 'B' ? 'selected' : ''}>Team B</option>
+                                <option value="A" ${userData.team === 'A' ? 'selected' : ''}>A Team</option>
+                                <option value="B" ${userData.team === 'B' ? 'selected' : ''}>B Team</option>
                             </select>
                             <select data-user-id="${doc.id}" class="user-role-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
                                 <option value="viewer" ${userData.role === 'viewer' ? 'selected' : ''}>Viewer</option>
