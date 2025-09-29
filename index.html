@@ -1654,7 +1654,6 @@ body::before {
                 
                 // Show next upcoming match for this team
                 const teamUpcoming = state.upcomingFixtures.filter(f => f.team === state.activeMatchView);
-                const nextMatch = teamUpcoming.length > 0 ? teamUpcoming[0] : null;
                 
                 // Show next upcoming match if available
                 const nextMatch = getNextUpcomingMatch();
