@@ -1075,22 +1075,23 @@
             }
         };
 
-        // --- HELPER FUNCTIONS ---
-        function getNextUpcomingMatch() {
+        function getNextUpcomingMatch(teamFilter = null) {
             if (state.upcomingFixtures.length === 0) return null;
-
+        
             const now = new Date();
             const upcoming = state.upcomingFixtures
                 .filter(fixture => {
                     const matchDate = fixture.scheduledDate?.toDate ? fixture.scheduledDate.toDate() : new Date(fixture.scheduledDate);
-                    return matchDate >= now;
+                    const isUpcoming = matchDate >= now;
+                    const matchesTeam = !teamFilter || fixture.team === teamFilter;
+                    return isUpcoming && matchesTeam;
                 })
                 .sort((a, b) => {
                     const dateA = a.scheduledDate?.toDate ? a.scheduledDate.toDate() : new Date(a.scheduledDate);
                     const dateB = b.scheduledDate?.toDate ? b.scheduledDate.toDate() : new Date(b.scheduledDate);
                     return dateA - dateB;
                 });
-
+        
             return upcoming[0] || null;
         }
 
@@ -1772,9 +1773,7 @@
             if (!activeFixture && !state.fixture.id) {
                 // Show "No active match" message
                 ui.currentMatchOpponent.textContent = 'Live results as they come in.';
-                
-                // Show next upcoming match for this team
-                const teamUpcoming = state.upcomingFixtures.filter(f => f.team === state.activeMatchView);
+               
                 
                 // Show next upcoming match if available
                 const nextMatch = getNextUpcomingMatch();
