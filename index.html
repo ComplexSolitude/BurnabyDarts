@@ -1775,8 +1775,10 @@
                 ui.currentMatchOpponent.textContent = 'Live results as they come in.';
                
                 
-                // Show next upcoming match if available
-                const nextMatch = getNextUpcomingMatch();
+                // Show next upcoming match for the selected team view
+                console.log('Active match view:', state.activeMatchView);
+                const nextMatch = getNextUpcomingMatch(state.activeMatchView);
+                console.log('Next match found:', nextMatch);
                 if (nextMatch) {
                     const matchDate = nextMatch.scheduledDate?.toDate ? nextMatch.scheduledDate.toDate() : new Date(nextMatch.scheduledDate);
                     ui.currentMatchResults.innerHTML = `
