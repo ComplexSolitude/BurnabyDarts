@@ -1157,12 +1157,12 @@
                         ${state.userTeam ? `<p class="text-sm font-semibold">Team: ${state.userTeam}</p>` : '<p class="text-sm text-yellow-600 dark:text-yellow-400 font-semibold">⚠ No team assigned</p>'}
                     </div>
                 `;
-                loggedInContainer.appendChild(userInfoDiv);
+                usersPanel.appendChild(userInfoDiv);
 
                 // User management section (admin only)
                 if (state.userRole === 'admin') {
                     const userManagementDiv = document.createElement('div');
-                    userManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
+                    userManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 mt-6';
                     userManagementDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold dark:text-white">User Management</h3>
@@ -1202,16 +1202,12 @@
 
                         <div id="users-list" class="space-y-2 mb-4"></div>
                     `;
-                    loggedInContainer.appendChild(userManagementDiv);
+                    usersPanel.appendChild(userManagementDiv);
 
-                   // Load and display users
+                    // Load and display users
                     loadUsers();
                 }
 
-                usersPanel.appendChild(userInfoDiv);
-                if (state.userRole === 'admin') {
-                    usersPanel.appendChild(userManagementDiv);
-                }
                 loggedInContainer.appendChild(usersPanel);
 
                 // Players Content Panel (admin only)
