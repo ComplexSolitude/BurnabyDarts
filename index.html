@@ -2189,7 +2189,7 @@ body::before {
             signInText.textContent = 'Signing in...';
             signInBtn.classList.add('opacity-75', 'cursor-not-allowed');
 
-
+               try {
                const result = await signInWithPopup(state.auth, provider);
                const user = result.user;
                const email = user.email;
