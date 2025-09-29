@@ -1355,6 +1355,9 @@ body::before {
         function renderFixturePlayerSelectors() {
             const form = ui.fixtureForm;
             form.innerHTML = '';
+
+            const teamPlayers = state.players.filter(p => p.team === state.userTeam);
+            const playerOptions = teamPlayers.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
         
             GAME_TITLES.forEach((title, i) => {
                 const isDoubles = title.includes("Doubles");
