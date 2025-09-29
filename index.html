@@ -1227,6 +1227,7 @@
                         <nav class="-mb-px flex space-x-8" aria-label="Player Tabs">
                             <button id="player-tab-roster" class="player-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Roster</button>
                             <button id="player-tab-profiles" class="player-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Profiles</button>
+                            <button id="player-tab-archived" class="player-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Archived</button>
                         </nav>
                     `;
                     playersPanel.appendChild(playerSubTabs);
@@ -1305,26 +1306,94 @@
                     profilesPanel.appendChild(profileManagementDiv);
                     playersPanel.appendChild(profilesPanel);
 
+                    // Archived Panel
+                    const archivedPanel = document.createElement('div');
+                    archivedPanel.id = 'player-panel-archived';
+                    archivedPanel.className = 'hidden max-w-2xl';
+
+                    const archivedPlayersDiv = document.createElement('div');
+                    archivedPlayersDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
+                    archivedPlayersDiv.innerHTML = `
+                        <h3 class="text-lg font-semibold mb-4 dark:text-white">Archived Players</h3>
+                        <div id="admin-archived-player-list" class="space-y-2"></div>
+                    `;
+                    archivedPanel.appendChild(archivedPlayersDiv);
+                    playersPanel.appendChild(archivedPanel);
+
                     loggedInContainer.appendChild(playersPanel);
+
+                    // Function to render archived players
+                    const renderArchivedPlayers = () => {
+                        const list = document.getElementById('admin-archived-player-list');
+                        if (!list) return;
+
+                        list.innerHTML = '';
+                        const archivedPlayers = state.players.filter(p => p.archived);
+
+                        if (archivedPlayers.length === 0) {
+                            list.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">No archived players.</p>';
+                            return;
+                        }
+
+                        archivedPlayers.forEach(player => {
+                            const teamLabel = player.team ? `Team ${player.team}` : 'No Team';
+                            const playerEl = document.createElement('div');
+                            playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg opacity-75';
+                            playerEl.innerHTML = `
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium dark:text-white truncate">${player.name}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">${player.nickname || 'No nickname'} • ${teamLabel}</p>
+                                </div>
+                                <button data-player-id="${player.id}" class="admin-unarchive-player-btn text-emerald-500 hover:text-emerald-700 text-sm font-semibold ml-2">Restore</button>
+                            `;
+                            list.appendChild(playerEl);
+                        });
+
+                        // Add unarchive event listeners
+                        document.querySelectorAll('.admin-unarchive-player-btn').forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                unarchivePlayer(e.target.dataset.playerId);
+                            });
+                        });
+                    };
 
                     // Set up player sub-tab switching
                     setTimeout(() => {
                         document.getElementById('player-tab-roster')?.addEventListener('click', () => {
                             document.getElementById('player-panel-roster').classList.remove('hidden');
                             document.getElementById('player-panel-profiles').classList.add('hidden');
+                            document.getElementById('player-panel-archived').classList.add('hidden');
                             document.getElementById('player-tab-roster').classList.add('text-emerald-600', 'border-emerald-500');
                             document.getElementById('player-tab-roster').classList.remove('text-gray-500', 'border-transparent');
                             document.getElementById('player-tab-profiles').classList.add('text-gray-500', 'border-transparent');
                             document.getElementById('player-tab-profiles').classList.remove('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('player-tab-archived').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-archived').classList.remove('text-emerald-600', 'border-emerald-500');
                         });
 
                         document.getElementById('player-tab-profiles')?.addEventListener('click', () => {
                             document.getElementById('player-panel-profiles').classList.remove('hidden');
                             document.getElementById('player-panel-roster').classList.add('hidden');
+                            document.getElementById('player-panel-archived').classList.add('hidden');
                             document.getElementById('player-tab-profiles').classList.add('text-emerald-600', 'border-emerald-500');
                             document.getElementById('player-tab-profiles').classList.remove('text-gray-500', 'border-transparent');
                             document.getElementById('player-tab-roster').classList.add('text-gray-500', 'border-transparent');
                             document.getElementById('player-tab-roster').classList.remove('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('player-tab-archived').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-archived').classList.remove('text-emerald-600', 'border-emerald-500');
+                        });
+
+                        document.getElementById('player-tab-archived')?.addEventListener('click', () => {
+                            document.getElementById('player-panel-archived').classList.remove('hidden');
+                            document.getElementById('player-panel-roster').classList.add('hidden');
+                            document.getElementById('player-panel-profiles').classList.add('hidden');
+                            document.getElementById('player-tab-archived').classList.add('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('player-tab-archived').classList.remove('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-roster').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-roster').classList.remove('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('player-tab-profiles').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-profiles').classList.remove('text-emerald-600', 'border-emerald-500');
+                            renderArchivedPlayers();
                         });
 
                         // Profile editing handlers
@@ -1446,12 +1515,15 @@
         
             list.innerHTML = '';
             
-            if (state.players.length === 0) {
+            // Filter out archived players
+            const activePlayers = state.players.filter(p => !p.archived);
+            
+            if (activePlayers.length === 0) {
                 list.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">No players in roster.</p>';
                 return;
             }
         
-            state.players.forEach(player => {
+            activePlayers.forEach(player => {
                 const teamLabel = player.team ? `Team ${player.team}` : 'No Team';
                 const playerEl = document.createElement('div');
                 playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg';
@@ -1460,7 +1532,7 @@
                         <p class="font-medium dark:text-white truncate">${player.name}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">${player.nickname || 'No nickname'} • ${teamLabel}</p>
                     </div>
-                    <button data-player-id="${player.id}" class="admin-delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold ml-2">Remove</button>
+                    <button data-player-id="${player.id}" class="admin-archive-player-btn text-orange-500 hover:text-orange-700 text-sm font-semibold ml-2">Archive</button>
                 `;
                 list.appendChild(playerEl);
             });
@@ -1484,10 +1556,10 @@
             }
             
         
-            // Add delete event listeners
-            document.querySelectorAll('.admin-delete-player-btn').forEach(btn => {
+            // Add archive event listeners
+            document.querySelectorAll('.admin-archive-player-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    deletePlayer(e.target.dataset.playerId);
+                    archivePlayer(e.target.dataset.playerId);
                 });
             });
         }
@@ -2934,7 +3006,6 @@
                         if (teamFilter === 'A' && userData.team !== 'A') return;
                         if (teamFilter === 'B' && userData.team !== 'B') return;
                     }
-                    const userData = doc.data();
                     const userItem = document.createElement('div');
                     userItem.className = 'flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 dark:bg-gray-600 p-3 rounded-lg space-y-2 sm:space-y-0';
                     const hasTeam = userData.team === 'A' || userData.team === 'B';
@@ -3202,15 +3273,7 @@
 
         async function handleConfirmation() {
             const { action, data } = state.confirmation;
-            if (action === 'deletePlayer') {
-                try {
-                    await deleteDoc(doc(state.db, PLAYERS_COLLECTION, data));
-                    showToast("Player removed.");
-                } catch (error) {
-                    console.error("Error deleting player: ", error);
-                    showToast("Could not remove player.", 'error');
-                }
-            } else if (action === 'deleteFixture' || action === 'deleteUpcomingFixture' || action === 'deletePreviousFixture') {
+            if (action === 'deleteFixture' || action === 'deleteUpcomingFixture' || action === 'deletePreviousFixture') {
                  try {
                     const fixtureIdToDelete = data;
                     await deleteDoc(doc(state.db, FIXTURES_COLLECTION, fixtureIdToDelete));
@@ -3375,14 +3438,50 @@
             }
         }
      
-        function deletePlayer(playerId) {
+        async function archivePlayer(playerId) {
             const player = state.players.find(p => p.id === playerId);
-            openConfirmModal(
-                `Remove ${player?.name || 'Player'}?`,
-                'This will permanently remove the player from the roster. This action cannot be undone.',
-                'deletePlayer',
-                playerId
-            );
+            if (!player) return;
+            
+            try {
+                await safeFirebaseCall('archivePlayer', async () => {
+                    const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
+                    return await updateDoc(playerRef, {
+                        archived: true,
+                        archivedAt: serverTimestamp()
+                    });
+                });
+                showToast(`${player.name} has been archived.`);
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error archiving player:", error);
+                    showToast("Could not archive player.", 'error');
+                }
+            }
+        }
+
+        async function unarchivePlayer(playerId) {
+            const player = state.players.find(p => p.id === playerId);
+            if (!player) return;
+            
+            try {
+                await safeFirebaseCall('unarchivePlayer', async () => {
+                    const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
+                    return await updateDoc(playerRef, {
+                        archived: false,
+                        unarchivedAt: serverTimestamp()
+                    });
+                });
+                showToast(`${player.name} has been restored to the roster.`);
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error unarchiving player:", error);
+                    showToast("Could not unarchive player.", 'error');
+                }
+            }
         }
 
         function deleteFixture(fixtureId) {
