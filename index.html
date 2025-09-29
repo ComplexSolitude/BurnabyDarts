@@ -287,19 +287,7 @@ body::before {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                         <!-- Left Column -->
                         <div>
-                            <div id="player-roster-container" class="bg-white dark:bg-gray-800 p-4 sm:p-6 pb-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 sm:mb-8">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h2 class="text-xl font-semibold dark:text-white">Player Roster</h2>
-                                    <button id="toggle-roster-btn" class="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Show</button>
-                                </div>
-                                <div id="player-roster-content" class="hidden">
-                                    <div id="player-roster-list" class="space-y-3 mb-4"></div>
-                                    <div id="add-player-form" class="space-y-2">
-                                        <input type="text" id="new-player-name-input" aria-label="New Player Input" placeholder="Enter new player name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                        <button id="add-player-btn" class="w-full bg-gray-800 dark:bg-gray-600 text-white py-2 px-4 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-500 transition-colors duration-200">Add Player</button>
-                                    </div>
-                                </div>
-                            </div>
+                           <!-- Player roster moved to Admin tab -->
                             <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
                                 <h2 class="text-xl font-semibold mb-4 dark:text-white">Season Management</h2>
                                 <div id="seasons-list" class="space-y-3 mb-4"></div>
@@ -1008,10 +996,6 @@ body::before {
             closeMenuBtn: document.getElementById('close-menu-btn'),
             adminContentArea: document.getElementById('admin-content-area'),
             connectionStatus: document.getElementById('connection-status'),
-            playerRoster: document.getElementById('player-roster-list'),
-            addPlayerForm: document.getElementById('add-player-form'),
-            newPlayerInput: document.getElementById('new-player-name-input'),
-            addPlayerBtn: document.getElementById('add-player-btn'),
             addSeasonForm: document.getElementById('add-season-form'),
             oppositionNameInput: document.getElementById('opposition-name-input'),
             matchDateInput: document.getElementById('match-date-input'),
@@ -1113,7 +1097,6 @@ body::before {
             renderTabs();
             updateTeamSwitcherStyles('match');
             updateTeamSwitcherStyles('fixtures');
-            renderPlayerRoster();
             renderSeasonManagement();
             renderFixturePlayerSelectors();
             renderFixtureSetup();
@@ -1197,11 +1180,33 @@ body::before {
                     loadUsers();
                 }
 
-                // Player Profiles Management button (admin only)
+                // Player Management Section (admin only)
                 if (state.userRole === 'admin') {
+                    const playerManagementDiv = document.createElement('div');
+                    playerManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
+                    playerManagementDiv.innerHTML = `
+                        <h3 class="text-lg font-semibold mb-4 dark:text-white">Player Management</h3>
+                        <div id="admin-player-roster-list" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
+                        <div class="space-y-2">
+                            <input type="text" id="admin-new-player-name" placeholder="Player name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <input type="text" id="admin-new-player-nickname" placeholder="Nickname (optional)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <select id="admin-new-player-team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="">No Team</option>
+                                <option value="A">Team A</option>
+                                <option value="B">Team B</option>
+                            </select>
+                            <button id="admin-add-player-btn" class="w-full bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-medium">Add Player</button>
+                        </div>
+                    `;
+                    loggedInContainer.appendChild(playerManagementDiv);
+                
+                    // Render player list
+                    renderAdminPlayerRoster();
+                
+                    // Player Profiles Management button
                     const profilesBtn = document.createElement('button');
                     profilesBtn.textContent = 'Manage Player Profiles';
-                    profilesBtn.className = 'w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium';
+                    profilesBtn.className = 'w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium mt-4';
                     profilesBtn.addEventListener('click', openProfilesManagement);
                     loggedInContainer.appendChild(profilesBtn);
                 }
@@ -1231,6 +1236,58 @@ body::before {
                 viewerContainer.appendChild(returnBtn);
                 ui.adminContentArea.appendChild(viewerContainer);
             }
+        }
+
+        function renderAdminPlayerRoster() {
+            const list = document.getElementById('admin-player-roster-list');
+            if (!list) return;
+        
+            list.innerHTML = '';
+            
+            if (state.players.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">No players in roster.</p>';
+                return;
+            }
+        
+            state.players.forEach(player => {
+                const teamLabel = player.team ? `Team ${player.team}` : 'No Team';
+                const playerEl = document.createElement('div');
+                playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg';
+                playerEl.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium dark:text-white truncate">${player.name}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">${player.nickname || 'No nickname'} • ${teamLabel}</p>
+                    </div>
+                    <button data-player-id="${player.id}" class="admin-delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold ml-2">Remove</button>
+                `;
+                list.appendChild(playerEl);
+            });
+            // Show warning if there are temporary players
+            const tempPlayers = state.players.filter(p => p.isTemporary);
+            if (tempPlayers.length > 0) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-3';
+                warningDiv.innerHTML = `
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-yellow-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Temporary Players</h4>
+                            <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">${tempPlayers.length} player(s) were auto-created during match setup. Review and assign teams via "Manage Player Profiles".</p>
+                        </div>
+                    </div>
+                `;
+                list.insertBefore(warningDiv, list.firstChild);
+            }
+            
+        
+            // Add delete event listeners
+            document.querySelectorAll('.admin-delete-player-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    deletePlayer(e.target.dataset.playerId);
+                });
+            });
         }
 
         function renderTabs() {
@@ -1272,25 +1329,6 @@ body::before {
             }
         }
 
-            function renderPlayerRoster() {
-                ui.playerRoster.innerHTML = '';
-                const teamPlayers = state.players.filter(p => p.team === state.userTeam);
-                if (teamPlayers.length === 0) {
-                ui.playerRoster.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No players added yet.</p>`;
-            } else {
-                    teamPlayers.forEach(player => {
-                    const playerEl = document.createElement('div');
-                    playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg';
-                    playerEl.innerHTML = `
-                        <span class="font-medium dark:text-white">${player.name}</span>
-                        ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="delete-player-btn text-red-500 hover:text-red-700 text-sm font-semibold">Remove</button>` : ''}
-                    `;
-                    ui.playerRoster.appendChild(playerEl);
-                });
-            }
-            ui.addPlayerForm.classList.toggle('hidden', state.userRole === 'viewer' || state.userRole === 'scorer');
-        }
-
         function renderSeasonManagement() {
             ui.seasonsList.innerHTML = '';
             if (state.seasons.length === 0) {
@@ -1317,62 +1355,60 @@ body::before {
         function renderFixturePlayerSelectors() {
             const form = ui.fixtureForm;
             form.innerHTML = '';
-            if (state.players.length === 0) {
-                form.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Add players to the roster before setting up a match.</p>';
-                return;
-            }
-
-           const teamPlayers = state.players.filter(p => p.team === state.userTeam);
-           const playerOptions = teamPlayers.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-
+        
             GAME_TITLES.forEach((title, i) => {
                 const isDoubles = title.includes("Doubles");
                 const gameSetupEl = document.createElement('div');
                 gameSetupEl.className = 'mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg';
-
+        
                 // Get current player selections if there's an active fixture
                 const currentGame = state.fixture.games?.[i];
-                const currentP1 = currentGame?.playerIds?.[0] || '';
-                const currentP2 = currentGame?.playerIds?.[1] || '';
-
+                const currentP1Id = currentGame?.playerIds?.[0] || '';
+                const currentP2Id = currentGame?.playerIds?.[1] || '';
+                
+                // Get player names for current selections
+                const currentP1Name = currentP1Id ? (state.players.find(p => p.id === currentP1Id)?.name || '') : '';
+                const currentP2Name = currentP2Id ? (state.players.find(p => p.id === currentP2Id)?.name || '') : '';
+        
                 let selectorsHtml = `
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${title}</label>
                     <div class="grid grid-cols-1 ${isDoubles ? 'sm:grid-cols-2' : ''} gap-2">
                         <div>
-                            <select id="game-${i}-p1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="">Select Player 1</option>
+                            <input 
+                                type="text" 
+                                id="game-${i}-p1" 
+                                list="players-list-${i}-p1"
+                                placeholder="Select or type player name"
+                                value="${currentP1Name}"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                autocomplete="off">
+                            <datalist id="players-list-${i}-p1">
                                 ${playerOptions}
-                            </select>
+                            </datalist>
                         </div>
                 `;
-
+        
                 if (isDoubles) {
                     selectorsHtml += `
                         <div>
-                            <select id="game-${i}-p2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option value="">Select Player 2</option>
+                            <input 
+                                type="text" 
+                                id="game-${i}-p2" 
+                                list="players-list-${i}-p2"
+                                placeholder="Select or type player name"
+                                value="${currentP2Name}"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                autocomplete="off">
+                            <datalist id="players-list-${i}-p2">
                                 ${playerOptions}
-                            </select>
+                            </datalist>
                         </div>
                     `;
                 }
-
+        
                 selectorsHtml += '</div>';
                 gameSetupEl.innerHTML = selectorsHtml;
                 form.appendChild(gameSetupEl);
-
-                // Set the current selections after the elements are added to the DOM
-                setTimeout(() => {
-                    const p1Select = document.getElementById(`game-${i}-p1`);
-                    const p2Select = document.getElementById(`game-${i}-p2`);
-
-                    if (p1Select && currentP1) {
-                        p1Select.value = currentP1;
-                    }
-                    if (p2Select && currentP2) {
-                        p2Select.value = currentP2;
-                    }
-                }, 0);
             });
         }
 
@@ -2958,24 +2994,35 @@ body::before {
             closeMobileMenu();
         }
         async function addPlayer() {
+            const nameInput = document.getElementById('admin-new-player-name');
+            const nicknameInput = document.getElementById('admin-new-player-nickname');
+            const teamSelect = document.getElementById('admin-new-player-team');
+        
+            if (!nameInput) return; // Not in admin tab
+        
             try {
-                const name = validateInput(ui.newPlayerInput.value, 50); // ✅ ADD validation
+                const name = validateInput(nameInput.value, 50);
+                const nickname = validateInput(nicknameInput.value, 50);
+                const team = teamSelect.value || null;
+        
                 if (!name) {
                     showToast("Player name cannot be empty.", 'error');
                     return;
                 }
-
+        
                 await safeFirebaseCall('addPlayer', async () => {
                     return await addDoc(collection(state.db, PLAYERS_COLLECTION), {
                         name: name,
-                        nickname: '',
-                        team: state.userTeam, // Assign to user's team
+                        nickname: nickname,
+                        team: team,
                         stats: {}
                     });
                 });
-
+        
                 showToast(`${name} added to the roster.`);
-                ui.newPlayerInput.value = '';
+                nameInput.value = '';
+                nicknameInput.value = '';
+                teamSelect.value = '';
             } catch (error) {
                 if (error.message.includes('Invalid characters') || error.message.includes('Input too long')) {
                     showToast(error.message, 'error');
@@ -2987,6 +3034,48 @@ body::before {
                 }
             }
         }
+
+        async function getOrCreatePlayer(nameInput) {
+            const trimmedName = nameInput.trim();
+            if (!trimmedName) return null;
+            
+            // Check if it's an existing player ID (from datalist selection)
+            const existingById = state.players.find(p => p.id === trimmedName);
+            if (existingById) {
+                return trimmedName;
+            }
+            
+            // Check if a player with this exact name already exists
+            const existingByName = state.players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase());
+            if (existingByName) {
+                return existingByName.id;
+            }
+            
+            // Create new player in database
+            try {
+                const docRef = await safeFirebaseCall('createPlayer', async () => {
+                    return await addDoc(collection(state.db, PLAYERS_COLLECTION), {
+                        name: trimmedName,
+                        nickname: '',
+                        team: state.userTeam,
+                        stats: {},
+                        isTemporary: true // Flag for admin review
+                    });
+                });
+                
+                showToast(`${trimmedName} added to roster.`);
+                return docRef.id;
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error creating player:", error);
+                    showToast("Could not create player.", 'error');
+                }
+                return null;
+            }
+        }
+     
         function deletePlayer(playerId) {
             const player = state.players.find(p => p.id === playerId);
             openConfirmModal(
@@ -3283,37 +3372,50 @@ body::before {
             for (let i = 0; i < GAME_TITLES.length; i++) {
                 const title = GAME_TITLES[i];
                 const isDoubles = title.includes("Doubles");
-
-                const p1Select = document.getElementById(`game-${i}-p1`);
-                const p1 = p1Select.value;
-
-                const playerIds = [p1];
+            
+                const p1Input = document.getElementById(`game-${i}-p1`);
+                const p1Value = p1Input.value.trim();
+                
+                // Get or create player ID for player 1
+                const p1Id = await getOrCreatePlayer(p1Value);
+                if (!p1Id && p1Value) {
+                    showToast(`Could not add player for ${title}.`, 'error');
+                    return;
+                }
+            
+                const playerIds = p1Id ? [p1Id] : [];
+                
                 if (isDoubles) {
-                    const p2Select = document.getElementById(`game-${i}-p2`);
-                    const p2 = p2Select.value;
-                    if (p1 && p2 && p1 === p2) {
+                    const p2Input = document.getElementById(`game-${i}-p2`);
+                    const p2Value = p2Input.value.trim();
+                    
+                    // Get or create player ID for player 2
+                    const p2Id = await getOrCreatePlayer(p2Value);
+                    
+                    if (p1Id && p2Id && p1Id === p2Id) {
                         showToast(`A player cannot play with themselves in ${title}.`, 'error');
                         return;
                     }
-                    if (p2) playerIds.push(p2);
+                    
+                    if (p2Id) playerIds.push(p2Id);
                 }
-
+            
                 const playerScores = playerIds.map(() => ({
                     scores100: 0,
                     scores140: 0,
                     scores180: 0,
                     sillyThings: 0,
                 }));
-
+            
                 games.push({
                     title: title,
-                    type: isDoubles ? 'doubles' : 'singles', // Add game type
+                    type: isDoubles ? 'doubles' : 'singles',
                     playerIds: playerIds,
                     legsWon: 0,
                     legsLost: 0,
                     highCheckout: 0,
                     fines: 0,
-                    finesList: [], // Track individual fines with details
+                    finesList: [],
                     playerScores: playerScores
                 });
             }
@@ -4253,8 +4355,6 @@ body::before {
             Object.keys(ui.tabs).forEach(tabName => {
                 ui.tabs[tabName].addEventListener('click', () => switchTab(tabName));
             });
-            ui.addPlayerBtn.addEventListener('click', addPlayer);
-            ui.newPlayerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addPlayer(); });
             ui.addSeasonBtn.addEventListener('click', async () => {
                 const name = ui.newSeasonInput.value.trim();
                 if (!name) return showToast("Season name cannot be empty.", 'warning');
@@ -4297,18 +4397,29 @@ body::before {
                     const title = GAME_TITLES[i];
                     const isDoubles = title.includes("Doubles");
 
-                    const p1Select = document.getElementById(`game-${i}-p1`);
-                    const p1 = p1Select.value;
-
-                    const playerIds = [p1];
+                    const p1Input = document.getElementById(`game-${i}-p1`);
+                    const p1Value = p1Input.value.trim();
+                    
+                    const p1Id = await getOrCreatePlayer(p1Value);
+                    if (!p1Id && p1Value) {
+                        showToast(`Could not add player for ${title}.`, 'error');
+                        return;
+                    }
+                    
+                    const playerIds = p1Id ? [p1Id] : [];
+                    
                     if (isDoubles) {
-                        const p2Select = document.getElementById(`game-${i}-p2`);
-                        const p2 = p2Select.value;
-                        if (p1 && p2 && p1 === p2) {
+                        const p2Input = document.getElementById(`game-${i}-p2`);
+                        const p2Value = p2Input.value.trim();
+                        
+                        const p2Id = await getOrCreatePlayer(p2Value);
+                        
+                        if (p1Id && p2Id && p1Id === p2Id) {
                             showToast(`A player cannot play with themselves in ${title}.`, 'error');
                             return;
                         }
-                        if (p2) playerIds.push(p2);
+                        
+                        if (p2Id) playerIds.push(p2Id);
                     }
 
                     // Keep existing game data but update player selections
@@ -4374,10 +4485,6 @@ body::before {
                 }
             });
 
-            ui.playerRoster.addEventListener('click', (e) => {
-                const deleteBtn = e.target.closest('.delete-player-btn');
-                if (deleteBtn) deletePlayer(deleteBtn.dataset.playerId);
-            });
 
             // Fixtures tab event listeners
             ui.fixturesTabUpcoming.addEventListener('click', () => {
@@ -4622,25 +4729,6 @@ body::before {
                 }
             });
 
-            // Toggle player roster visibility
-            document.getElementById('toggle-roster-btn').addEventListener('click', () => {
-                const content = document.getElementById('player-roster-content');
-                const button = document.getElementById('toggle-roster-btn');
-                const container = document.getElementById('player-roster-container');
-                const isHidden = content.classList.contains('hidden');
-
-                if (isHidden) {
-                    content.classList.remove('hidden');
-                    button.textContent = 'Hide';
-                    container.classList.remove('pb-4');
-                    container.classList.add('sm:p-6');
-                } else {
-                    content.classList.add('hidden');
-                    button.textContent = 'Show';
-                    container.classList.add('pb-4');
-                    container.classList.remove('sm:p-6');
-                }
-            });
         
             // Column visibility controls
             document.getElementById('toggle-columns-btn').addEventListener('click', () => {
@@ -4720,6 +4808,13 @@ body::before {
             state.activeMatchView = 'B';
             renderFixturesTab();
             updateTeamSwitcherStyles('fixtures');
+        });
+
+        // Admin player management
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'admin-add-player-btn') {
+                addPlayer();
+            }
         });
         
         function updateTeamSwitcherStyles(context) {
