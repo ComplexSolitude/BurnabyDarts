@@ -216,7 +216,13 @@ body::before {
                 <!-- Current Match Tab -->
                 <div id="tab-content-match">
                     <div class="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Current Match</h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Current Match</h2>
+                            <div class="flex gap-2">
+                                <button id="match-view-team-a" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">Team A</button>
+                                <button id="match-view-team-b" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">Team B</button>
+                            </div>
+                        </div>
                         <p id="current-match-opponent" class="mt-1 text-sm text-gray-600 dark:text-gray-400">Live results as they come in.</p>
                         <div id="current-match-score-container" class="my-4"></div>
                         <div id="current-match-results" class="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4"></div>
@@ -226,11 +232,15 @@ body::before {
                 <!-- Fixtures Tab -->
                 <div id="tab-content-fixtures" class="hidden">
                     <!-- Fixtures Sub-tabs -->
-                    <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
-                        <nav class="-mb-px flex justify-center space-x-8" aria-label="Fixture Tabs">
+                    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 mb-6">
+                        <nav class="-mb-px flex space-x-8" aria-label="Fixture Tabs">
                             <button id="fixtures-tab-upcoming" class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Upcoming</button>
                             <button id="fixtures-tab-previous" class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Previous</button>
                         </nav>
+                        <div class="flex gap-2 mb-2">
+                            <button id="fixtures-view-team-a" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">Team A</button>
+                            <button id="fixtures-view-team-b" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">Team B</button>
+                        </div>
                     </div>
 
                     <!-- Upcoming Fixtures Panel -->
@@ -508,6 +518,11 @@ body::before {
                                 <button id="toggle-columns-btn" class="bg-gray-600 dark:bg-gray-700 text-white px-3 py-2 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors text-sm">
                                     Show/Hide Columns
                                 </button>
+                                <select id="team-filter-select" aria-label="Team Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <option value="all">All Teams</option>
+                                    <option value="A">Team A</option>
+                                    <option value="B">Team B</option>
+                                </select>
                                 <select id="season-filter-select" aria-label="Season Filter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></select>
                             </div>
                         </div>
@@ -819,6 +834,8 @@ body::before {
             userName: null,
             userRole: null, // null, 'viewer', 'member', 'admin'
             userPlayerId: null, // Link to player profile
+            userTeam: null,
+            activeMatchView: null,
             isLoggedIn: false,
             signingIn: false,
             activeTab: 'match',
@@ -826,6 +843,7 @@ body::before {
             seasons: [],
             activeSeasonId: null,
             selectedStatsSeasonId: 'all-time',
+            selectedStatsTeamFilter: 'all', // 'all', 'A', or 'B'
             playerCard: { isOpen: false, playerId: null, selectedSeasonId: 'all-time' },
             fixture: { id: null, games: [], activeGameIndex: 0 },
             previousFixtures: [],
@@ -1085,6 +1103,8 @@ body::before {
         function render() {
             renderAuth();
             renderTabs();
+            updateTeamSwitcherStyles('match');
+            updateTeamSwitcherStyles('fixtures');
             renderPlayerRoster();
             renderSeasonManagement();
             renderFixturePlayerSelectors();
@@ -1123,6 +1143,7 @@ body::before {
                         <p>Signed in as <span class="font-bold capitalize">${state.userRole}</span></p>
                         <p class="text-sm">${state.userEmail}</p>
                         ${state.userName ? `<p class="text-sm">${state.userName}</p>` : ''}
+                        ${state.userTeam ? `<p class="text-sm font-semibold">Team: ${state.userTeam}</p>` : '<p class="text-sm text-yellow-600 dark:text-yellow-400 font-semibold">⚠ No team assigned</p>'}
                     </div>
                 `;
                 loggedInContainer.appendChild(userInfoDiv);
@@ -1133,7 +1154,20 @@ body::before {
                     userManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
                     userManagementDiv.innerHTML = `
                         <h3 class="text-lg font-semibold mb-4 dark:text-white">User Management</h3>
-
+                
+                        <!-- Unassigned Users Warning -->
+                        <div id="unassigned-users-warning" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+                            <div class="flex">
+                                <svg class="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <h4 class="text-sm font-medium text-red-800 dark:text-red-200">Users Without Teams</h4>
+                                    <p class="text-sm text-red-700 dark:text-red-300 mt-1"><span id="unassigned-count">0</span> user(s) need to be assigned to a team. They are marked with ⚠ below.</p>
+                                </div>
+                            </div>
+                        </div>
+                
                         <!-- Security Warning -->
                         <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
                             <div class="flex">
@@ -1230,12 +1264,13 @@ body::before {
             }
         }
 
-        function renderPlayerRoster() {
-            ui.playerRoster.innerHTML = '';
-            if (state.players.length === 0) {
+            function renderPlayerRoster() {
+                ui.playerRoster.innerHTML = '';
+                const teamPlayers = state.players.filter(p => p.team === state.userTeam);
+                if (teamPlayers.length === 0) {
                 ui.playerRoster.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No players added yet.</p>`;
             } else {
-                state.players.forEach(player => {
+                    teamPlayers.forEach(player => {
                     const playerEl = document.createElement('div');
                     playerEl.className = 'flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg';
                     playerEl.innerHTML = `
@@ -1279,7 +1314,8 @@ body::before {
                 return;
             }
 
-            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+           const teamPlayers = state.players.filter(p => p.team === state.userTeam);
+           const playerOptions = teamPlayers.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
 
             GAME_TITLES.forEach((title, i) => {
                 const isDoubles = title.includes("Doubles");
@@ -1333,9 +1369,27 @@ body::before {
         }
 
         function renderFixtureSetup() {
-            const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer';
+            const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer' || (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer');
             const hasActiveFixture = state.fixture.id !== null;
-
+            
+            // Show warning if logged-in user (not viewer) has no team
+            if (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer') {
+                ui.oppositionNameInput.disabled = true;
+                ui.matchDateInput.disabled = true;
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'col-span-2 p-4 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 text-center mb-4';
+                warningDiv.innerHTML = `
+                    <p class="font-semibold text-yellow-900 dark:text-yellow-100">No Team Assigned</p>
+                    <p class="text-sm text-yellow-800 dark:text-yellow-200">Contact an admin to assign you to a team.</p>
+                `;
+                if (ui.fixtureForm.parentElement && !document.getElementById('no-team-warning')) {
+                    warningDiv.id = 'no-team-warning';
+                    ui.fixtureForm.parentElement.insertBefore(warningDiv, ui.fixtureForm);
+                }
+            } else {
+                const existingWarning = document.getElementById('no-team-warning');
+                if (existingWarning) existingWarning.remove();
+            }
             // Disable most inputs for viewers/scorers, but allow editing during active fixture for members/admins
             document.querySelectorAll('#tab-content-setup input:not(#opposition-name-input):not(#match-date-input), #tab-content-setup select').forEach(el => {
                 el.disabled = isDisabled;
@@ -1446,7 +1500,13 @@ body::before {
            
            // Get visible columns
            const visibleColumns = Object.keys(state.columnVisibility).filter(col => state.columnVisibility[col]);
-            let playersWithStats = state.players.map(p => {
+           // Filter by team if selected
+           let filteredPlayers = state.players;
+           if (state.selectedStatsTeamFilter !== 'all') {
+               filteredPlayers = state.players.filter(p => p.team === state.selectedStatsTeamFilter);
+           }
+           
+           let playersWithStats = filteredPlayers.map(p => {
                 const singlesStats = getPlayerStats(p, state.selectedStatsSeasonId, 'singles');
                 const combinedStats = getPlayerStats(p, state.selectedStatsSeasonId, 'combined');
                 const totalLegs = singlesStats.legsWon + singlesStats.legsLost;
@@ -1568,9 +1628,33 @@ body::before {
         }
 
         function renderCurrentMatch() {
-            if (!state.fixture.id) {
+            // Show warning if logged-in user (not viewer) has no team assigned
+            if (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer') {
+                ui.currentMatchOpponent.textContent = 'Team Assignment Required';
+                ui.currentMatchResults.innerHTML = `
+                    <div class="p-6 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 text-center">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <p class="font-semibold text-lg text-yellow-900 dark:text-yellow-100 mb-2">No Team Assigned</p>
+                        <p class="text-yellow-800 dark:text-yellow-200">Please contact an admin to assign you to Team A or Team B.</p>
+                    </div>
+                `;
+                ui.currentMatchScoreContainer.innerHTML = '';
+                return;
+            }
+            
+            // Filter fixtures by active match view team
+            const teamFixtures = state.previousFixtures.filter(f => f.team === state.activeMatchView);
+            const activeFixture = teamFixtures.find(f => f.status === 'live');
+            
+            if (!activeFixture && !state.fixture.id) {
                 // Show "No active match" message
                 ui.currentMatchOpponent.textContent = 'Live results as they come in.';
+                
+                // Show next upcoming match for this team
+                const teamUpcoming = state.upcomingFixtures.filter(f => f.team === state.activeMatchView);
+                const nextMatch = teamUpcoming.length > 0 ? teamUpcoming[0] : null;
                 
                 // Show next upcoming match if available
                 const nextMatch = getNextUpcomingMatch();
@@ -1596,12 +1680,13 @@ body::before {
                 ui.currentMatchScoreContainer.innerHTML = '';
                 return;
             }
-            ui.currentMatchOpponent.textContent = `vs ${state.fixture.oppositionName}`;
-            ui.currentMatchResults.innerHTML = '';
-
-            renderOverallScore(ui.currentMatchScoreContainer);
-
-            state.fixture.games.forEach((game, index) => {
+            const displayFixture = activeFixture || state.fixture;
+                ui.currentMatchOpponent.textContent = `vs ${displayFixture.oppositionName}`;
+                ui.currentMatchResults.innerHTML = '';
+            
+                renderOverallScore(ui.currentMatchScoreContainer);
+            
+                displayFixture.games.forEach((game, index) => {
                 const gameEl = document.createElement('div');
                 gameEl.className = `p-4 rounded-xl ${state.currentGameIndex === index ? 'bg-emerald-100 dark:bg-emerald-800/60' : 'bg-gray-50 dark:bg-gray-700/50'}`;
                 const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
@@ -1642,16 +1727,18 @@ body::before {
 
         function renderUpcomingFixtures() {
             ui.upcomingFixturesList.innerHTML = '';
-
+        
             // Show/hide add button based on permissions
             ui.addFixtureBtn.classList.toggle('hidden', state.userRole === 'viewer' || state.userRole === 'scorer');
-
-            if (state.upcomingFixtures.length === 0) {
+        
+            const teamFixtures = state.upcomingFixtures.filter(f => f.team === state.activeMatchView);
+        
+            if (teamFixtures.length === 0) {
                 ui.upcomingFixturesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No upcoming matches.</p>';
                 return;
             }
 
-            state.upcomingFixtures.forEach(fixture => {
+            teamFixtures.forEach(fixture => {
                 const item = document.createElement('div');
                 item.className = `w-full text-left p-3 rounded-lg transition-colors duration-200 ${state.selectedUpcomingFixtureId === fixture.id ? 'bg-emerald-100 dark:bg-emerald-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`;
 
@@ -1683,12 +1770,13 @@ body::before {
 
         function renderPreviousFixtures() {
             ui.previousFixturesList.innerHTML = '';
-            if (state.previousFixtures.length === 0) {
+            const teamFixtures = state.previousFixtures.filter(f => f.team === state.activeMatchView);
+            if (teamFixtures.length === 0) {
                 ui.previousFixturesList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No finished matches.</p>';
                 return;
             }
 
-            state.previousFixtures.forEach(fixture => {
+             teamFixtures.forEach(fixture => {
                 let burnabyLegs = 0;
                 let oppositionLegs = 0;
                 fixture.games.forEach(game => {
@@ -1724,7 +1812,8 @@ body::before {
         function renderFines() {
             ui.finesList.innerHTML = '';
             let totalOutstandingFines = 0;
-            const playersWithFines = state.players.map(p => {
+            const teamPlayers = state.players.filter(p => p.team === state.userTeam);
+            const playersWithFines = teamPlayers.map(p => {
                 const allTimeStats = getPlayerStats(p, 'all-time', 'singles');
                 return { ...p, outstandingFines: allTimeStats.outstandingFines };
             }).filter(p => p.outstandingFines > 0);
@@ -1760,10 +1849,12 @@ body::before {
 
         function renderLiveMatch() {
             const isViewer = state.userRole === 'viewer';
+            const wrongTeam = state.fixture.team !== state.userTeam;
+            const cannotScore = isViewer || wrongTeam;
             document.querySelectorAll('#live-match-content button, #live-match-content input').forEach(el => {
-                if(el.id !== 'prev-game-btn' && el.id !== 'next-game-btn') {
-                    el.disabled = isViewer;
-                }
+               if(el.id !== 'prev-game-btn' && el.id !== 'next-game-btn') {
+                   el.disabled = cannotScore;
+               }
             });
 
             if (!state.fixture.id || !state.fixture.games || state.fixture.games.length === 0) {
@@ -2213,6 +2304,7 @@ body::before {
                        name: userName,
                        role: 'viewer',
                        playerId: null,
+                       team:null,
                        createdAt: serverTimestamp()
                    });
                }
@@ -2409,6 +2501,8 @@ body::before {
                 const userData = userDoc.data();
                 state.userRole = userData.role || 'viewer';
                 state.userPlayerId = userData.playerId || null;
+                state.userTeam = userData.team || null;
+                state.activeMatchView = userData.team || null; // Default to user's team, fallback to A
                 state.userName = userData.name; // Get name from Firestore
                 console.log('Retrieved name from Firestore:', userData.name); // Debug log
             } else {
@@ -2502,19 +2596,28 @@ body::before {
             onSnapshot(usersCollection, (snapshot) => {
                 const usersList = document.getElementById('users-list');
                 if (!usersList) return;
-
+        
                 usersList.innerHTML = '';
-
+                
+                let unassignedCount = 0;
+        
                 snapshot.docs.forEach(doc => {
                     const userData = doc.data();
                     const userItem = document.createElement('div');
                     userItem.className = 'flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 dark:bg-gray-600 p-3 rounded-lg space-y-2 sm:space-y-0';
+                    const hasTeam = userData.team === 'A' || userData.team === 'B';
                     userItem.innerHTML = `
                         <div class="min-w-0 flex-1">
-                            <p class="font-medium dark:text-white truncate">${userData.name || userData.email}</p>
+                            <p class="font-medium dark:text-white truncate">${userData.name || userData.email} ${!hasTeam ? '<span class="text-yellow-600 dark:text-yellow-400">⚠</span>' : ''}</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400 truncate">${userData.email}</p>
+                            ${!hasTeam ? '<p class="text-xs text-yellow-600 dark:text-yellow-400 font-medium">No team assigned</p>' : ''}
                         </div>
                         <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                            <select data-user-id="${doc.id}" class="user-team-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
+                                <option value="">No Team</option>
+                                <option value="A" ${userData.team === 'A' ? 'selected' : ''}>Team A</option>
+                                <option value="B" ${userData.team === 'B' ? 'selected' : ''}>Team B</option>
+                            </select>
                             <select data-user-id="${doc.id}" class="user-role-select w-full sm:w-auto px-2 py-1 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-xs sm:text-sm">
                                 <option value="viewer" ${userData.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                                 <option value="scorer" ${userData.role === 'scorer' ? 'selected' : ''}>Scorer</option>
@@ -2528,9 +2631,34 @@ body::before {
                         </div>
                     `;
                     usersList.appendChild(userItem);
+            
+                    // Count unassigned users
+                    if (!hasTeam) {
+                        unassignedCount++;
+                    }
                 });
 
-                // Add event listeners for role and player changes
+                // Show/hide unassigned warning
+                const warning = document.getElementById('unassigned-users-warning');
+                const countSpan = document.getElementById('unassigned-count');
+                if (warning && countSpan) {
+                    if (unassignedCount > 0) {
+                        warning.classList.remove('hidden');
+                        countSpan.textContent = unassignedCount;
+                    } else {
+                        warning.classList.add('hidden');
+                    }
+                }
+
+                // Add event listeners for team, role and player changes
+                document.querySelectorAll('.user-team-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const userId = e.target.dataset.userId;
+                        const newTeam = e.target.value || null;
+                        await updateUserTeam(userId, newTeam);
+                    });
+                });
+                
                 document.querySelectorAll('.user-role-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const userId = e.target.dataset.userId;
@@ -2547,6 +2675,62 @@ body::before {
                     });
                 });
             });
+        }
+
+        async function updateUserTeam(userId, newTeam) {
+            try {
+                const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
+                const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
+        
+                await safeFirebaseCall('auditLog', async () => {
+                    return await addDoc(collection(state.db, 'audit_logs'), {
+                        action: 'team_change',
+                        targetUserId: userId,
+                        targetUserName: targetUserData.name || 'Unknown',
+                        targetUserEmail: targetUserData.email || 'Unknown',
+                        oldTeam: targetUserData.team || null,
+                        newTeam: newTeam,
+                        adminUserId: state.userId,
+                        adminUserName: state.userName || 'Unknown',
+                        adminEmail: state.userEmail,
+                        timestamp: serverTimestamp(),
+                        userAgent: navigator.userAgent
+                    });
+                });
+        
+                await safeFirebaseCall('updateUserTeam', async () => {
+                    return await updateDoc(doc(state.db, 'users', userId), {
+                        team: newTeam,
+                        updatedAt: serverTimestamp()
+                    });
+                });
+        
+                // If user has a linked player, update that player's team too
+                if (targetUserData.playerId) {
+                    await safeFirebaseCall('updatePlayerTeam', async () => {
+                        return await updateDoc(doc(state.db, PLAYERS_COLLECTION, targetUserData.playerId), {
+                            team: newTeam
+                        });
+                    });
+                }
+        
+                // If updating current user's team, update local state
+                if (userId === state.userId) {
+                    state.userTeam = newTeam;
+                    state.activeMatchView = newTeam || 'A'; // Update active view to match new team
+                    localStorage.setItem('userTeam', newTeam || '');
+                    render();
+                }
+        
+                showToast('User team updated successfully.');
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error('Error updating user team:', error);
+                    showToast('Failed to update user team.', 'error');
+                }
+            }
         }
 
         async function updateUserRole(userId, newRole) {
@@ -2601,10 +2785,10 @@ body::before {
                 // Get the target user's document and player information
                 const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
                 const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
-
+        
                 const oldPlayer = state.players.find(p => p.id === targetUserData.playerId);
                 const newPlayer = newPlayerId ? state.players.find(p => p.id === newPlayerId) : null;
-
+        
                 // Add enhanced audit logging for player links
                 await safeFirebaseCall('auditLog', async () => {
                     return await addDoc(collection(state.db, 'audit_logs'), {
@@ -2623,21 +2807,30 @@ body::before {
                         userAgent: navigator.userAgent
                     });
                 });
-
-
+        
+        
                 await safeFirebaseCall('updateUserPlayer', async () => {
                     return await updateDoc(doc(state.db, 'users', userId), {
                         playerId: newPlayerId,
                         updatedAt: serverTimestamp()
                     });
                 });
-
+        
+                // Update the new player's team to match the user's team
+                if (newPlayerId && targetUserData.team) {
+                    await safeFirebaseCall('updatePlayerTeam', async () => {
+                        return await updateDoc(doc(state.db, PLAYERS_COLLECTION, newPlayerId), {
+                            team: targetUserData.team
+                        });
+                    });
+                }
+        
                 // If updating current user's player link, update local state
                 if (userId === state.userId) {
                     state.userPlayerId = newPlayerId;
                     render();
                 }
-
+        
                 showToast('User player link updated successfully.');
             } catch (error) {
                 if (error.message.includes('Rate limit')) {
@@ -2769,6 +2962,7 @@ body::before {
                     return await addDoc(collection(state.db, PLAYERS_COLLECTION), {
                         name: name,
                         nickname: '',
+                        team: state.userTeam, // Assign to user's team
                         stats: {}
                     });
                 });
@@ -2996,6 +3190,7 @@ body::before {
                 await safeFirebaseCall('addScheduledFixture', async () => {
                     return await addDoc(collection(state.db, FIXTURES_COLLECTION), {
                         seasonId: state.activeSeasonId,
+                        team: state.userTeam, // Assign to user's team
                         oppositionName: oppositionName,
                         scheduledDate: scheduledDate,
                         venue: venue || null,
@@ -3117,9 +3312,10 @@ body::before {
             }
 
             try {
-                 await safeFirebaseCall('createFixture', async () => {
+                await safeFirebaseCall('createFixture', async () => {
                     return await addDoc(collection(state.db, FIXTURES_COLLECTION), {
                         seasonId: state.activeSeasonId,
+                        team: state.userTeam, // Assign fixture to user's team
                         oppositionName: oppositionName,
                         games: games,
                         activeGameIndex: 0,
@@ -3897,6 +4093,7 @@ body::before {
                             state.userEmail = userData.email;
                             state.userName = userData.name;
                             state.userPlayerId = userData.playerId;
+                            state.userTeam = userData.team || null;
                             state.isLoggedIn = true;
 
                             console.log('Auth state changed - role:', userData.role); // Debug log
@@ -4025,6 +4222,7 @@ body::before {
             document.querySelector('[data-role="viewer"]').addEventListener('click', () => {
                 state.userRole = 'viewer';
                 state.isLoggedIn = false;
+                state.activeMatchView = 'A'; // Viewers default to Team A but can switch
                 localStorage.setItem('userRole', 'viewer');
                 localStorage.removeItem('isLoggedIn');
                 localStorage.removeItem('loginTimestamp');
@@ -4242,6 +4440,11 @@ body::before {
 
             ui.seasonFilterSelect.addEventListener('change', (e) => {
                 state.selectedStatsSeasonId = e.target.value;
+                renderLeaderboard();
+            });
+
+            document.getElementById('team-filter-select')?.addEventListener('change', (e) => {
+                state.selectedStatsTeamFilter = e.target.value;
                 renderLeaderboard();
             });
 
@@ -4482,6 +4685,70 @@ body::before {
                 renderLeaderboard();
             });
         init();
+        // Team switcher event listeners
+        document.getElementById('match-view-team-a').addEventListener('click', () => {
+            state.activeMatchView = 'A';
+            renderCurrentMatch();
+            updateTeamSwitcherStyles('match');
+        });
+        
+        document.getElementById('match-view-team-b').addEventListener('click', () => {
+            state.activeMatchView = 'B';
+            renderCurrentMatch();
+            updateTeamSwitcherStyles('match');
+        });
+        
+        document.getElementById('fixtures-view-team-a').addEventListener('click', () => {
+            state.activeMatchView = 'A';
+            renderFixturesTab();
+            updateTeamSwitcherStyles('fixtures');
+        });
+        
+        document.getElementById('fixtures-view-team-b').addEventListener('click', () => {
+            state.activeMatchView = 'B';
+            renderFixturesTab();
+            updateTeamSwitcherStyles('fixtures');
+        });
+        
+        function updateTeamSwitcherStyles(context) {
+            const prefix = context === 'match' ? 'match-view' : 'fixtures-view';
+            const btnA = document.getElementById(`${prefix}-team-a`);
+            const btnB = document.getElementById(`${prefix}-team-b`);
+            
+            if (!btnA || !btnB) return;
+            
+            // If logged-in user has no team (not viewer), disable both buttons
+            if (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer') {
+                btnA.disabled = true;
+                btnB.disabled = true;
+                btnA.classList.add('opacity-50', 'cursor-not-allowed');
+                btnB.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+            
+            // Enable buttons for viewers or users with teams
+            btnA.disabled = false;
+            btnB.disabled = false;
+            btnA.classList.remove('opacity-50', 'cursor-not-allowed');
+            btnB.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            // If no active view set yet, default to user's team (or A for viewers/unassigned)
+            if (!state.activeMatchView) {
+                state.activeMatchView = state.userTeam || 'A';
+            }
+            
+            if (state.activeMatchView === 'A') {
+                btnA.classList.add('bg-emerald-600', 'text-white');
+                btnA.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-800', 'dark:text-gray-200');
+                btnB.classList.remove('bg-emerald-600', 'text-white');
+                btnB.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-800', 'dark:text-gray-200');
+            } else {
+                btnB.classList.add('bg-emerald-600', 'text-white');
+                btnB.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-800', 'dark:text-gray-200');
+                btnA.classList.remove('bg-emerald-600', 'text-white');
+                btnA.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-800', 'dark:text-gray-200');
+            }
+        }
     </script>
 </body>
 </html>
