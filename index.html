@@ -3260,6 +3260,8 @@
             const modal = document.createElement('div');
             modal.id = 'add-fixture-modal';
             modal.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4';
+            const isAdmin = state.userRole === 'admin';
+            
             modal.innerHTML = `
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
                     <div class="flex justify-between items-center mb-4">
@@ -3267,6 +3269,15 @@
                         <button id="add-fixture-close" class="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-2xl leading-none">&times;</button>
                     </div>
                     <div class="space-y-4">
+                        ${isAdmin ? `
+                        <div>
+                            <label for="fixture-team-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Team</label>
+                            <select id="fixture-team-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="A" ${state.activeMatchView === 'A' ? 'selected' : ''}>Team A</option>
+                                <option value="B" ${state.activeMatchView === 'B' ? 'selected' : ''}>Team B</option>
+                            </select>
+                        </div>
+                        ` : ''}
                         <div>
                             <label for="fixture-location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
                             <select id="fixture-location" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
@@ -3350,8 +3361,18 @@
                 return;
             }
 
+            // For admins, get the selected team; for members, use their team
+            const fixtureTeam = state.userRole === 'admin' 
+                ? document.getElementById('fixture-team-select')?.value || state.userTeam 
+                : state.userTeam;
+
+            if (!fixtureTeam) {
+                showToast("Please select a team for this fixture.", 'warning');
+                return;
+            }
+
             try {
-                const scheduledDate = Timestamp.fromDate(new Date(fixtureDate));
+                const scheduledDate = Timestamp.fromDate(new Date(fixtureDate));       
 
                 // Create empty games structure for scheduled fixture
                 const games = GAME_TITLES.map((title) => {
@@ -3372,7 +3393,7 @@
                 await safeFirebaseCall('addScheduledFixture', async () => {
                     return await addDoc(collection(state.db, FIXTURES_COLLECTION), {
                         seasonId: state.activeSeasonId,
-                        team: state.userTeam, // Assign to user's team
+                        team: fixtureTeam, // Assign to selected team (admin) or user's team (member)
                         oppositionName: oppositionName,
                         scheduledDate: scheduledDate,
                         venue: venue || null,
