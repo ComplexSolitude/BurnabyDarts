@@ -1355,9 +1355,8 @@ body::before {
         function renderFixturePlayerSelectors() {
             const form = ui.fixtureForm;
             form.innerHTML = '';
-
+        
             const teamPlayers = state.players.filter(p => p.team === state.userTeam);
-            const playerOptions = teamPlayers.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
         
             GAME_TITLES.forEach((title, i) => {
                 const isDoubles = title.includes("Doubles");
@@ -1376,35 +1375,33 @@ body::before {
                 let selectorsHtml = `
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${title}</label>
                     <div class="grid grid-cols-1 ${isDoubles ? 'sm:grid-cols-2' : ''} gap-2">
-                        <div>
+                        <div class="relative">
                             <input 
                                 type="text" 
-                                id="game-${i}-p1" 
-                                list="players-list-${i}-p1"
+                                id="game-${i}-p1-input" 
+                                data-game-index="${i}"
+                                data-player-slot="p1"
                                 placeholder="Select or type player name"
                                 value="${currentP1Name}"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                class="player-selector-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 autocomplete="off">
-                            <datalist id="players-list-${i}-p1">
-                                ${playerOptions}
-                            </datalist>
+                            <div id="game-${i}-p1-dropdown" class="player-dropdown hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto"></div>
                         </div>
                 `;
         
                 if (isDoubles) {
                     selectorsHtml += `
-                        <div>
+                        <div class="relative">
                             <input 
                                 type="text" 
-                                id="game-${i}-p2" 
-                                list="players-list-${i}-p2"
+                                id="game-${i}-p2-input" 
+                                data-game-index="${i}"
+                                data-player-slot="p2"
                                 placeholder="Select or type player name"
                                 value="${currentP2Name}"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                class="player-selector-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 autocomplete="off">
-                            <datalist id="players-list-${i}-p2">
-                                ${playerOptions}
-                            </datalist>
+                            <div id="game-${i}-p2-dropdown" class="player-dropdown hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto"></div>
                         </div>
                     `;
                 }
@@ -1413,7 +1410,81 @@ body::before {
                 gameSetupEl.innerHTML = selectorsHtml;
                 form.appendChild(gameSetupEl);
             });
+        
+            // Set up dropdown functionality
+            setupPlayerSelectors();
         }
+
+        function setupPlayerSelectors() {
+            const inputs = document.querySelectorAll('.player-selector-input');
+            const teamPlayers = state.players.filter(p => p.team === state.userTeam);
+        
+            inputs.forEach(input => {
+                const gameIndex = input.dataset.gameIndex;
+                const playerSlot = input.dataset.playerSlot;
+                const dropdown = document.getElementById(`game-${gameIndex}-${playerSlot}-dropdown`);
+        
+                // Show dropdown on focus
+                input.addEventListener('focus', () => {
+                    showPlayerDropdown(input, dropdown, teamPlayers, '');
+                });
+        
+                // Filter dropdown on input
+                input.addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    showPlayerDropdown(input, dropdown, teamPlayers, searchTerm);
+                });
+        
+                // Hide dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            });
+        }
+        
+        function showPlayerDropdown(input, dropdown, players, searchTerm) {
+            const filtered = players.filter(p => 
+                p.name.toLowerCase().includes(searchTerm)
+            );
+        
+            dropdown.innerHTML = '';
+        
+            // Show "Add as new player" option if typing custom name
+            if (searchTerm && !filtered.find(p => p.name.toLowerCase() === searchTerm)) {
+                const customOption = document.createElement('div');
+                customOption.className = 'px-3 py-2 hover:bg-emerald-100 dark:hover:bg-emerald-900 cursor-pointer border-b border-gray-200 dark:border-gray-700';
+                customOption.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-medium">+ Add "${searchTerm}" as new player</span>`;
+                customOption.addEventListener('click', () => {
+                    input.value = searchTerm;
+                    dropdown.classList.add('hidden');
+                });
+                dropdown.appendChild(customOption);
+            }
+        
+            // Show existing players
+            if (filtered.length > 0) {
+                filtered.forEach(player => {
+                    const option = document.createElement('div');
+                    option.className = 'px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer';
+                    option.textContent = player.name;
+                    option.addEventListener('click', () => {
+                        input.value = player.name;
+                        dropdown.classList.add('hidden');
+                    });
+                    dropdown.appendChild(option);
+                });
+            } else if (!searchTerm) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'px-3 py-2 text-gray-500 dark:text-gray-400 text-sm';
+                emptyMsg.textContent = 'No players available. Type to add new player.';
+                dropdown.appendChild(emptyMsg);
+            }
+        
+            dropdown.classList.remove('hidden');
+        }
+     
 
         function renderFixtureSetup() {
             const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer' || (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer');
@@ -3376,7 +3447,7 @@ body::before {
                 const title = GAME_TITLES[i];
                 const isDoubles = title.includes("Doubles");
             
-                const p1Input = document.getElementById(`game-${i}-p1`);
+                const p1Input = document.getElementById(`game-${i}-p1-input`);
                 const p1Value = p1Input.value.trim();
                 
                 // Get or create player ID for player 1
@@ -3389,7 +3460,7 @@ body::before {
                 const playerIds = p1Id ? [p1Id] : [];
                 
                 if (isDoubles) {
-                    const p2Input = document.getElementById(`game-${i}-p2`);
+                    const p2Input = document.getElementById(`game-${i}-p2-input`);
                     const p2Value = p2Input.value.trim();
                     
                     // Get or create player ID for player 2
@@ -4400,7 +4471,7 @@ body::before {
                     const title = GAME_TITLES[i];
                     const isDoubles = title.includes("Doubles");
 
-                    const p1Input = document.getElementById(`game-${i}-p1`);
+                    const p1Input = document.getElementById(`game-${i}-p1-input`);
                     const p1Value = p1Input.value.trim();
                     
                     const p1Id = await getOrCreatePlayer(p1Value);
@@ -4412,7 +4483,7 @@ body::before {
                     const playerIds = p1Id ? [p1Id] : [];
                     
                     if (isDoubles) {
-                        const p2Input = document.getElementById(`game-${i}-p2`);
+                        const p2Input = document.getElementById(`game-${i}-p2-input`);
                         const p2Value = p2Input.value.trim();
                         
                         const p2Id = await getOrCreatePlayer(p2Value);
