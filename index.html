@@ -1134,10 +1134,18 @@
                 const adminSubTabs = document.createElement('div');
                 adminSubTabs.className = 'border-b border-gray-200 dark:border-gray-700 mb-6';
                 adminSubTabs.innerHTML = `
-                    <nav class="-mb-px flex space-x-8" aria-label="Admin Tabs">
-                        <button id="admin-tab-users" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Users</button>
-                        <button id="admin-tab-players" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Players</button>
-                    </nav>
+                    <div class="flex justify-between items-center mb-4">
+                        <nav class="-mb-px flex space-x-8" aria-label="Admin Tabs">
+                            <button id="admin-tab-users" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Users</button>
+                            <button id="admin-tab-players" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Players</button>
+                        </nav>
+                        <select id="admin-team-filter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                            <option value="all">All Teams</option>
+                            <option value="A">Team A</option>
+                            <option value="B">Team B</option>
+                            <option value="none">No Team</option>
+                        </select>
+                    </div>
                 `;
                 loggedInContainer.appendChild(adminSubTabs);
 
@@ -1164,15 +1172,7 @@
                     const userManagementDiv = document.createElement('div');
                     userManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 mt-6';
                     userManagementDiv.innerHTML = `
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold dark:text-white">User Management</h3>
-                            <select id="user-team-filter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-                                <option value="all">All Users</option>
-                                <option value="A">Team A</option>
-                                <option value="B">Team B</option>
-                                <option value="none">No Team</option>
-                            </select>
-                        </div>
+                        <h3 class="text-lg font-semibold mb-4 dark:text-white">User Management</h3>
                 
                         <!-- Unassigned Users Warning -->
                         <div id="unassigned-users-warning" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
@@ -1236,9 +1236,8 @@
                     const playerManagementDiv = document.createElement('div');
                     playerManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
                     playerManagementDiv.innerHTML = `
-                       <h3 class="text-lg font-semibold mb-4 dark:text-white">Player Roster</h3>
-                       <div id="admin-player-roster-list" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
-                       <div class="space-y-2">
+                        <h3 class="text-lg font-semibold mb-4 dark:text-white">Add New Player</h3>
+                        <div class="space-y-2 mb-6">
                             <input type="text" id="admin-new-player-name" placeholder="Player name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <input type="text" id="admin-new-player-nickname" placeholder="Nickname (optional)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <select id="admin-new-player-team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
@@ -1248,6 +1247,9 @@
                             </select>
                             <button id="admin-add-player-btn" class="w-full bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-medium">Add Player</button>
                         </div>
+                        
+                        <h3 class="text-lg font-semibold mb-4 mt-6 dark:text-white">Active Players</h3>
+                        <div id="admin-player-roster-list" class="space-y-2 max-h-96 overflow-y-auto"></div>
                     `;
                     rosterPanel.appendChild(playerManagementDiv);
                     playersPanel.appendChild(rosterPanel);
@@ -1456,6 +1458,14 @@
                         });
                     }, 100);
 
+                    // Set up global team filter
+                    setTimeout(() => {
+                        document.getElementById('admin-team-filter')?.addEventListener('change', () => {
+                            loadUsers();
+                            renderAdminPlayerRoster();
+                        });
+                    }, 100);
+
                     // Set up admin sub-tab switching
                     setTimeout(() => {
                         document.getElementById('admin-tab-users')?.addEventListener('click', () => {
@@ -1511,8 +1521,18 @@
         
             list.innerHTML = '';
             
-            // Filter out archived players
-            const activePlayers = state.players.filter(p => !p.archived);
+            const teamFilter = document.getElementById('admin-team-filter')?.value || 'all';
+            
+            // Filter out archived players and apply team filter
+            let activePlayers = state.players.filter(p => !p.archived);
+            
+            if (teamFilter !== 'all') {
+                if (teamFilter === 'none') {
+                    activePlayers = activePlayers.filter(p => !p.team);
+                } else {
+                    activePlayers = activePlayers.filter(p => p.team === teamFilter);
+                }
+            }
             
             if (activePlayers.length === 0) {
                 list.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">No players in roster.</p>';
@@ -2991,7 +3011,7 @@
                 usersList.innerHTML = '';
                 
                 let unassignedCount = 0;
-                const teamFilter = document.getElementById('user-team-filter')?.value || 'all';
+                const teamFilter = document.getElementById('admin-team-filter')?.value || 'all';
         
                 snapshot.docs.forEach(doc => {
                     const userData = doc.data();
@@ -3074,13 +3094,7 @@
                     });
                 });
 
-                // Add event listener for team filter
-                const teamFilterSelect = document.getElementById('user-team-filter');
-                if (teamFilterSelect) {
-                    teamFilterSelect.addEventListener('change', () => {
-                        loadUsers(); // Reload users with new filter
-                    });
-                }
+                // Team filter is now handled globally in admin tab setup
             });
         }
 
