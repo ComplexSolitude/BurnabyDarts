@@ -78,25 +78,28 @@
             animation: pulse 0.6s ease;
         }
         #main-app {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('burnaby-logo.png');
-  background-repeat: no-repeat;
-  background-position: center 65%;
-  background-size: 350px;
-  opacity: 0.05;
-  z-index: -1;
-}
+          position: relative;
+          z-index: 1;
+          min-height: 100vh;
+        }
+        
+        body::before {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-image: url('burnaby-logo.png');
+          background-repeat: no-repeat;
+          background-position: center 65%;
+          background-size: 350px;
+          opacity: 0.05;
+          z-index: -1;
+        }
+        body.modal-open {
+          overflow: hidden;
+        }
     </style>
     <!-- HTTPS Redirect -->
     <script>
@@ -2228,13 +2231,15 @@ body::before {
             if (!state.playerCard.isOpen) {
                 ui.playerCardModal.overlay.classList.add('hidden');
                 ui.playerCardModal.overlay.classList.remove('flex');
+                document.body.classList.remove('modal-open');
                 return;
             }
-
+        
             ui.playerCardModal.content.innerHTML = generatePlayerCardHTML(state.playerCard.playerId, state.playerCard.selectedSeasonId);
-
+        
             ui.playerCardModal.overlay.classList.remove('hidden');
             ui.playerCardModal.overlay.classList.add('flex');
+            document.body.classList.add('modal-open');
 
             // Set up tab switching for the player card modal
             setupProfileTabs(ui.playerCardModal.content);
@@ -2316,11 +2321,13 @@ body::before {
             ui.playerCardModal.content.innerHTML = modalContent;
             ui.playerCardModal.overlay.classList.remove('hidden');
             ui.playerCardModal.overlay.classList.add('flex');
+            document.body.classList.add('modal-open');
         }
 
         function closeFixtureModal() {
             ui.playerCardModal.overlay.classList.add('hidden');
             ui.playerCardModal.overlay.classList.remove('flex');
+            document.body.classList.remove('modal-open');
         }
 
         // Haptic feedback utility
@@ -2539,6 +2546,7 @@ body::before {
             document.getElementById('signup-modal').classList.remove('hidden');
             document.getElementById('signup-modal').classList.add('flex');
             document.getElementById('signup-name').focus();
+            document.body.classList.add('modal-open');
         }
 
         function closeSignupModal() {
@@ -2549,6 +2557,7 @@ body::before {
             document.getElementById('signup-email').value = '';
             document.getElementById('signup-password').value = '';
             document.getElementById('signup-confirm-password').value = '';
+            document.body.classList.remove('modal-open');
         }
 
         async function handleEmailSignUp() {
@@ -2967,12 +2976,14 @@ body::before {
             ui.confirmModal.text.textContent = text;
             ui.confirmModal.overlay.classList.remove('hidden');
             ui.confirmModal.overlay.classList.add('flex');
+            document.body.classList.add('modal-open');
         }
 
         function closeConfirmModal() {
             state.confirmation = { action: null, data: null };
             ui.confirmModal.overlay.classList.add('hidden');
             ui.confirmModal.overlay.classList.remove('flex');
+            document.body.classList.remove('modal-open');
         }
 
         async function handleConfirmation() {
@@ -3288,6 +3299,7 @@ body::before {
                 </div>
             `;
             document.body.appendChild(modal);
+            document.body.classList.add('modal-open');
 
             // Set default date to today
             document.getElementById('fixture-date').value = new Date().toISOString().split('T')[0];
@@ -3319,6 +3331,7 @@ body::before {
             const modal = document.getElementById('add-fixture-modal');
             if (modal) {
                 modal.remove();
+                document.body.classList.remove('modal-open');
             }
         }
 
@@ -3769,6 +3782,7 @@ body::before {
                 showToast("Match finished and all stats saved! Well played.", 'success');
                 ui.dotdModal.overlay.classList.add('hidden');
                 ui.dotdModal.overlay.classList.remove('flex');
+                document.body.classList.remove('modal-open');
                 switchTab('match');
 
             } catch (e) {
@@ -3821,11 +3835,13 @@ body::before {
             ui.lowScoreModal.overlay.classList.remove('hidden');
             ui.lowScoreModal.overlay.classList.add('flex');
             ui.lowScoreModal.input.focus();
+            document.body.classList.add('modal-open');
         }
         function closeLowScoreModal() {
             ui.lowScoreModal.overlay.classList.add('hidden');
             ui.lowScoreModal.overlay.classList.remove('flex');
             ui.lowScoreModal.input.value = '';
+            document.body.classList.remove('modal-open');
         }
         function submitLowScoreFine() {
             const score = parseInt(ui.lowScoreModal.input.value);
@@ -3887,6 +3903,7 @@ body::before {
 
             ui.dotdModal.overlay.classList.remove('hidden');
             ui.dotdModal.overlay.classList.add('flex');
+            document.body.classList.add('modal-open');
         }
 
         function renderH2HTab() {
@@ -4083,6 +4100,7 @@ body::before {
             editSection.classList.add('hidden');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            document.body.classList.add('modal-open');
         }
         function closeProfilesManagement() {
             const modal = document.getElementById('profile-management-modal');
@@ -4091,6 +4109,7 @@ body::before {
 
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            document.body.classList.remove('modal-open');
             editSection.classList.add('hidden');
             select.value = '';
         }
@@ -4726,6 +4745,7 @@ body::before {
             document.getElementById('dotd-close-btn').addEventListener('click', () => {
                 ui.dotdModal.overlay.classList.add('hidden');
                 ui.dotdModal.overlay.classList.remove('flex');
+                document.body.classList.remove('modal-open');
             });
 
             ui.confirmModal.cancel.addEventListener('click', closeConfirmModal);
