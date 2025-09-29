@@ -2627,7 +2627,7 @@
                 state.userRole = userData.role || 'viewer';
                 state.userPlayerId = userData.playerId || null;
                 state.userTeam = userData.team || null;
-                state.activeMatchView = userData.team || null; // Default to user's team, fallback to A
+                state.activeMatchView = userData.team || null; 
                 state.userName = userData.name; // Get name from Firestore
                 console.log('Retrieved name from Firestore:', userData.name); // Debug log
             } else {
@@ -4774,6 +4774,31 @@
                 calculateAndRenderH2H();
             });
 
+            // Team switcher event listeners
+            document.getElementById('match-view-team-a').addEventListener('click', () => {
+                state.activeMatchView = 'A';
+                updateTeamSwitcherStyles('match');
+                renderCurrentMatch();
+            });
+            
+            document.getElementById('match-view-team-b').addEventListener('click', () => {
+                state.activeMatchView = 'B';
+                updateTeamSwitcherStyles('match');
+                renderCurrentMatch();
+            });
+            
+            document.getElementById('fixtures-view-team-a').addEventListener('click', () => {
+                state.activeMatchView = 'A';
+                updateTeamSwitcherStyles('fixtures');
+                renderFixturesTab();
+            });
+            
+            document.getElementById('fixtures-view-team-b').addEventListener('click', () => {
+                state.activeMatchView = 'B';
+                updateTeamSwitcherStyles('fixtures');
+                renderFixturesTab();
+            });
+
             // My Profile Listeners
             ui.myProfile.playerSelect.addEventListener('change', async (e) => {
                 const newPlayerId = e.target.value;
@@ -4877,38 +4902,14 @@
                 }
                 renderLeaderboard();
             });
-        init();
-        // Team switcher event listeners
-        document.getElementById('match-view-team-a').addEventListener('click', () => {
-            state.activeMatchView = 'A';
-            renderCurrentMatch();
-            updateTeamSwitcherStyles('match');
-        });
-        
-        document.getElementById('match-view-team-b').addEventListener('click', () => {
-            state.activeMatchView = 'B';
-            renderCurrentMatch();
-            updateTeamSwitcherStyles('match');
-        });
-        
-        document.getElementById('fixtures-view-team-a').addEventListener('click', () => {
-            state.activeMatchView = 'A';
-            renderFixturesTab();
-            updateTeamSwitcherStyles('fixtures');
-        });
-        
-        document.getElementById('fixtures-view-team-b').addEventListener('click', () => {
-            state.activeMatchView = 'B';
-            renderFixturesTab();
-            updateTeamSwitcherStyles('fixtures');
-        });
-
-        // Admin player management
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'admin-add-player-btn') {
-                addPlayer();
-            }
-        });
+            // Admin player management
+            document.addEventListener('click', (e) => {
+                if (e.target.id === 'admin-add-player-btn') {
+                    addPlayer();
+                }
+            });
+    
+            init();
         
         function updateTeamSwitcherStyles(context) {
             const prefix = context === 'match' ? 'match-view' : 'fixtures-view';
