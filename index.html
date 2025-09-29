@@ -1268,7 +1268,7 @@
                                 <label for="admin-profile-player-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Player</label>
                                 <select id="admin-profile-player-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <option value="">Choose a player...</option>
-                                    ${state.players.map(p => {
+                                    ${state.players.filter(p => !p.archived).map(p => {
                                         const teamLabel = p.team ? `Team ${p.team}` : 'No Team';
                                         return `<option value="${p.id}">${p.name} (${teamLabel})</option>`;
                                     }).join('')}
@@ -1647,7 +1647,7 @@
             const form = ui.fixtureForm;
             form.innerHTML = '';
         
-            const teamPlayers = state.players.filter(p => p.team === state.userTeam);
+            const teamPlayers = state.players.filter(p => p.team === state.userTeam && !p.archived);
         
             GAME_TITLES.forEach((title, i) => {
                 const isDoubles = title.includes("Doubles");
@@ -1737,7 +1737,7 @@
         
         function showPlayerDropdown(input, dropdown, players, searchTerm) {
             const filtered = players.filter(p => 
-                p.name.toLowerCase().includes(searchTerm)
+                p.name.toLowerCase().includes(searchTerm) && !p.archived
             );
         
             dropdown.innerHTML = '';
@@ -1909,10 +1909,10 @@
            
            // Get visible columns
            const visibleColumns = Object.keys(state.columnVisibility).filter(col => state.columnVisibility[col]);
-           // Filter by team if selected
-           let filteredPlayers = state.players;
+           // Filter by team if selected and exclude archived players
+           let filteredPlayers = state.players.filter(p => !p.archived);
            if (state.selectedStatsTeamFilter !== 'all') {
-               filteredPlayers = state.players.filter(p => p.team === state.selectedStatsTeamFilter);
+               filteredPlayers = filteredPlayers.filter(p => p.team === state.selectedStatsTeamFilter);
            }
            
            let playersWithStats = filteredPlayers.map(p => {
@@ -4252,7 +4252,7 @@
         }
 
         function renderH2HTab() {
-            const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            const playerOptions = state.players.filter(p => !p.archived).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
             ui.h2h.player1Select.innerHTML = `<option value="">Select Player 1</option>${playerOptions}`;
             ui.h2h.player2Select.innerHTML = `<option value="">Select Player 2</option>${playerOptions}`;
 
@@ -4357,7 +4357,7 @@
                 ui.myProfile.playerSelect.parentElement.classList.add('hidden');
             } else {
                 ui.myProfile.playerSelect.parentElement.classList.remove('hidden');
-                const playerOptions = state.players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                const playerOptions = state.players.filter(p => !p.archived).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
                 ui.myProfile.playerSelect.innerHTML = `<option value="">Select a player...</option>${playerOptions}`;
                 if (selectedPlayerId) {
                     ui.myProfile.playerSelect.value = selectedPlayerId;
