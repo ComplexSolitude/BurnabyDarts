@@ -787,6 +787,14 @@ body::before {
                         <label for="profile-edit-nickname" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
                         <input type="text" id="profile-edit-nickname" placeholder="Optional nickname" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     </div>
+                    <div>
+                        <label for="profile-edit-team" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Team</label>
+                        <select id="profile-edit-team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">No Team</option>
+                            <option value="A">Team A</option>
+                            <option value="B">Team B</option>
+                        </select>
+                    </div>
                     <div class="flex justify-end space-x-3 mt-6">
                         <button id="profile-edit-cancel" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
                         <button id="profile-edit-save" class="bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors">Save Changes</button>
@@ -3888,18 +3896,18 @@ body::before {
             const modal = document.getElementById('profile-management-modal');
             const select = document.getElementById('profile-player-select');
             const editSection = document.getElementById('profile-edit-section');
-
+        
             // Reset form
             select.innerHTML = '<option value="">Choose a player...</option>';
             state.players.forEach(player => {
-                select.innerHTML += `<option value="${player.id}">${player.name}</option>`;
+                const teamLabel = player.team ? `Team ${player.team}` : 'No Team';
+                select.innerHTML += `<option value="${player.id}">${player.name} (${teamLabel})</option>`;
             });
-
+        
             editSection.classList.add('hidden');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
-
         function closeProfilesManagement() {
             const modal = document.getElementById('profile-management-modal');
             const editSection = document.getElementById('profile-edit-section');
@@ -3915,26 +3923,28 @@ body::before {
             const playerId = document.getElementById('profile-player-select').value;
             const newName = document.getElementById('profile-edit-name').value.trim();
             const newNickname = document.getElementById('profile-edit-nickname').value.trim();
-
+            const newTeam = document.getElementById('profile-edit-team').value || null;
+        
             if (!playerId) {
                 showToast("Please select a player.", 'warning');
                 return;
             }
-
+        
             if (!newName) {
                 showToast("Player name cannot be empty.", 'warning');
                 return;
             }
-
+        
             try {
                 await safeFirebaseCall('updatePlayerProfile', async () => {
                     const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
                     return await updateDoc(playerRef, {
                         name: newName,
-                        nickname: newNickname
+                        nickname: newNickname,
+                        team: newTeam
                     });
                 });
-
+        
                 showToast("Player profile updated successfully!");
                 closeProfilesManagement();
             } catch (error) {
@@ -4180,15 +4190,17 @@ body::before {
                     ui.connectionStatus.classList.add('hidden');
                     const allFixtures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                    const activeFixture = allFixtures.find(f => f.status === 'live');
-
+                    // Find active fixture for the current user's team
+                    const userTeam = state.userTeam || state.activeMatchView;
+                    const activeFixture = allFixtures.find(f => f.status === 'live' && f.team === userTeam);
+                    
                     if (activeFixture) {
                         state.fixture = activeFixture;
                         state.currentGameIndex = activeFixture.activeGameIndex || 0;
                         state.fixture.activeGameIndex = state.currentGameIndex;
                         state.lastTurnSeq = state.fixture.games[state.currentGameIndex]?.turnSeq || 0;
                     } else {
-                        state.fixture = { id: null, games: [], activeGameIndex: 0 };
+                        state.fixture = { id: null, games: [], activeGameIndex: 0, team: userTeam };
                         state.currentGameIndex = 0;
                         state.lastTurnSeq = 0;
                     }
@@ -4596,12 +4608,13 @@ body::before {
             document.getElementById('profile-player-select').addEventListener('change', (e) => {
                 const playerId = e.target.value;
                 const editSection = document.getElementById('profile-edit-section');
-
+            
                 if (playerId) {
                     const player = state.players.find(p => p.id === playerId);
                     if (player) {
                         document.getElementById('profile-edit-name').value = player.name || '';
                         document.getElementById('profile-edit-nickname').value = player.nickname || '';
+                        document.getElementById('profile-edit-team').value = player.team || '';
                         editSection.classList.remove('hidden');
                     }
                 } else {
