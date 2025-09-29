@@ -2190,31 +2190,32 @@ body::before {
             signInBtn.classList.add('opacity-75', 'cursor-not-allowed');
 
 
-            try {
-                const result = await signInWithPopup(state.auth, provider);
-                const user = result.user;
-                const email = user.email;
-
-                // Check if user already has a role assigned in Firestore
-                const userDoc = await getDoc(doc(state.db, 'users', user.uid));
-
-                if (userDoc.exists()) {
-                    // Existing user - use their assigned role and player link
-                    const userData = userDoc.data();
-                    state.userRole = userData.role || 'viewer'; // Default to member
-                    state.userPlayerId = userData.playerId || null; // Get linked player ID
-                } else {
-                    // New user - default to member role and create user document
-                    state.userRole = 'viewer';
-                    state.userPlayerId = null;
-                    await setDoc(doc(state.db, 'users', user.uid), {
-                        email: email,
-                        name: user.name,
-                        role: 'viewer',
-                        playerId: null,
-                        createdAt: serverTimestamp()
-                    });
-                }
+               const result = await signInWithPopup(state.auth, provider);
+               const user = result.user;
+               const email = user.email;
+               
+               // Check if user already has a role assigned in Firestore
+               const userDoc = await getDoc(doc(state.db, 'users', user.uid));
+               
+               if (userDoc.exists()) {
+                   // Existing user - use their assigned role and player link
+                   const userData = userDoc.data();
+                   state.userRole = userData.role || 'viewer'; // Default to member
+                   state.userPlayerId = userData.playerId || null; // Get linked player ID
+               } else {
+                   // New user - default to member role and create user document
+                   state.userRole = 'viewer';
+                   state.userPlayerId = null;
+                   // Use displayName if available, otherwise use email prefix
+                   const userName = user.displayName || email.split('@')[0] || 'New User';
+                   await setDoc(doc(state.db, 'users', user.uid), {
+                       email: email,
+                       name: userName,
+                       role: 'viewer',
+                       playerId: null,
+                       createdAt: serverTimestamp()
+                   });
+               }
 
                 await handleSuccessfulSignIn(user);
 
