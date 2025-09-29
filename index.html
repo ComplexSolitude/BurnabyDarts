@@ -1128,7 +1128,23 @@
 
             if (state.isLoggedIn) {
                 const loggedInContainer = document.createElement('div');
-                loggedInContainer.className = 'space-y-6 max-w-2xl';
+                loggedInContainer.className = 'space-y-6';
+
+                // Admin Sub-tabs Navigation
+                const adminSubTabs = document.createElement('div');
+                adminSubTabs.className = 'border-b border-gray-200 dark:border-gray-700 mb-6';
+                adminSubTabs.innerHTML = `
+                    <nav class="-mb-px flex space-x-8" aria-label="Admin Tabs">
+                        <button id="admin-tab-users" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Users</button>
+                        <button id="admin-tab-players" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Players</button>
+                    </nav>
+                `;
+                loggedInContainer.appendChild(adminSubTabs);
+
+                // Users Content Panel
+                const usersPanel = document.createElement('div');
+                usersPanel.id = 'admin-panel-users';
+                usersPanel.className = 'max-w-2xl';
 
                 // User info section
                 const userInfoDiv = document.createElement('div');
@@ -1188,34 +1204,215 @@
                     `;
                     loggedInContainer.appendChild(userManagementDiv);
 
-                    // Load and display users
+                   // Load and display users
                     loadUsers();
                 }
 
-                // Player Management Section (admin only)
+                usersPanel.appendChild(userInfoDiv);
                 if (state.userRole === 'admin') {
+                    usersPanel.appendChild(userManagementDiv);
+                }
+                loggedInContainer.appendChild(usersPanel);
+
+                // Players Content Panel (admin only)
+                if (state.userRole === 'admin') {
+                    const playersPanel = document.createElement('div');
+                    playersPanel.id = 'admin-panel-players';
+                    playersPanel.className = 'hidden';
+
+                    // Player Sub-sub-tabs
+                    const playerSubTabs = document.createElement('div');
+                    playerSubTabs.className = 'border-b border-gray-200 dark:border-gray-700 mb-6';
+                    playerSubTabs.innerHTML = `
+                        <nav class="-mb-px flex space-x-8" aria-label="Player Tabs">
+                            <button id="player-tab-roster" class="player-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Roster</button>
+                            <button id="player-tab-profiles" class="player-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Profiles</button>
+                        </nav>
+                    `;
+                    playersPanel.appendChild(playerSubTabs);
+
+                    // Roster Panel
+                    const rosterPanel = document.createElement('div');
+                    rosterPanel.id = 'player-panel-roster';
+                    rosterPanel.className = 'max-w-2xl';
+
                     const playerManagementDiv = document.createElement('div');
                     playerManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
                     playerManagementDiv.innerHTML = `
-                       <h3 class="text-lg font-semibold mb-4 dark:text-white">Player Management</h3>
+                       <h3 class="text-lg font-semibold mb-4 dark:text-white">Player Roster</h3>
                        <div id="admin-player-roster-list" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
-                       <button id="manage-profiles-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium mb-4">Manage Player Profiles</button>
                        <div class="space-y-2">
                             <input type="text" id="admin-new-player-name" placeholder="Player name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <input type="text" id="admin-new-player-nickname" placeholder="Nickname (optional)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <select id="admin-new-player-team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 <option value="">No Team</option>
-                                <option value="A">A Team</option>
-                                <option value="B">B Team</option>
+                                <option value="A">Team A</option>
+                                <option value="B">Team B</option>
                             </select>
                             <button id="admin-add-player-btn" class="w-full bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-medium">Add Player</button>
                         </div>
                     `;
-                    loggedInContainer.appendChild(playerManagementDiv);
+                    rosterPanel.appendChild(playerManagementDiv);
+                    playersPanel.appendChild(rosterPanel);
                 
                     // Render player list
                     renderAdminPlayerRoster();
-                
+
+                    // Profiles Panel
+                    const profilesPanel = document.createElement('div');
+                    profilesPanel.id = 'player-panel-profiles';
+                    profilesPanel.className = 'hidden max-w-2xl';
+
+                    const profileManagementDiv = document.createElement('div');
+                    profileManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
+                    profileManagementDiv.innerHTML = `
+                        <h3 class="text-lg font-semibold mb-4 dark:text-white">Player Profiles</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="admin-profile-player-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Player</label>
+                                <select id="admin-profile-player-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <option value="">Choose a player...</option>
+                                    ${state.players.map(p => {
+                                        const teamLabel = p.team ? `Team ${p.team}` : 'No Team';
+                                        return `<option value="${p.id}">${p.name} (${teamLabel})</option>`;
+                                    }).join('')}
+                                </select>
+                            </div>
+                            <div id="admin-profile-edit-section" class="hidden space-y-4">
+                                <div>
+                                    <label for="admin-profile-edit-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                                    <input type="text" id="admin-profile-edit-name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="admin-profile-edit-nickname" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nickname</label>
+                                    <input type="text" id="admin-profile-edit-nickname" placeholder="Optional nickname" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="admin-profile-edit-team" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Team</label>
+                                    <select id="admin-profile-edit-team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                        <option value="">No Team</option>
+                                        <option value="A">Team A</option>
+                                        <option value="B">Team B</option>
+                                    </select>
+                                </div>
+                                <div class="flex justify-end space-x-3 mt-6">
+                                    <button id="admin-profile-edit-cancel" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
+                                    <button id="admin-profile-edit-save" class="bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors">Save Changes</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    profilesPanel.appendChild(profileManagementDiv);
+                    playersPanel.appendChild(profilesPanel);
+
+                    loggedInContainer.appendChild(playersPanel);
+
+                    // Set up player sub-tab switching
+                    setTimeout(() => {
+                        document.getElementById('player-tab-roster')?.addEventListener('click', () => {
+                            document.getElementById('player-panel-roster').classList.remove('hidden');
+                            document.getElementById('player-panel-profiles').classList.add('hidden');
+                            document.getElementById('player-tab-roster').classList.add('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('player-tab-roster').classList.remove('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-profiles').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-profiles').classList.remove('text-emerald-600', 'border-emerald-500');
+                        });
+
+                        document.getElementById('player-tab-profiles')?.addEventListener('click', () => {
+                            document.getElementById('player-panel-profiles').classList.remove('hidden');
+                            document.getElementById('player-panel-roster').classList.add('hidden');
+                            document.getElementById('player-tab-profiles').classList.add('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('player-tab-profiles').classList.remove('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-roster').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('player-tab-roster').classList.remove('text-emerald-600', 'border-emerald-500');
+                        });
+
+                        // Profile editing handlers
+                        document.getElementById('admin-profile-player-select')?.addEventListener('change', (e) => {
+                            const playerId = e.target.value;
+                            const editSection = document.getElementById('admin-profile-edit-section');
+                            
+                            if (playerId) {
+                                const player = state.players.find(p => p.id === playerId);
+                                if (player) {
+                                    document.getElementById('admin-profile-edit-name').value = player.name || '';
+                                    document.getElementById('admin-profile-edit-nickname').value = player.nickname || '';
+                                    document.getElementById('admin-profile-edit-team').value = player.team || '';
+                                    editSection.classList.remove('hidden');
+                                }
+                            } else {
+                                editSection.classList.add('hidden');
+                            }
+                        });
+
+                        document.getElementById('admin-profile-edit-cancel')?.addEventListener('click', () => {
+                            document.getElementById('admin-profile-player-select').value = '';
+                            document.getElementById('admin-profile-edit-section').classList.add('hidden');
+                        });
+
+                        document.getElementById('admin-profile-edit-save')?.addEventListener('click', async () => {
+                            const playerId = document.getElementById('admin-profile-player-select').value;
+                            const newName = document.getElementById('admin-profile-edit-name').value.trim();
+                            const newNickname = document.getElementById('admin-profile-edit-nickname').value.trim();
+                            const newTeam = document.getElementById('admin-profile-edit-team').value || null;
+
+                            if (!playerId) {
+                                showToast("Please select a player.", 'warning');
+                                return;
+                            }
+
+                            if (!newName) {
+                                showToast("Player name cannot be empty.", 'warning');
+                                return;
+                            }
+
+                            try {
+                                await safeFirebaseCall('updatePlayerProfile', async () => {
+                                    const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
+                                    return await updateDoc(playerRef, {
+                                        name: newName,
+                                        nickname: newNickname,
+                                        team: newTeam
+                                    });
+                                });
+
+                                showToast("Player profile updated successfully!");
+                                document.getElementById('admin-profile-player-select').value = '';
+                                document.getElementById('admin-profile-edit-section').classList.add('hidden');
+                                renderAdminPlayerRoster(); // Refresh the roster
+                            } catch (error) {
+                                if (error.message.includes('Rate limit')) {
+                                    showToast(error.message, 'error');
+                                } else {
+                                    console.error("Error updating player profile:", error);
+                                    showToast("Could not update player profile.", 'error');
+                                }
+                            }
+                        });
+                    }, 100);
+
+                    // Set up admin sub-tab switching
+                    setTimeout(() => {
+                        document.getElementById('admin-tab-users')?.addEventListener('click', () => {
+                            document.getElementById('admin-panel-users').classList.remove('hidden');
+                            document.getElementById('admin-panel-players').classList.add('hidden');
+                            document.getElementById('admin-tab-users').classList.add('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('admin-tab-users').classList.remove('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-players').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-players').classList.remove('text-emerald-600', 'border-emerald-500');
+                        });
+
+                        document.getElementById('admin-tab-players')?.addEventListener('click', () => {
+                            document.getElementById('admin-panel-players').classList.remove('hidden');
+                            document.getElementById('admin-panel-users').classList.add('hidden');
+                            document.getElementById('admin-tab-players').classList.add('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('admin-tab-players').classList.remove('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-users').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-users').classList.remove('text-emerald-600', 'border-emerald-500');
+                        });
+                    }, 100);
+                }
+             
                 // Sign out button
                 const logoutBtn = document.createElement('button');
                 logoutBtn.textContent = 'Sign Out';
@@ -4123,73 +4320,6 @@
             }
         }
 
-        function openProfilesManagement() {
-            const modal = document.getElementById('profile-management-modal');
-            const select = document.getElementById('profile-player-select');
-            const editSection = document.getElementById('profile-edit-section');
-        
-            // Reset form
-            select.innerHTML = '<option value="">Choose a player...</option>';
-            state.players.forEach(player => {
-                const teamLabel = player.team ? `Team ${player.team}` : 'No Team';
-                select.innerHTML += `<option value="${player.id}">${player.name} (${teamLabel})</option>`;
-            });
-        
-            editSection.classList.add('hidden');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.classList.add('modal-open');
-        }
-        function closeProfilesManagement() {
-            const modal = document.getElementById('profile-management-modal');
-            const editSection = document.getElementById('profile-edit-section');
-            const select = document.getElementById('profile-player-select');
-
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.body.classList.remove('modal-open');
-            editSection.classList.add('hidden');
-            select.value = '';
-        }
-
-        async function saveProfileChanges() {
-            const playerId = document.getElementById('profile-player-select').value;
-            const newName = document.getElementById('profile-edit-name').value.trim();
-            const newNickname = document.getElementById('profile-edit-nickname').value.trim();
-            const newTeam = document.getElementById('profile-edit-team').value || null;
-        
-            if (!playerId) {
-                showToast("Please select a player.", 'warning');
-                return;
-            }
-        
-            if (!newName) {
-                showToast("Player name cannot be empty.", 'warning');
-                return;
-            }
-        
-            try {
-                await safeFirebaseCall('updatePlayerProfile', async () => {
-                    const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
-                    return await updateDoc(playerRef, {
-                        name: newName,
-                        nickname: newNickname,
-                        team: newTeam
-                    });
-                });
-        
-                showToast("Player profile updated successfully!");
-                closeProfilesManagement();
-            } catch (error) {
-                if (error.message.includes('Rate limit')) {
-                    showToast(error.message, 'error');
-                } else {
-                    console.error("Error updating player profile:", error);
-                    showToast("Could not update player profile.", 'error');
-                }
-            }
-        }
-
 
         function handleThemeToggle() {
             const isDark = document.documentElement.classList.toggle('dark');
@@ -4864,28 +4994,6 @@
             });
             ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
 
-            // Profile Management Modal Listeners
-            document.getElementById('profile-management-close').addEventListener('click', closeProfilesManagement);
-            document.getElementById('profile-edit-cancel').addEventListener('click', closeProfilesManagement);
-            document.getElementById('profile-edit-save').addEventListener('click', saveProfileChanges);
-
-            document.getElementById('profile-player-select').addEventListener('change', (e) => {
-                const playerId = e.target.value;
-                const editSection = document.getElementById('profile-edit-section');
-            
-                if (playerId) {
-                    const player = state.players.find(p => p.id === playerId);
-                    if (player) {
-                        document.getElementById('profile-edit-name').value = player.name || '';
-                        document.getElementById('profile-edit-nickname').value = player.nickname || '';
-                        document.getElementById('profile-edit-team').value = player.team || '';
-                        editSection.classList.remove('hidden');
-                    }
-                } else {
-                    editSection.classList.add('hidden');
-                }
-            });
-
         
             // Column visibility controls
             document.getElementById('toggle-columns-btn').addEventListener('click', () => {
@@ -4945,9 +5053,6 @@
             document.addEventListener('click', (e) => {
                 if (e.target.id === 'admin-add-player-btn') {
                     addPlayer();
-                }
-                if (e.target.id === 'manage-profiles-btn') {
-                    openProfilesManagement();
                 }
             });
     
