@@ -1253,9 +1253,6 @@
                     `;
                     rosterPanel.appendChild(playerManagementDiv);
                     playersPanel.appendChild(rosterPanel);
-                
-                    // Render player list
-                    renderAdminPlayerRoster();
 
                     // Profiles Panel
                     const profilesPanel = document.createElement('div');
@@ -1484,7 +1481,11 @@
                             document.getElementById('admin-tab-players').classList.remove('text-gray-500', 'border-transparent');
                             document.getElementById('admin-tab-users').classList.add('text-gray-500', 'border-transparent');
                             document.getElementById('admin-tab-users').classList.remove('text-emerald-600', 'border-emerald-500');
+                            renderAdminPlayerRoster(); // Render when switching to players tab
                         });
+
+                        // Initial render of player roster
+                        renderAdminPlayerRoster();
                     }, 100);
                 }
              
