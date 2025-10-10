@@ -317,8 +317,9 @@
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to use today's date.</p>
                             </div>
                             <div id="fixture-setup-form" class="space-y-4"></div>
-                            <div class="mt-6">
+                            <div class="mt-6 space-y-3">
                                 <button id="create-fixture-btn" class="w-full bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-semibold text-lg">Create & Start Fixture</button>
+                                <button id="cancel-match-btn" class="hidden w-full bg-red-500 text-white py-2 px-4 rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium">Cancel Match</button>
                             </div>
                         </div>
                     </div>
@@ -1601,6 +1602,18 @@
                     }
                 }
 
+                // Hide setup tab unless there's an active match for user's team
+                if (tabKey === 'setup') {
+                    const hasActiveMatch = state.fixture.id !== null && state.fixture.team === state.userTeam;
+                    if (tabButton) {
+                        tabButton.style.display = hasActiveMatch ? '' : 'none';
+                    }
+                    if (!hasActiveMatch) {
+                        // Skip adding to mobile menu if no active match
+                        continue;
+                    }
+                }
+
                 if (tabButton) {
                     if (tabKey === state.activeTab) {
                         tabButton.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
@@ -1808,6 +1821,12 @@
             if (hasActiveFixture) {
                 ui.createFixtureBtn.style.display = 'none';
 
+                // Show cancel match button
+                const cancelBtn = document.getElementById('cancel-match-btn');
+                if (cancelBtn) {
+                    cancelBtn.style.display = isDisabled ? 'none' : 'block';
+                }
+
                 // Add an update button if it doesn't exist
                 let updateBtn = document.getElementById('update-teams-btn');
                 if (!updateBtn) {
@@ -1828,6 +1847,12 @@
                 ui.createFixtureBtn.style.display = 'block';
                 const updateBtn = document.getElementById('update-teams-btn');
                 if (updateBtn) updateBtn.style.display = 'none';
+
+                // Hide cancel match button
+                const cancelBtn = document.getElementById('cancel-match-btn');
+                if (cancelBtn) {
+                    cancelBtn.style.display = 'none';
+                }
 
                 // Re-enable opposition name and date when no active fixture
                 ui.oppositionNameInput.disabled = isDisabled;
@@ -3284,6 +3309,10 @@
 
         async function handleConfirmation() {
             const { action, data } = state.confirmation;
+            if (action === 'cancelMatch') {
+                await cancelMatch();
+                return;
+            }
             if (action === 'deleteFixture' || action === 'deleteUpcomingFixture' || action === 'deletePreviousFixture') {
                  try {
                     const fixtureIdToDelete = data;
@@ -3570,6 +3599,7 @@
                 }
 
                 showToast("Match started! Please set up your team.", 'success');
+                render(); // Re-render to show setup tab
                 switchTab('setup');
             } catch (error) {
                 if (error.message.includes('Rate limit')) {
@@ -3991,6 +4021,50 @@
             }
         }
 
+        async function cancelMatch() {
+            if (!state.fixture.id) return;
+
+            try {
+                const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
+
+                await safeFirebaseCall('cancelMatch', async () => {
+                    // Revert the fixture back to scheduled status with empty games
+                    const emptyGames = GAME_TITLES.map((title) => {
+                        const isDoubles = title.includes("Doubles");
+                        return {
+                            title: title,
+                            type: isDoubles ? 'doubles' : 'singles',
+                            playerIds: [],
+                            legsWon: 0,
+                            legsLost: 0,
+                            highCheckout: 0,
+                            fines: 0,
+                            finesList: [],
+                            playerScores: []
+                        };
+                    });
+
+                    return await updateDoc(fixtureRef, {
+                        status: 'scheduled',
+                        games: emptyGames,
+                        activeGameIndex: 0
+                    });
+                });
+
+                showToast("Match cancelled and returned to upcoming fixtures.");
+                closeConfirmModal();
+                render();
+                switchTab('fixtures');
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error cancelling match:", error);
+                    showToast("Could not cancel the match.", 'error');
+                }
+            }
+        }
+
         // --- FIX STARTS HERE ---
         // This function saves the final stats to the database.
         // It's been updated to be more robust, ensuring the singles/doubles
@@ -4128,6 +4202,7 @@
                 ui.dotdModal.overlay.classList.add('hidden');
                 ui.dotdModal.overlay.classList.remove('flex');
                 document.body.classList.remove('modal-open');
+                render(); // Re-render to hide setup tab
                 switchTab('match');
 
             } catch (e) {
@@ -4757,6 +4832,17 @@
                 }
             });
             ui.createFixtureBtn.addEventListener('click', createFixture);
+
+            document.addEventListener('click', (e) => {
+                if (e.target.id === 'cancel-match-btn') {
+                    openConfirmModal(
+                        'Cancel Match?',
+                        'Are you sure you want to cancel this match? All current progress will be lost and the match will be returned to upcoming fixtures.',
+                        'cancelMatch',
+                        null
+                    );
+                }
+            });
 
             // Add the update teams function
             window.updateTeamSelections = async function() {
