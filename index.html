@@ -1602,18 +1602,6 @@
                     }
                 }
 
-                // Hide setup tab unless there's an active match for user's team
-                if (tabKey === 'setup') {
-                    const hasActiveMatch = state.fixture.id !== null && state.fixture.team === state.userTeam;
-                    if (tabButton) {
-                        tabButton.style.display = hasActiveMatch ? '' : 'none';
-                    }
-                    if (!hasActiveMatch) {
-                        // Skip adding to mobile menu if no active match
-                        continue;
-                    }
-                }
-
                 if (tabButton) {
                     if (tabKey === state.activeTab) {
                         tabButton.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
@@ -2081,7 +2069,7 @@
             // Filter fixtures by active match view team
             const teamFixtures = state.previousFixtures.filter(f => f.team === state.activeMatchView);
             const activeFixture = teamFixtures.find(f => f.status === 'live');
-            
+
             if (!activeFixture && !state.fixture.id) {
                 // Show "No active match" message
                 ui.currentMatchOpponent.textContent = 'Live results as they come in.';
