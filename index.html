@@ -2732,6 +2732,57 @@
             document.body.classList.remove('modal-open');
         }
 
+        async function saveFixtureEdit(fixtureId) {
+            const opposition = validateInput(document.getElementById('edit-fixture-opposition').value);
+            const date = document.getElementById('edit-fixture-date').value;
+            const location = document.getElementById('edit-fixture-location').value;
+            const venue = document.getElementById('edit-fixture-venue').value.trim();
+            const address = document.getElementById('edit-fixture-address').value.trim();
+            const team = document.getElementById('edit-fixture-team')?.value;
+
+            if (!opposition) {
+                showToast("Opposition name cannot be empty.", 'warning');
+                return;
+            }
+            if (!date) {
+                showToast("Match date cannot be empty.", 'warning');
+                return;
+            }
+
+            try {
+                const scheduledDate = Timestamp.fromDate(new Date(date));
+                const updates = {
+                    oppositionName: opposition,
+                    scheduledDate: scheduledDate,
+                    location: location,
+                    venue: venue || null,
+                    address: address || null
+                };
+
+                // Only admins can change team assignment
+                if (team && state.userRole === 'admin') {
+                    updates.team = team;
+                }
+
+                await safeFirebaseCall('updateFixture', async () => {
+                    const fixtureRef = doc(state.db, FIXTURES_COLLECTION, fixtureId);
+                    return await updateDoc(fixtureRef, updates);
+                });
+
+                showToast("Fixture updated successfully!");
+                closeFixtureModal();
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else if (error.message.includes('Invalid characters') || error.message.includes('Input too long')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error updating fixture:", error);
+                    showToast("Could not update fixture.", 'error');
+                }
+            }
+        }
+
         // Haptic feedback utility
         function triggerHaptic(pattern = 'light') {
             if (!('vibrate' in navigator)) return;
@@ -5132,6 +5183,36 @@
                 if (e.target.id === 'player-card-season-select') {
                     state.playerCard.selectedSeasonId = e.target.value;
                     renderPlayerCard();
+                }
+            });
+
+            // Fixture edit modal events
+            ui.playerCardModal.content.addEventListener('click', (e) => {
+                if (e.target.id === 'save-edit-fixture') {
+                    saveFixtureEdit(e.target.dataset.fixtureId);
+                }
+                if (e.target.id === 'cancel-edit-fixture') {
+                    closeFixtureModal();
+                }
+            });
+
+            // Handle location change to show/hide address field in edit modal
+            ui.playerCardModal.content.addEventListener('change', (e) => {
+                if (e.target.id === 'edit-fixture-location') {
+                    const addressContainer = document.getElementById('edit-fixture-address-container');
+                    const addressInput = document.getElementById('edit-fixture-address');
+                    const venueInput = document.getElementById('edit-fixture-venue');
+
+                    if (e.target.value === 'Home') {
+                        addressContainer.style.display = 'none';
+                        addressInput.value = '';
+                        venueInput.value = 'The Burnaby Arms';
+                    } else {
+                        addressContainer.style.display = 'block';
+                        if (venueInput.value === 'The Burnaby Arms') {
+                            venueInput.value = '';
+                        }
+                    }
                 }
             });
 
