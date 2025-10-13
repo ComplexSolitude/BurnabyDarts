@@ -2599,37 +2599,92 @@
             if (!fixture) return;
 
             const scheduledDate = fixture.scheduledDate?.toDate ? fixture.scheduledDate.toDate() : new Date(fixture.scheduledDate);
+            const isAdmin = state.userRole === 'admin';
+            const canEdit = isAdmin || state.userRole === 'member';
 
-            let modalContent = `
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-2xl font-bold dark:text-white">vs ${fixture.oppositionName}</h3>
-                </div>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Date</p>
-                            <p class="font-semibold dark:text-white">${scheduledDate.toLocaleDateString()}</p>
+            let modalContent = '';
+
+            if (type === 'upcoming' && canEdit) {
+                // Editable form for upcoming fixtures
+                modalContent = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold dark:text-white">Edit Fixture</h3>
+                    </div>
+                    <div class="space-y-4">
+                        ${isAdmin ? `
+                        <div>
+                            <label for="edit-fixture-team" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Team</label>
+                            <select id="edit-fixture-team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="A" ${fixture.team === 'A' ? 'selected' : ''}>Team A</option>
+                                <option value="B" ${fixture.team === 'B' ? 'selected' : ''}>Team B</option>
+                            </select>
+                        </div>
+                        ` : ''}
+                        <div>
+                            <label for="edit-fixture-opposition" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opposition</label>
+                            <input type="text" id="edit-fixture-opposition" value="${fixture.oppositionName}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="edit-fixture-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Match Date</label>
+                            <input type="date" id="edit-fixture-date" value="${scheduledDate.toISOString().split('T')[0]}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="edit-fixture-location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                            <select id="edit-fixture-location" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="Away" ${fixture.location === 'Away' ? 'selected' : ''}>Away</option>
+                                <option value="Home" ${fixture.location === 'Home' ? 'selected' : ''}>Home</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="edit-fixture-venue" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Venue</label>
+                            <input type="text" id="edit-fixture-venue" value="${fixture.venue || ''}" placeholder="e.g., The King's Arms" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div id="edit-fixture-address-container" ${fixture.location === 'Home' ? 'style="display:none;"' : ''}>
+                            <label for="edit-fixture-address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Address (for maps)</label>
+                            <input type="text" id="edit-fixture-address" value="${fixture.address || ''}" placeholder="e.g., 123 High Street, Burnaby Village, BC V5A 1A1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                         <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             <p class="text-sm text-gray-600 dark:text-gray-400">Season</p>
                             <p class="font-semibold dark:text-white">${state.seasons.find(s => s.id === fixture.seasonId)?.name || 'Unknown'}</p>
                         </div>
-                    </div>
-            `;
-
-            if (fixture.venue || fixture.location) {
-                modalContent += `
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Venue</p>
-                        <p class="font-semibold dark:text-white">
-                            ${fixture.venue ? (fixture.address ? `<a href="https://www.google.com/maps/place/${encodeURIComponent(fixture.address)}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline cursor-pointer" title="View location on Google Maps">${fixture.venue}</a>` : fixture.venue) : 'TBD'}
-                            ${fixture.location ? `(${fixture.location})` : ''}
-                        </p>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button id="cancel-edit-fixture" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
+                            <button id="save-edit-fixture" data-fixture-id="${fixtureId}" class="bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors">Save Changes</button>
+                        </div>
                     </div>
                 `;
-            }
+            } else {
+                // Read-only view for upcoming fixtures (viewers/scorers) or previous fixtures
+                modalContent = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold dark:text-white">vs ${fixture.oppositionName}</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Date</p>
+                                <p class="font-semibold dark:text-white">${scheduledDate.toLocaleDateString()}</p>
+                            </div>
+                            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Season</p>
+                                <p class="font-semibold dark:text-white">${state.seasons.find(s => s.id === fixture.seasonId)?.name || 'Unknown'}</p>
+                            </div>
+                        </div>
+                `;
 
-            if (type === 'previous') {
+                if (fixture.venue || fixture.location) {
+                    modalContent += `
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Venue</p>
+                            <p class="font-semibold dark:text-white">
+                                ${fixture.venue ? (fixture.address ? `<a href="https://www.google.com/maps/place/${encodeURIComponent(fixture.address)}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 underline cursor-pointer" title="View location on Google Maps">${fixture.venue}</a>` : fixture.venue) : 'TBD'}
+                                ${fixture.location ? `(${fixture.location})` : ''}
+                            </p>
+                        </div>
+                    `;
+                }
+
+                if (type === 'previous') {
                 // Show match results for finished games
                 let burnabyLegs = 0;
                 let oppositionLegs = 0;
@@ -2674,6 +2729,58 @@
             ui.playerCardModal.overlay.classList.add('hidden');
             ui.playerCardModal.overlay.classList.remove('flex');
             document.body.classList.remove('modal-open');
+        }
+
+
+        async function saveFixtureEdit(fixtureId) {
+            const opposition = validateInput(document.getElementById('edit-fixture-opposition').value);
+            const date = document.getElementById('edit-fixture-date').value;
+            const location = document.getElementById('edit-fixture-location').value;
+            const venue = document.getElementById('edit-fixture-venue').value.trim();
+            const address = document.getElementById('edit-fixture-address').value.trim();
+            const team = document.getElementById('edit-fixture-team')?.value;
+
+            if (!opposition) {
+                showToast("Opposition name cannot be empty.", 'warning');
+                return;
+            }
+            if (!date) {
+                showToast("Match date cannot be empty.", 'warning');
+                return;
+            }
+
+            try {
+                const scheduledDate = Timestamp.fromDate(new Date(date));
+                const updates = {
+                    oppositionName: opposition,
+                    scheduledDate: scheduledDate,
+                    location: location,
+                    venue: venue || null,
+                    address: address || null
+                };
+
+                // Only admins can change team assignment
+                if (team && state.userRole === 'admin') {
+                    updates.team = team;
+                }
+
+                await safeFirebaseCall('updateFixture', async () => {
+                    const fixtureRef = doc(state.db, FIXTURES_COLLECTION, fixtureId);
+                    return await updateDoc(fixtureRef, updates);
+                });
+
+                showToast("Fixture updated successfully!");
+                closeFixtureModal();
+            } catch (error) {
+                if (error.message.includes('Rate limit')) {
+                    showToast(error.message, 'error');
+                } else if (error.message.includes('Invalid characters') || error.message.includes('Input too long')) {
+                    showToast(error.message, 'error');
+                } else {
+                    console.error("Error updating fixture:", error);
+                    showToast("Could not update fixture.", 'error');
+                }
+            }
         }
 
         // Haptic feedback utility
@@ -5076,6 +5183,36 @@
                 if (e.target.id === 'player-card-season-select') {
                     state.playerCard.selectedSeasonId = e.target.value;
                     renderPlayerCard();
+                }
+            });
+
+            // Fixture edit modal events
+            ui.playerCardModal.content.addEventListener('click', (e) => {
+                if (e.target.id === 'save-edit-fixture') {
+                    saveFixtureEdit(e.target.dataset.fixtureId);
+                }
+                if (e.target.id === 'cancel-edit-fixture') {
+                    closeFixtureModal();
+                }
+            });
+
+            // Handle location change to show/hide address field in edit modal
+            ui.playerCardModal.content.addEventListener('change', (e) => {
+                if (e.target.id === 'edit-fixture-location') {
+                    const addressContainer = document.getElementById('edit-fixture-address-container');
+                    const addressInput = document.getElementById('edit-fixture-address');
+                    const venueInput = document.getElementById('edit-fixture-venue');
+
+                    if (e.target.value === 'Home') {
+                        addressContainer.style.display = 'none';
+                        addressInput.value = '';
+                        venueInput.value = 'The Burnaby Arms';
+                    } else {
+                        addressContainer.style.display = 'block';
+                        if (venueInput.value === 'The Burnaby Arms') {
+                            venueInput.value = '';
+                        }
+                    }
                 }
             });
 
