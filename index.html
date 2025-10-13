@@ -2110,13 +2110,27 @@
                 }
                 ui.currentMatchScoreContainer.innerHTML = '';
                 return;
-            }
-            const displayFixture = activeFixture || state.fixture;
+                }
+
+                // Only use state.fixture if it matches the team we're viewing
+                let displayFixture = activeFixture;
+                if (!displayFixture && state.fixture.id && state.fixture.team === state.activeMatchView) {
+                    displayFixture = state.fixture;
+                }
+
+                // If still no fixture for this team, show no active match message
+                if (!displayFixture) {
+                    ui.currentMatchOpponent.textContent = 'Live results as they come in.';
+                    ui.currentMatchResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No active match for this team.</p>';
+                    ui.currentMatchScoreContainer.innerHTML = '';
+                    return;
+                }
+
                 ui.currentMatchOpponent.textContent = `vs ${displayFixture.oppositionName}`;
                 ui.currentMatchResults.innerHTML = '';
-            
+
                 renderOverallScore(ui.currentMatchScoreContainer);
-            
+
                 displayFixture.games.forEach((game, index) => {
                 const gameEl = document.createElement('div');
                 gameEl.className = `p-4 rounded-xl ${state.currentGameIndex === index ? 'bg-emerald-100 dark:bg-emerald-800/60' : 'bg-gray-50 dark:bg-gray-700/50'}`;
