@@ -2112,40 +2112,40 @@
                 return;
                 }
 
-                // Only use state.fixture if it matches the team we're viewing
-                let displayFixture = activeFixture;
-                if (!displayFixture && state.fixture.id && state.fixture.team === state.activeMatchView) {
-                    displayFixture = state.fixture;
-                }
-
-                // If still no fixture for this team, show no active match message with next upcoming
-                if (!displayFixture) {
-                    ui.currentMatchOpponent.textContent = 'Live results as they come in.';
-
-                    // Show next upcoming match for the selected team view
-                    const nextMatch = getNextUpcomingMatch(state.activeMatchView);
-                    if (nextMatch) {
-                        const matchDate = nextMatch.scheduledDate?.toDate ? nextMatch.scheduledDate.toDate() : new Date(nextMatch.scheduledDate);
-                        ui.currentMatchResults.innerHTML = `
-                            <p class="text-gray-500 dark:text-gray-400 mb-4">No active match.</p>
-                            <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
-                                <p class="font-semibold dark:text-white">Next Match</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">vs ${nextMatch.oppositionName}</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">${matchDate.toLocaleDateString()}</p>
-                                ${nextMatch.venue ? `<p class="text-sm text-gray-600 dark:text-gray-400">${nextMatch.venue}</p>` : ''}
-                            </div>
-                        `;
-                    } else {
-                        ui.currentMatchResults.innerHTML = `
-                            <p class="text-gray-500 dark:text-gray-400">No active match.</p>
-                            <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
-                             <p class="font-semibold dark:text-white">No Upcoming Matches</p>
-                            </div>
-                        `;
+                    // Only use state.fixture if it matches the team we're viewing
+                    let displayFixture = activeFixture;
+                    if (!displayFixture && state.fixture.id && state.fixture.team === state.activeMatchView) {
+                        displayFixture = state.fixture;
                     }
-                    ui.currentMatchScoreContainer.innerHTML = '';
-                    return;
-                }
+
+                    // If still no fixture for this team, show no active match message with next upcoming
+                    if (!displayFixture) {
+                        ui.currentMatchOpponent.textContent = 'Live results as they come in.';
+
+                        // Show next upcoming match for the selected team view
+                        const nextMatch = getNextUpcomingMatch(state.activeMatchView);
+                        if (nextMatch) {
+                            const matchDate = nextMatch.scheduledDate?.toDate ? nextMatch.scheduledDate.toDate() : new Date(nextMatch.scheduledDate);
+                            ui.currentMatchResults.innerHTML = `
+                                <p class="text-gray-500 dark:text-gray-400 mb-4">No active match.</p>
+                                <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
+                                    <p class="font-semibold dark:text-white">Next Match</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">vs ${nextMatch.oppositionName}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">${matchDate.toLocaleDateString()}</p>
+                                    ${nextMatch.venue ? `<p class="text-sm text-gray-600 dark:text-gray-400">${nextMatch.venue}</p>` : ''}
+                                </div>
+                            `;
+                        } else {
+                            ui.currentMatchResults.innerHTML = `
+                                <p class="text-gray-500 dark:text-gray-400">No active match.</p>
+                                <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
+                                 <p class="font-semibold dark:text-white">No Upcoming Matches</p>
+                                </div>
+                            `;
+                        }
+                        ui.currentMatchScoreContainer.innerHTML = '';
+                        return;
+                    }
 
                     ui.currentMatchOpponent.textContent = `vs ${displayFixture.oppositionName}`;
                     ui.currentMatchResults.innerHTML = '';
@@ -2685,39 +2685,40 @@
                 }
 
                 if (type === 'previous') {
-                // Show match results for finished games
-                let burnabyLegs = 0;
-                let oppositionLegs = 0;
-                fixture.games.forEach(game => {
-                    burnabyLegs += game.legsWon || 0;
-                    oppositionLegs += game.legsLost || 0;
-                });
+                    // Show match results for finished games
+                    let burnabyLegs = 0;
+                    let oppositionLegs = 0;
+                    fixture.games.forEach(game => {
+                        burnabyLegs += game.legsWon || 0;
+                        oppositionLegs += game.legsLost || 0;
+                    });
 
-                modalContent += `
-                    <div class="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Final Score</p>
-                        <p class="font-bold text-xl dark:text-white">${burnabyLegs} - ${oppositionLegs}</p>
-                    </div>
-                    <div class="space-y-2">
-                        <h4 class="font-semibold dark:text-white">Game Results</h4>
-                `;
-
-                fixture.games.forEach(game => {
-                    const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
                     modalContent += `
-                        <div class="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
-                            <div>
-                                <p class="font-medium dark:text-white">${game.title}</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">${playerNames}</p>
-                            </div>
-                            <p class="font-bold dark:text-white">${game.legsWon} - ${game.legsLost}</p>
+                        <div class="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Final Score</p>
+                            <p class="font-bold text-xl dark:text-white">${burnabyLegs} - ${oppositionLegs}</p>
                         </div>
+                        <div class="space-y-2">
+                            <h4 class="font-semibold dark:text-white">Game Results</h4>
                     `;
-                });
+
+                    fixture.games.forEach(game => {
+                        const playerNames = game.playerIds.map(id => state.players.find(p => p.id === id)?.name || 'Unknown').join(' & ');
+                        modalContent += `
+                            <div class="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+                                <div>
+                                    <p class="font-medium dark:text-white">${game.title}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">${playerNames}</p>
+                                </div>
+                                <p class="font-bold dark:text-white">${game.legsWon} - ${game.legsLost}</p>
+                            </div>
+                        `;
+                    });
+                    modalContent += '</div>';
+                }
+
                 modalContent += '</div>';
             }
-
-            modalContent += '</div>';
 
             ui.playerCardModal.content.innerHTML = modalContent;
             ui.playerCardModal.overlay.classList.remove('hidden');
@@ -2729,58 +2730,6 @@
             ui.playerCardModal.overlay.classList.add('hidden');
             ui.playerCardModal.overlay.classList.remove('flex');
             document.body.classList.remove('modal-open');
-        }
-
-
-        async function saveFixtureEdit(fixtureId) {
-            const opposition = validateInput(document.getElementById('edit-fixture-opposition').value);
-            const date = document.getElementById('edit-fixture-date').value;
-            const location = document.getElementById('edit-fixture-location').value;
-            const venue = document.getElementById('edit-fixture-venue').value.trim();
-            const address = document.getElementById('edit-fixture-address').value.trim();
-            const team = document.getElementById('edit-fixture-team')?.value;
-
-            if (!opposition) {
-                showToast("Opposition name cannot be empty.", 'warning');
-                return;
-            }
-            if (!date) {
-                showToast("Match date cannot be empty.", 'warning');
-                return;
-            }
-
-            try {
-                const scheduledDate = Timestamp.fromDate(new Date(date));
-                const updates = {
-                    oppositionName: opposition,
-                    scheduledDate: scheduledDate,
-                    location: location,
-                    venue: venue || null,
-                    address: address || null
-                };
-
-                // Only admins can change team assignment
-                if (team && state.userRole === 'admin') {
-                    updates.team = team;
-                }
-
-                await safeFirebaseCall('updateFixture', async () => {
-                    const fixtureRef = doc(state.db, FIXTURES_COLLECTION, fixtureId);
-                    return await updateDoc(fixtureRef, updates);
-                });
-
-                showToast("Fixture updated successfully!");
-                closeFixtureModal();
-            } catch (error) {
-                if (error.message.includes('Rate limit')) {
-                    showToast(error.message, 'error');
-                } else if (error.message.includes('Invalid characters') || error.message.includes('Input too long')) {
-                    showToast(error.message, 'error');
-                } else {
-                    console.error("Error updating fixture:", error);
-                    showToast("Could not update fixture.", 'error');
-                }
-            }
         }
 
         // Haptic feedback utility
@@ -2861,10 +2810,10 @@
                const result = await signInWithPopup(state.auth, provider);
                const user = result.user;
                const email = user.email;
-               
+
                // Check if user already has a role assigned in Firestore
                const userDoc = await getDoc(doc(state.db, 'users', user.uid));
-               
+
                if (userDoc.exists()) {
                    // Existing user - use their assigned role and player link
                    const userData = userDoc.data();
@@ -3081,7 +3030,7 @@
                 state.userRole = userData.role || 'viewer';
                 state.userPlayerId = userData.playerId || null;
                 state.userTeam = userData.team || null;
-                state.activeMatchView = userData.team || null; 
+                state.activeMatchView = userData.team || null;
                 state.userName = userData.name; // Get name from Firestore
                 console.log('Retrieved name from Firestore:', userData.name); // Debug log
             } else {
@@ -3175,15 +3124,15 @@
             onSnapshot(usersCollection, (snapshot) => {
                 const usersList = document.getElementById('users-list');
                 if (!usersList) return;
-        
+
                 usersList.innerHTML = '';
-                
+
                 let unassignedCount = 0;
                 const teamFilter = document.getElementById('admin-team-filter')?.value || 'all';
-        
+
                 snapshot.docs.forEach(doc => {
                     const userData = doc.data();
-                    
+
                     // Apply team filter
                     if (teamFilter !== 'all') {
                         if (teamFilter === 'none' && userData.team) return;
@@ -3218,7 +3167,7 @@
                         </div>
                     `;
                     usersList.appendChild(userItem);
-            
+
                     // Count unassigned users
                     if (!hasTeam) {
                         unassignedCount++;
@@ -3245,7 +3194,7 @@
                         await updateUserTeam(userId, newTeam);
                     });
                 });
-                
+
                 document.querySelectorAll('.user-role-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const userId = e.target.dataset.userId;
@@ -3270,7 +3219,7 @@
             try {
                 const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
                 const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
-        
+
                 await safeFirebaseCall('auditLog', async () => {
                     return await addDoc(collection(state.db, 'audit_logs'), {
                         action: 'team_change',
@@ -3286,14 +3235,14 @@
                         userAgent: navigator.userAgent
                     });
                 });
-        
+
                 await safeFirebaseCall('updateUserTeam', async () => {
                     return await updateDoc(doc(state.db, 'users', userId), {
                         team: newTeam,
                         updatedAt: serverTimestamp()
                     });
                 });
-        
+
                 // If user has a linked player, update that player's team too
                 if (targetUserData.playerId) {
                     await safeFirebaseCall('updatePlayerTeam', async () => {
@@ -3302,7 +3251,7 @@
                         });
                     });
                 }
-        
+
                 // If updating current user's team, update local state
                 if (userId === state.userId) {
                     state.userTeam = newTeam;
@@ -3310,7 +3259,7 @@
                     localStorage.setItem('userTeam', newTeam || '');
                     render();
                 }
-        
+
                 showToast('User team updated successfully.');
             } catch (error) {
                 if (error.message.includes('Rate limit')) {
@@ -3374,10 +3323,10 @@
                 // Get the target user's document and player information
                 const targetUserDoc = await getDoc(doc(state.db, 'users', userId));
                 const targetUserData = targetUserDoc.exists() ? targetUserDoc.data() : {};
-        
+
                 const oldPlayer = state.players.find(p => p.id === targetUserData.playerId);
                 const newPlayer = newPlayerId ? state.players.find(p => p.id === newPlayerId) : null;
-        
+
                 // Add enhanced audit logging for player links
                 await safeFirebaseCall('auditLog', async () => {
                     return await addDoc(collection(state.db, 'audit_logs'), {
@@ -3396,15 +3345,15 @@
                         userAgent: navigator.userAgent
                     });
                 });
-        
-        
+
+
                 await safeFirebaseCall('updateUserPlayer', async () => {
                     return await updateDoc(doc(state.db, 'users', userId), {
                         playerId: newPlayerId,
                         updatedAt: serverTimestamp()
                     });
                 });
-        
+
                 // Update the new player's team to match the user's team
                 if (newPlayerId && targetUserData.team) {
                     await safeFirebaseCall('updatePlayerTeam', async () => {
@@ -3413,13 +3362,13 @@
                         });
                     });
                 }
-        
+
                 // If updating current user's player link, update local state
                 if (userId === state.userId) {
                     state.userPlayerId = newPlayerId;
                     render();
                 }
-        
+
                 showToast('User player link updated successfully.');
             } catch (error) {
                 if (error.message.includes('Rate limit')) {
@@ -3541,19 +3490,19 @@
             const nameInput = document.getElementById('admin-new-player-name');
             const nicknameInput = document.getElementById('admin-new-player-nickname');
             const teamSelect = document.getElementById('admin-new-player-team');
-        
+
             if (!nameInput) return; // Not in admin tab
-        
+
             try {
                 const name = validateInput(nameInput.value, 50);
                 const nickname = validateInput(nicknameInput.value, 50);
                 const team = teamSelect.value || null;
-        
+
                 if (!name) {
                     showToast("Player name cannot be empty.", 'error');
                     return;
                 }
-        
+
                 await safeFirebaseCall('addPlayer', async () => {
                     return await addDoc(collection(state.db, PLAYERS_COLLECTION), {
                         name: name,
@@ -3562,7 +3511,7 @@
                         stats: {}
                     });
                 });
-        
+
                 showToast(`${name} added to the roster.`);
                 nameInput.value = '';
                 nicknameInput.value = '';
@@ -3582,19 +3531,19 @@
         async function getOrCreatePlayer(nameInput) {
             const trimmedName = nameInput.trim();
             if (!trimmedName) return null;
-            
+
             // Check if it's an existing player ID (from datalist selection)
             const existingById = state.players.find(p => p.id === trimmedName);
             if (existingById) {
                 return trimmedName;
             }
-            
+
             // Check if a player with this exact name already exists
             const existingByName = state.players.find(p => p.name.toLowerCase() === trimmedName.toLowerCase());
             if (existingByName) {
                 return existingByName.id;
             }
-            
+
             // Create new player in database
             try {
                 const docRef = await safeFirebaseCall('createPlayer', async () => {
@@ -3606,7 +3555,7 @@
                         isTemporary: true // Flag for admin review
                     });
                 });
-                
+
                 showToast(`${trimmedName} added to roster.`);
                 return docRef.id;
             } catch (error) {
@@ -3619,11 +3568,11 @@
                 return null;
             }
         }
-     
+
         async function archivePlayer(playerId) {
             const player = state.players.find(p => p.id === playerId);
             if (!player) return;
-            
+
             try {
                 await safeFirebaseCall('archivePlayer', async () => {
                     const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
@@ -3646,7 +3595,7 @@
         async function unarchivePlayer(playerId) {
             const player = state.players.find(p => p.id === playerId);
             if (!player) return;
-            
+
             try {
                 await safeFirebaseCall('unarchivePlayer', async () => {
                     const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
@@ -3758,7 +3707,7 @@
             modal.id = 'add-fixture-modal';
             modal.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4';
             const isAdmin = state.userRole === 'admin';
-            
+
             modal.innerHTML = `
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
                     <div class="flex justify-between items-center mb-4">
@@ -3859,8 +3808,8 @@
             }
 
             // For admins, get the selected team; for members, use their team
-            const fixtureTeam = state.userRole === 'admin' 
-                ? document.getElementById('fixture-team-select')?.value || state.userTeam 
+            const fixtureTeam = state.userRole === 'admin'
+                ? document.getElementById('fixture-team-select')?.value || state.userTeam
                 : state.userTeam;
 
             if (!fixtureTeam) {
@@ -3869,7 +3818,7 @@
             }
 
             try {
-                const scheduledDate = Timestamp.fromDate(new Date(fixtureDate));       
+                const scheduledDate = Timestamp.fromDate(new Date(fixtureDate));
 
                 // Create empty games structure for scheduled fixture
                 const games = GAME_TITLES.map((title) => {
@@ -3976,41 +3925,41 @@
             for (let i = 0; i < GAME_TITLES.length; i++) {
                 const title = GAME_TITLES[i];
                 const isDoubles = title.includes("Doubles");
-            
+
                 const p1Input = document.getElementById(`game-${i}-p1-input`);
                 const p1Value = p1Input.value.trim();
-                
+
                 // Get or create player ID for player 1
                 const p1Id = await getOrCreatePlayer(p1Value);
                 if (!p1Id && p1Value) {
                     showToast(`Could not add player for ${title}.`, 'error');
                     return;
                 }
-            
+
                 const playerIds = p1Id ? [p1Id] : [];
-                
+
                 if (isDoubles) {
                     const p2Input = document.getElementById(`game-${i}-p2-input`);
                     const p2Value = p2Input.value.trim();
-                    
+
                     // Get or create player ID for player 2
                     const p2Id = await getOrCreatePlayer(p2Value);
-                    
+
                     if (p1Id && p2Id && p1Id === p2Id) {
                         showToast(`A player cannot play with themselves in ${title}.`, 'error');
                         return;
                     }
-                    
+
                     if (p2Id) playerIds.push(p2Id);
                 }
-            
+
                 const playerScores = playerIds.map(() => ({
                     scores100: 0,
                     scores140: 0,
                     scores180: 0,
                     sillyThings: 0,
                 }));
-            
+
                 games.push({
                     title: title,
                     type: isDoubles ? 'doubles' : 'singles',
@@ -4096,7 +4045,7 @@
         async function addFine(amount, reason) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game) return;
-        
+
             // Create unique fine with timestamp + user ID for better uniqueness
             const fineId = `${Date.now()}-${state.userId || 'anon'}-${Math.random().toString(36).substr(2, 9)}`;
             const newFine = {
@@ -4106,51 +4055,51 @@
                 timestamp: new Date().toISOString(),
                 addedBy: state.userId || 'anonymous'
             };
-        
+
             try {
                 const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
-                
+
                 await safeFirebaseCall('addFine', async () => {
                     return await runTransaction(state.db, async (transaction) => {
                         const fixtureDoc = await transaction.get(fixtureRef);
                         if (!fixtureDoc.exists()) {
                             throw new Error("Fixture document does not exist!");
                         }
-                        
+
                         const serverData = fixtureDoc.data();
                         const currentGame = serverData.games[state.currentGameIndex];
-                        
+
                         // Check if this exact fine already exists (prevent duplicates)
                         const existingFines = currentGame.finesList || [];
-                        const duplicateFine = existingFines.find(f => 
-                            f.reason === reason && 
-                            f.amount === amount && 
+                        const duplicateFine = existingFines.find(f =>
+                            f.reason === reason &&
+                            f.amount === amount &&
                             Math.abs(new Date(f.timestamp).getTime() - new Date(newFine.timestamp).getTime()) < 5000 // Within 5 seconds
                         );
-                        
+
                         if (duplicateFine) {
                             throw new Error('DUPLICATE_FINE');
                         }
-                        
+
                         // Add fine to server data
                         const updatedFinesList = [...existingFines, newFine];
                         const updatedFinesTotal = (currentGame.fines || 0) + amount;
-                        
+
                         const updatedGames = [...serverData.games];
                         updatedGames[state.currentGameIndex] = {
                             ...currentGame,
                             finesList: updatedFinesList,
                             fines: updatedFinesTotal
                         };
-                        
+
                         return transaction.update(fixtureRef, {
                             games: updatedGames
                         });
                     });
                 });
-                
+
                 showToast(`Fine added: ${reason} (+£${(amount/100).toFixed(2)})`);
-                
+
             } catch (error) {
                 if (error.message === 'DUPLICATE_FINE') {
                     showToast(`Fine already added by another scorer!`, 'warning');
@@ -4883,7 +4832,7 @@
                     // Find active fixture for the current user's team
                     const userTeam = state.userTeam || state.activeMatchView;
                     const activeFixture = allFixtures.find(f => f.status === 'live' && f.team === userTeam);
-                    
+
                     if (activeFixture) {
                         state.fixture = activeFixture;
                         state.currentGameIndex = activeFixture.activeGameIndex || 0;
@@ -4998,26 +4947,26 @@
 
                     const p1Input = document.getElementById(`game-${i}-p1-input`);
                     const p1Value = p1Input.value.trim();
-                    
+
                     const p1Id = await getOrCreatePlayer(p1Value);
                     if (!p1Id && p1Value) {
                         showToast(`Could not add player for ${title}.`, 'error');
                         return;
                     }
-                    
+
                     const playerIds = p1Id ? [p1Id] : [];
-                    
+
                     if (isDoubles) {
                         const p2Input = document.getElementById(`game-${i}-p2-input`);
                         const p2Value = p2Input.value.trim();
-                        
+
                         const p2Id = await getOrCreatePlayer(p2Value);
-                        
+
                         if (p1Id && p2Id && p1Id === p2Id) {
                             showToast(`A player cannot play with themselves in ${title}.`, 'error');
                             return;
                         }
-                        
+
                         if (p2Id) playerIds.push(p2Id);
                     }
 
@@ -5186,36 +5135,6 @@
                 }
             });
 
-            // Fixture edit modal events
-            ui.playerCardModal.content.addEventListener('click', (e) => {
-                if (e.target.id === 'save-edit-fixture') {
-                    saveFixtureEdit(e.target.dataset.fixtureId);
-                }
-                if (e.target.id === 'cancel-edit-fixture') {
-                    closeFixtureModal();
-                }
-            });
-
-            // Handle location change to show/hide address field in edit modal
-            ui.playerCardModal.content.addEventListener('change', (e) => {
-                if (e.target.id === 'edit-fixture-location') {
-                    const addressContainer = document.getElementById('edit-fixture-address-container');
-                    const addressInput = document.getElementById('edit-fixture-address');
-                    const venueInput = document.getElementById('edit-fixture-venue');
-
-                    if (e.target.value === 'Home') {
-                        addressContainer.style.display = 'none';
-                        addressInput.value = '';
-                        venueInput.value = 'The Burnaby Arms';
-                    } else {
-                        addressContainer.style.display = 'block';
-                        if (venueInput.value === 'The Burnaby Arms') {
-                            venueInput.value = '';
-                        }
-                    }
-                }
-            });
-
             ui.highCheckoutInput.addEventListener('input', (e) => {
                 const game = state.fixture.games[state.currentGameIndex];
                 if (game) {
@@ -5238,20 +5157,20 @@
             ui.fineBtn26.addEventListener('click', () => {
                 const key = 'fine-26';
                 if (fineDebounce[key]) return; // Prevent rapid clicks
-                
+
                 fineDebounce[key] = true;
                 setTimeout(() => delete fineDebounce[key], 2000); // 2 second cooldown
-                
+
                 triggerHaptic('medium');
                 addFine(26, 'Score of 26');
             });
             ui.fineBtnMiss.addEventListener('click', () => {
                 const key = 'fine-miss';
                 if (fineDebounce[key]) return; // Prevent rapid clicks
-                
+
                 fineDebounce[key] = true;
                 setTimeout(() => delete fineDebounce[key], 2000); // 2 second cooldown
-                
+
                 triggerHaptic('medium');
                 addFine(50, 'Missed Board');
             });
@@ -5317,19 +5236,19 @@
                 updateTeamSwitcherStyles('match');
                 renderCurrentMatch();
             });
-            
+
             document.getElementById('match-view-team-b').addEventListener('click', () => {
                 state.activeMatchView = 'B';
                 updateTeamSwitcherStyles('match');
                 renderCurrentMatch();
             });
-            
+
             document.getElementById('fixtures-view-team-a').addEventListener('click', () => {
                 state.activeMatchView = 'A';
                 updateTeamSwitcherStyles('fixtures');
                 renderFixturesTab();
             });
-            
+
             document.getElementById('fixtures-view-team-b').addEventListener('click', () => {
                 state.activeMatchView = 'B';
                 updateTeamSwitcherStyles('fixtures');
@@ -5362,12 +5281,12 @@
             });
             ui.myProfile.saveBtn.addEventListener('click', handleUpdateProfile);
 
-        
+
             // Column visibility controls
             document.getElementById('toggle-columns-btn').addEventListener('click', () => {
                 const controls = document.getElementById('column-controls');
                 const isHidden = controls.classList.contains('hidden');
-                
+
                 if (isHidden) {
                     controls.classList.remove('hidden');
                 } else {
@@ -5423,7 +5342,7 @@
                     addPlayer();
                 }
             });
-    
+
             init();
         
         function updateTeamSwitcherStyles(context) {
