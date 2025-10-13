@@ -2118,18 +2118,39 @@
                     displayFixture = state.fixture;
                 }
 
-                // If still no fixture for this team, show no active match message
+                // If still no fixture for this team, show no active match message with next upcoming
                 if (!displayFixture) {
                     ui.currentMatchOpponent.textContent = 'Live results as they come in.';
-                    ui.currentMatchResults.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No active match for this team.</p>';
+
+                    // Show next upcoming match for the selected team view
+                    const nextMatch = getNextUpcomingMatch(state.activeMatchView);
+                    if (nextMatch) {
+                        const matchDate = nextMatch.scheduledDate?.toDate ? nextMatch.scheduledDate.toDate() : new Date(nextMatch.scheduledDate);
+                        ui.currentMatchResults.innerHTML = `
+                            <p class="text-gray-500 dark:text-gray-400 mb-4">No active match.</p>
+                            <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
+                                <p class="font-semibold dark:text-white">Next Match</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">vs ${nextMatch.oppositionName}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">${matchDate.toLocaleDateString()}</p>
+                                ${nextMatch.venue ? `<p class="text-sm text-gray-600 dark:text-gray-400">${nextMatch.venue}</p>` : ''}
+                            </div>
+                        `;
+                    } else {
+                        ui.currentMatchResults.innerHTML = `
+                            <p class="text-gray-500 dark:text-gray-400">No active match.</p>
+                            <div class="p-4 rounded-xl bg-blue-100 dark:bg-blue-800/60 text-center">
+                             <p class="font-semibold dark:text-white">No Upcoming Matches</p>
+                            </div>
+                        `;
+                    }
                     ui.currentMatchScoreContainer.innerHTML = '';
                     return;
                 }
 
-                ui.currentMatchOpponent.textContent = `vs ${displayFixture.oppositionName}`;
-                ui.currentMatchResults.innerHTML = '';
+                    ui.currentMatchOpponent.textContent = `vs ${displayFixture.oppositionName}`;
+                    ui.currentMatchResults.innerHTML = '';
 
-                renderOverallScore(ui.currentMatchScoreContainer);
+                    renderOverallScore(ui.currentMatchScoreContainer);
 
                 displayFixture.games.forEach((game, index) => {
                 const gameEl = document.createElement('div');
