@@ -839,6 +839,7 @@
             selectedStatsTeamFilter: 'all', // 'all', 'A', or 'B'
             playerCard: { isOpen: false, playerId: null, selectedSeasonId: 'all-time' },
             fixture: { id: null, games: [], activeGameIndex: 0 },
+            allFixtures: [],
             previousFixtures: [],
             upcomingFixtures: [],
             selectedPreviousFixtureId: null,
@@ -1639,7 +1640,7 @@
 
                     if (state.userRole === 'admin') {
                         // Admins can see setup if ANY team has an active match
-                        hasActiveMatch = state.previousFixtures.some(f => f.status === 'live');
+                        hasActiveMatch = state.allFixtures.some(f => f.status === 'live');
                     } else {
                         // Members can only see setup for their team's active match
                         hasActiveMatch = state.fixture.id !== null && state.fixture.team === state.userTeam;
@@ -1701,16 +1702,26 @@
         function renderFixturePlayerSelectors() {
             const form = ui.fixtureForm;
             form.innerHTML = '';
-        
-            const teamPlayers = state.players.filter(p => p.team === state.userTeam && !p.archived);
-        
+
+            // For admins, use activeMatchView; for members, use userTeam
+            const teamToShow = state.userRole === 'admin' ? (state.activeMatchView || state.userTeam) : state.userTeam;
+            const teamPlayers = state.players.filter(p => p.team === teamToShow && !p.archived);
+
+            // For admins, get the active fixture for the team they're viewing
+            let fixtureToShow;
+            if (state.userRole === 'admin') {
+                fixtureToShow = state.allFixtures.find(f => f.status === 'live' && f.team === teamToShow);
+            } else {
+                fixtureToShow = state.fixture.id ? state.fixture : null;
+            }
+
             GAME_TITLES.forEach((title, i) => {
                 const isDoubles = title.includes("Doubles");
                 const gameSetupEl = document.createElement('div');
                 gameSetupEl.className = 'mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg';
-        
+
                 // Get current player selections if there's an active fixture
-                const currentGame = state.fixture.games?.[i];
+                const currentGame = fixtureToShow?.games?.[i];
                 const currentP1Id = currentGame?.playerIds?.[0] || '';
                 const currentP2Id = currentGame?.playerIds?.[1] || '';
                 
@@ -1763,7 +1774,9 @@
 
         function setupPlayerSelectors() {
             const inputs = document.querySelectorAll('.player-selector-input');
-            const teamPlayers = state.players.filter(p => p.team === state.userTeam);
+            // For admins, use activeMatchView; for members, use userTeam
+            const teamToShow = state.userRole === 'admin' ? (state.activeMatchView || state.userTeam) : state.userTeam;
+            const teamPlayers = state.players.filter(p => p.team === teamToShow);
         
             inputs.forEach(input => {
                 const gameIndex = input.dataset.gameIndex;
@@ -1840,7 +1853,7 @@
             let activeFixtureForTeam = null;
             if (state.userRole === 'admin') {
                 const teamToCheck = state.activeMatchView || state.userTeam;
-                activeFixtureForTeam = state.previousFixtures.find(f => f.status === 'live' && f.team === teamToCheck);
+                activeFixtureForTeam = state.allFixtures.find(f => f.status === 'live' && f.team === teamToCheck);
             } else {
                 activeFixtureForTeam = state.fixture.id ? state.fixture : null;
             }
@@ -1858,6 +1871,27 @@
                     teamSwitcher.classList.add('hidden');
                     teamSwitcher.classList.remove('flex');
                 }
+            }
+
+            // For admins viewing a team without an active match, show info message
+            if (state.userRole === 'admin' && !hasActiveFixture) {
+                const existingNoMatchWarning = document.getElementById('admin-no-match-warning');
+                if (existingNoMatchWarning) existingNoMatchWarning.remove();
+
+                const teamToCheck = state.activeMatchView || state.userTeam;
+                const warningDiv = document.createElement('div');
+                warningDiv.id = 'admin-no-match-warning';
+                warningDiv.className = 'col-span-2 p-4 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-center mb-4';
+                warningDiv.innerHTML = `
+                    <p class="font-semibold text-blue-900 dark:text-blue-100">No Active Match for Team ${teamToCheck}</p>
+                    <p class="text-sm text-blue-800 dark:text-blue-200">Switch teams using the buttons above to manage an active match.</p>
+                `;
+                if (ui.fixtureForm.parentElement) {
+                    ui.fixtureForm.parentElement.insertBefore(warningDiv, ui.fixtureForm);
+                }
+            } else {
+                const existingNoMatchWarning = document.getElementById('admin-no-match-warning');
+                if (existingNoMatchWarning) existingNoMatchWarning.remove();
             }
 
             // Show warning if logged-in user (not viewer) has no team
@@ -4959,6 +4993,9 @@
                     ui.connectionStatus.classList.add('hidden');
                     const allFixtures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+                    // Store all fixtures in state for easier access
+                    state.allFixtures = allFixtures;
+
                     // Find active fixture for the current user's team
                     const userTeam = state.userTeam || state.activeMatchView;
                     const activeFixture = allFixtures.find(f => f.status === 'live' && f.team === userTeam);
@@ -5072,7 +5109,16 @@
 
             // Add the update teams function
             window.updateTeamSelections = async function() {
-                if (!state.fixture.id) return;
+                // For admins, get the active fixture for the team they're viewing
+                let fixtureToUpdate;
+                if (state.userRole === 'admin') {
+                    const teamToCheck = state.activeMatchView || state.userTeam;
+                    fixtureToUpdate = state.allFixtures.find(f => f.status === 'live' && f.team === teamToCheck);
+                } else {
+                    fixtureToUpdate = state.fixture.id ? state.fixture : null;
+                }
+
+                if (!fixtureToUpdate || !fixtureToUpdate.id) return;
 
                 // Validate all games have players selected
                 const games = [];
@@ -5106,7 +5152,7 @@
                     }
 
                     // Keep existing game data but update player selections
-                    const existingGame = state.fixture.games[i];
+                    const existingGame = fixtureToUpdate.games[i];
                     const updatedGame = {
                         ...existingGame,
                         playerIds: playerIds,
@@ -5127,7 +5173,7 @@
                 }
 
                 try {
-                    const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
+                    const fixtureRef = doc(state.db, FIXTURES_COLLECTION, fixtureToUpdate.id);
                     await updateDoc(fixtureRef, { games: games });
                     showToast("Team selections updated successfully!");
                     switchTab('live');
