@@ -1633,9 +1633,18 @@
                     }
                 }
 
-                // Hide setup tab unless there's an active match for user's team
+                // Hide setup tab unless there's an active match
                 if (tabKey === 'setup') {
-                    const hasActiveMatch = state.fixture.id !== null && state.fixture.team === state.userTeam;
+                    let hasActiveMatch = false;
+
+                    if (state.userRole === 'admin') {
+                        // Admins can see setup if ANY team has an active match
+                        hasActiveMatch = state.previousFixtures.some(f => f.status === 'live');
+                    } else {
+                        // Members can only see setup for their team's active match
+                        hasActiveMatch = state.fixture.id !== null && state.fixture.team === state.userTeam;
+                    }
+
                     if (tabButton) {
                         tabButton.style.display = hasActiveMatch ? '' : 'none';
                     }
@@ -1825,7 +1834,18 @@
 
         function renderFixtureSetup() {
             const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer' || (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer');
-            const hasActiveFixture = state.fixture.id !== null;
+
+            // For admins, check if there's an active fixture for the team they're viewing
+            // For non-admins, use state.fixture as before
+            let activeFixtureForTeam = null;
+            if (state.userRole === 'admin') {
+                const teamToCheck = state.activeMatchView || state.userTeam;
+                activeFixtureForTeam = state.previousFixtures.find(f => f.status === 'live' && f.team === teamToCheck);
+            } else {
+                activeFixtureForTeam = state.fixture.id ? state.fixture : null;
+            }
+
+            const hasActiveFixture = activeFixtureForTeam !== null;
 
             // Show/hide team switcher for admins
             const teamSwitcher = document.getElementById('setup-team-switcher');
@@ -1866,6 +1886,60 @@
             // Handle the create button differently - hide when fixture is active, show "Update Teams" instead
             if (hasActiveFixture) {
                 ui.createFixtureBtn.style.display = 'none';
+
+                // Show cancel match button
+                const cancelBtn = document.getElementById('cancel-match-btn');
+                if (cancelBtn) {
+                    cancelBtn.style.display = isDisabled ? 'none' : 'block';
+                }
+
+                // Add an update button if it doesn't exist
+                let updateBtn = document.getElementById('update-teams-btn');
+                if (!updateBtn) {
+                    updateBtn = document.createElement('button');
+                    updateBtn.id = 'update-teams-btn';
+                    updateBtn.className = 'w-full bg-blue-600 text-white py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-semibold text-lg';
+                    updateBtn.textContent = 'Update Team Selections';
+                    ui.createFixtureBtn.parentNode.insertBefore(updateBtn, ui.createFixtureBtn.nextSibling);
+
+                    updateBtn.addEventListener('click', updateTeamSelections);
+                }
+                updateBtn.style.display = isDisabled ? 'none' : 'block';
+
+                // Disable opposition name and date during active fixture
+                ui.oppositionNameInput.disabled = true;
+                ui.matchDateInput.disabled = true;
+
+                // Populate form with active fixture data
+                if (activeFixtureForTeam) {
+                    ui.oppositionNameInput.value = activeFixtureForTeam.oppositionName;
+                    if (activeFixtureForTeam.scheduledDate) {
+                        const matchDate = activeFixtureForTeam.scheduledDate.toDate();
+                        ui.matchDateInput.value = matchDate.toISOString().split('T')[0];
+                    }
+                }
+            } else {
+                ui.createFixtureBtn.style.display = 'block';
+                const updateBtn = document.getElementById('update-teams-btn');
+                if (updateBtn) updateBtn.style.display = 'none';
+
+                // Hide cancel match button
+                const cancelBtn = document.getElementById('cancel-match-btn');
+                if (cancelBtn) {
+                    cancelBtn.style.display = 'none';
+                }
+
+                // Re-enable opposition name and date when no active fixture
+                ui.oppositionNameInput.disabled = isDisabled;
+                ui.matchDateInput.disabled = isDisabled;
+
+                if (isDisabled) {
+                    ui.createFixtureBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    ui.createFixtureBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
 
                 // Show cancel match button
                 const cancelBtn = document.getElementById('cancel-match-btn');
