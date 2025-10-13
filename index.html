@@ -4358,10 +4358,29 @@
         }
 
         async function cancelMatch() {
-            if (!state.fixture.id) return;
+            // Determine which fixture to cancel (same logic as renderFixtureSetup)
+            let fixtureToCancel = null;
+
+            if (state.userRole === 'admin') {
+                const teamAFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'A');
+                const teamBFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'B');
+
+                if (teamAFixture && teamBFixture) {
+                    const teamToCheck = state.activeMatchView || 'A';
+                    fixtureToCancel = teamToCheck === 'A' ? teamAFixture : teamBFixture;
+                } else if (teamAFixture) {
+                    fixtureToCancel = teamAFixture;
+                } else if (teamBFixture) {
+                    fixtureToCancel = teamBFixture;
+                }
+            } else {
+                fixtureToCancel = state.fixture.id ? state.fixture : null;
+            }
+
+            if (!fixtureToCancel || !fixtureToCancel.id) return;
 
             try {
-                const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
+                const fixtureRef = doc(state.db, FIXTURES_COLLECTION, fixtureToCancel.id);
 
                 await safeFirebaseCall('cancelMatch', async () => {
                     // Revert the fixture back to scheduled status with empty games
