@@ -1859,7 +1859,7 @@
                     teamSwitcher.classList.remove('flex');
                 }
             }
-            
+
             // Show warning if logged-in user (not viewer) has no team
             if (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer') {
                 ui.oppositionNameInput.disabled = true;
@@ -1878,6 +1878,7 @@
                 const existingWarning = document.getElementById('no-team-warning');
                 if (existingWarning) existingWarning.remove();
             }
+
             // Disable most inputs for viewers/scorers, but allow editing during active fixture for members/admins
             document.querySelectorAll('#tab-content-setup input:not(#opposition-name-input):not(#match-date-input), #tab-content-setup select').forEach(el => {
                 el.disabled = isDisabled;
@@ -1918,51 +1919,6 @@
                         ui.matchDateInput.value = matchDate.toISOString().split('T')[0];
                     }
                 }
-            } else {
-                ui.createFixtureBtn.style.display = 'block';
-                const updateBtn = document.getElementById('update-teams-btn');
-                if (updateBtn) updateBtn.style.display = 'none';
-
-                // Hide cancel match button
-                const cancelBtn = document.getElementById('cancel-match-btn');
-                if (cancelBtn) {
-                    cancelBtn.style.display = 'none';
-                }
-
-                // Re-enable opposition name and date when no active fixture
-                ui.oppositionNameInput.disabled = isDisabled;
-                ui.matchDateInput.disabled = isDisabled;
-
-                if (isDisabled) {
-                    ui.createFixtureBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    ui.createFixtureBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            }
-        }
-
-                // Show cancel match button
-                const cancelBtn = document.getElementById('cancel-match-btn');
-                if (cancelBtn) {
-                    cancelBtn.style.display = isDisabled ? 'none' : 'block';
-                }
-
-                // Add an update button if it doesn't exist
-                let updateBtn = document.getElementById('update-teams-btn');
-                if (!updateBtn) {
-                    updateBtn = document.createElement('button');
-                    updateBtn.id = 'update-teams-btn';
-                    updateBtn.className = 'w-full bg-blue-600 text-white py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-semibold text-lg';
-                    updateBtn.textContent = 'Update Team Selections';
-                    ui.createFixtureBtn.parentNode.insertBefore(updateBtn, ui.createFixtureBtn.nextSibling);
-
-                    updateBtn.addEventListener('click', updateTeamSelections);
-                }
-                updateBtn.style.display = isDisabled ? 'none' : 'block';
-
-                // Disable opposition name and date during active fixture
-                ui.oppositionNameInput.disabled = true;
-                ui.matchDateInput.disabled = true;
             } else {
                 ui.createFixtureBtn.style.display = 'block';
                 const updateBtn = document.getElementById('update-teams-btn');
