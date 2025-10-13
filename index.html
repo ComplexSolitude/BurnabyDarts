@@ -1139,6 +1139,7 @@
                         <nav class="-mb-px flex space-x-8" aria-label="Admin Tabs">
                             <button id="admin-tab-users" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Users</button>
                             <button id="admin-tab-players" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Players</button>
+                            <button id="admin-tab-seasons" class="admin-sub-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">Seasons</button>
                         </nav>
                         <select id="admin-team-filter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                             <option value="all">All Teams</option>
@@ -1318,6 +1319,24 @@
 
                     loggedInContainer.appendChild(playersPanel);
 
+                    // Seasons Panel
+                    const seasonsPanel = document.createElement('div');
+                    seasonsPanel.id = 'admin-panel-seasons';
+                    seasonsPanel.className = 'hidden max-w-2xl';
+
+                    const seasonManagementDiv = document.createElement('div');
+                    seasonManagementDiv.className = 'bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700';
+                    seasonManagementDiv.innerHTML = `
+                        <h3 class="text-lg font-semibold mb-4 dark:text-white">Season Management</h3>
+                        <div id="admin-seasons-list" class="space-y-3 mb-4"></div>
+                        <div id="admin-add-season-form" class="space-y-2">
+                            <input type="text" id="admin-new-season-name-input" aria-label="New Season Input" placeholder="e.g., Summer 25" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <button id="admin-add-season-btn" class="w-full bg-gray-800 dark:bg-gray-600 text-white py-2 px-4 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-500 transition-colors duration-200">Add New Season</button>
+                        </div>
+                    `;
+                    seasonsPanel.appendChild(seasonManagementDiv);
+                    loggedInContainer.appendChild(seasonsPanel);
+
                     // Function to render archived players
                     const renderArchivedPlayers = () => {
                         const list = document.getElementById('admin-archived-player-list');
@@ -1469,20 +1488,39 @@
                         document.getElementById('admin-tab-users')?.addEventListener('click', () => {
                             document.getElementById('admin-panel-users').classList.remove('hidden');
                             document.getElementById('admin-panel-players').classList.add('hidden');
+                            document.getElementById('admin-panel-seasons').classList.add('hidden');
                             document.getElementById('admin-tab-users').classList.add('text-emerald-600', 'border-emerald-500');
                             document.getElementById('admin-tab-users').classList.remove('text-gray-500', 'border-transparent');
                             document.getElementById('admin-tab-players').classList.add('text-gray-500', 'border-transparent');
                             document.getElementById('admin-tab-players').classList.remove('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('admin-tab-seasons').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-seasons').classList.remove('text-emerald-600', 'border-emerald-500');
                         });
 
                         document.getElementById('admin-tab-players')?.addEventListener('click', () => {
                             document.getElementById('admin-panel-players').classList.remove('hidden');
                             document.getElementById('admin-panel-users').classList.add('hidden');
+                            document.getElementById('admin-panel-seasons').classList.add('hidden');
                             document.getElementById('admin-tab-players').classList.add('text-emerald-600', 'border-emerald-500');
                             document.getElementById('admin-tab-players').classList.remove('text-gray-500', 'border-transparent');
                             document.getElementById('admin-tab-users').classList.add('text-gray-500', 'border-transparent');
                             document.getElementById('admin-tab-users').classList.remove('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('admin-tab-seasons').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-seasons').classList.remove('text-emerald-600', 'border-emerald-500');
                             renderAdminPlayerRoster(); // Render when switching to players tab
+                        });
+
+                        document.getElementById('admin-tab-seasons')?.addEventListener('click', () => {
+                            document.getElementById('admin-panel-seasons').classList.remove('hidden');
+                            document.getElementById('admin-panel-users').classList.add('hidden');
+                            document.getElementById('admin-panel-players').classList.add('hidden');
+                            document.getElementById('admin-tab-seasons').classList.add('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('admin-tab-seasons').classList.remove('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-users').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-users').classList.remove('text-emerald-600', 'border-emerald-500');
+                            document.getElementById('admin-tab-players').classList.add('text-gray-500', 'border-transparent');
+                            document.getElementById('admin-tab-players').classList.remove('text-emerald-600', 'border-emerald-500');
+                            renderAdminSeasonsList(); // Render when switching to seasons tab
                         });
 
                         // Initial render of player roster
@@ -1634,26 +1672,28 @@
         }
 
         function renderSeasonManagement() {
-            ui.seasonsList.innerHTML = '';
+            ui.activeSeasonDisplay.textContent = state.seasons.find(s => s.id === state.activeSeasonId)?.name || 'N/A - Please create a season.';
+        }
+
+        function renderAdminSeasonsList() {
+            const seasonsList = document.getElementById('admin-seasons-list');
+            if (!seasonsList) return;
+
+            seasonsList.innerHTML = '';
             if (state.seasons.length === 0) {
-                ui.seasonsList.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No seasons created yet.</p>`;
-                ui.activeSeasonDisplay.textContent = 'N/A - Please create a season.';
+                seasonsList.innerHTML = `<p class="text-gray-500 dark:text-gray-400">No seasons created yet.</p>`;
             } else {
-                let activeSeasonName = 'N/A';
                 state.seasons.forEach(season => {
                     const isActive = season.id === state.activeSeasonId;
-                    if (isActive) activeSeasonName = season.name;
                     const seasonEl = document.createElement('div');
                     seasonEl.className = `flex items-center justify-between p-2 rounded-lg ${isActive ? 'bg-emerald-100 dark:bg-emerald-900' : 'bg-gray-100 dark:bg-gray-700'}`;
                     seasonEl.innerHTML = `
-                        <span class="font-medium dark:text-white">${season.name}</span>
-                        ${!isActive && (state.userRole === 'admin' || state.userRole === 'member') ? `<button data-season-id="${season.id}" class="set-active-season-btn text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 text-sm font-semibold">Set Active</button>` : ''}
+                        <span class="font-medium dark:text-white">${season.name}${isActive ? ' (Active)' : ''}</span>
+                        ${!isActive ? `<button data-season-id="${season.id}" class="admin-set-active-season-btn text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 text-sm font-semibold">Set Active</button>` : ''}
                     `;
-                    ui.seasonsList.appendChild(seasonEl);
+                    seasonsList.appendChild(seasonEl);
                 });
-                ui.activeSeasonDisplay.textContent = activeSeasonName;
             }
-            ui.addSeasonForm.classList.toggle('hidden', state.userRole === 'viewer' || state.userRole === 'scorer');
         }
 
         function renderFixturePlayerSelectors() {
@@ -4943,25 +4983,29 @@
             Object.keys(ui.tabs).forEach(tabName => {
                 ui.tabs[tabName].addEventListener('click', () => switchTab(tabName));
             });
-            ui.addSeasonBtn.addEventListener('click', async () => {
-                const name = ui.newSeasonInput.value.trim();
-                if (!name) return showToast("Season name cannot be empty.", 'warning');
-                try {
-                    await safeFirebaseCall('addSeason', async () => {
-                        return await addDoc(collection(state.db, SEASONS_COLLECTION), { name, status: 'archived' });
-                    });
-                    showToast(`Season "${name}" added.`);
-                    ui.newSeasonInput.value = '';
-                } catch(e) {
-                    if (e.message.includes('Rate limit')) {
-                        showToast(e.message, 'error');
-                    } else {
-                        showToast("Could not add season.", 'error');
+            // Admin season management events
+            document.addEventListener('click', async (e) => {
+                if (e.target.id === 'admin-add-season-btn') {
+                    const nameInput = document.getElementById('admin-new-season-name-input');
+                    const name = nameInput.value.trim();
+                    if (!name) return showToast("Season name cannot be empty.", 'warning');
+                    try {
+                        await safeFirebaseCall('addSeason', async () => {
+                            return await addDoc(collection(state.db, SEASONS_COLLECTION), { name, status: 'archived' });
+                        });
+                        showToast(`Season "${name}" added.`);
+                        nameInput.value = '';
+                        renderAdminSeasonsList();
+                    } catch(e) {
+                        if (e.message.includes('Rate limit')) {
+                            showToast(e.message, 'error');
+                        } else {
+                            showToast("Could not add season.", 'error');
+                        }
                     }
                 }
-            });
-            ui.seasonsList.addEventListener('click', async (e) => {
-                const setActiveBtn = e.target.closest('.set-active-season-btn');
+
+                const setActiveBtn = e.target.closest('.admin-set-active-season-btn');
                 if (setActiveBtn) {
                     const newActiveId = setActiveBtn.dataset.seasonId;
                     const batch = writeBatch(state.db);
@@ -4971,6 +5015,7 @@
                     });
                     await batch.commit();
                     showToast("Active season updated.");
+                    renderAdminSeasonsList();
                 }
             });
             ui.createFixtureBtn.addEventListener('click', createFixture);
