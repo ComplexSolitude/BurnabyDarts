@@ -289,7 +289,13 @@
                 <div id="tab-content-setup" class="hidden">
                     <div class="max-w-2xl mx-auto">
                         <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <h2 class="text-xl font-semibold mb-4 dark:text-white">Setup New Match</h2>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-semibold dark:text-white">Setup New Match</h2>
+                                <div id="setup-team-switcher" class="hidden gap-2">
+                                    <button id="setup-view-team-a" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">A Team</button>
+                                    <button id="setup-view-team-b" class="px-3 py-1 rounded-lg text-sm font-medium transition-colors">B Team</button>
+                                </div>
+                            </div>
                             <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Season</label>
                                 <p id="active-season-display" class="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-400"></p>
@@ -1820,6 +1826,19 @@
         function renderFixtureSetup() {
             const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer' || (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer');
             const hasActiveFixture = state.fixture.id !== null;
+
+            // Show/hide team switcher for admins
+            const teamSwitcher = document.getElementById('setup-team-switcher');
+            if (teamSwitcher) {
+                if (state.userRole === 'admin') {
+                    teamSwitcher.classList.remove('hidden');
+                    teamSwitcher.classList.add('flex');
+                    updateTeamSwitcherStyles('setup');
+                } else {
+                    teamSwitcher.classList.add('hidden');
+                    teamSwitcher.classList.remove('flex');
+                }
+            }
             
             // Show warning if logged-in user (not viewer) has no team
             if (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer') {
@@ -4052,10 +4071,13 @@
             }
 
             try {
+                // For admins, use the active match view; for members, use their team
+                const fixtureTeam = state.userRole === 'admin' ? state.activeMatchView : state.userTeam;
+
                 await safeFirebaseCall('createFixture', async () => {
                     return await addDoc(collection(state.db, FIXTURES_COLLECTION), {
                         seasonId: state.activeSeasonId,
-                        team: state.userTeam, // Assign fixture to user's team
+                        team: fixtureTeam, // Assign fixture to selected team (admin) or user's team (member)
                         oppositionName: oppositionName,
                         games: games,
                         activeGameIndex: 0,
@@ -5368,6 +5390,18 @@
                 renderFixturesTab();
             });
 
+            document.getElementById('setup-view-team-a').addEventListener('click', () => {
+                state.activeMatchView = 'A';
+                updateTeamSwitcherStyles('setup');
+                renderFixtureSetup();
+            });
+
+            document.getElementById('setup-view-team-b').addEventListener('click', () => {
+                state.activeMatchView = 'B';
+                updateTeamSwitcherStyles('setup');
+                renderFixtureSetup();
+            });
+
             // My Profile Listeners
             ui.myProfile.playerSelect.addEventListener('change', async (e) => {
                 const newPlayerId = e.target.value;
@@ -5459,7 +5493,7 @@
             init();
         
         function updateTeamSwitcherStyles(context) {
-            const prefix = context === 'match' ? 'match-view' : 'fixtures-view';
+            const prefix = context === 'match' ? 'match-view' : context === 'fixtures' ? 'fixtures-view' : 'setup-view';
             const btnA = document.getElementById(`${prefix}-team-a`);
             const btnB = document.getElementById(`${prefix}-team-b`);
             
