@@ -1703,25 +1703,43 @@
             const form = ui.fixtureForm;
             form.innerHTML = '';
 
-            // For admins, use activeMatchView; for members, use userTeam
-            const teamToShow = state.userRole === 'admin' ? (state.activeMatchView || state.userTeam) : state.userTeam;
-            const teamPlayers = state.players.filter(p => p.team === teamToShow && !p.archived);
+            // Determine which team's fixture to show (same logic as renderFixtureSetup)
+            let fixtureToShow = null;
+            let teamToShow = null;
 
-            // For admins, get the active fixture for the team they're viewing
-            let fixtureToShow;
             if (state.userRole === 'admin') {
-                fixtureToShow = state.allFixtures.find(f => f.status === 'live' && f.team === teamToShow);
+                // Find all active fixtures
+                const teamAFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'A');
+                const teamBFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'B');
+
+                if (teamAFixture && teamBFixture) {
+                    // Both teams have active matches - use the team switcher
+                    teamToShow = state.activeMatchView || 'A';
+                    fixtureToShow = teamToShow === 'A' ? teamAFixture : teamBFixture;
+                } else if (teamAFixture) {
+                    // Only Team A has a match - show Team A
+                    teamToShow = 'A';
+                    fixtureToShow = teamAFixture;
+                } else if (teamBFixture) {
+                    // Only Team B has a match - show Team B
+                    teamToShow = 'B';
+                    fixtureToShow = teamBFixture;
+                }
             } else {
+                // For non-admins, use their assigned team's fixture
                 fixtureToShow = state.fixture.id ? state.fixture : null;
+                teamToShow = state.userTeam;
             }
 
-            // If admin is viewing a team without an active match, don't render the form
-            if (state.userRole === 'admin' && !fixtureToShow) {
+            // If there's no active fixture, don't render the form
+            if (!fixtureToShow) {
                 form.style.display = 'none';
                 return;
             } else {
                 form.style.display = '';
             }
+
+            const teamPlayers = state.players.filter(p => p.team === teamToShow && !p.archived);
 
             GAME_TITLES.forEach((title, i) => {
                 const isDoubles = title.includes("Doubles");
@@ -1782,8 +1800,25 @@
 
         function setupPlayerSelectors() {
             const inputs = document.querySelectorAll('.player-selector-input');
-            // For admins, use activeMatchView; for members, use userTeam
-            const teamToShow = state.userRole === 'admin' ? (state.activeMatchView || state.userTeam) : state.userTeam;
+
+            // Determine which team to show (same logic as renderFixtureSetup)
+            let teamToShow = null;
+
+            if (state.userRole === 'admin') {
+                const teamAFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'A');
+                const teamBFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'B');
+
+                if (teamAFixture && teamBFixture) {
+                    teamToShow = state.activeMatchView || 'A';
+                } else if (teamAFixture) {
+                    teamToShow = 'A';
+                } else if (teamBFixture) {
+                    teamToShow = 'B';
+                }
+            } else {
+                teamToShow = state.userTeam;
+            }
+
             const teamPlayers = state.players.filter(p => p.team === teamToShow);
         
             inputs.forEach(input => {
@@ -1856,22 +1891,43 @@
         function renderFixtureSetup() {
             const isDisabled = state.userRole === 'viewer' || state.userRole === 'scorer' || (!state.userTeam && state.isLoggedIn && state.userRole !== 'viewer');
 
-            // For admins, check if there's an active fixture for the team they're viewing
-            // For non-admins, use state.fixture as before
+            // Determine which team's fixture to show
             let activeFixtureForTeam = null;
+            let teamToShow = null;
+            let bothTeamsHaveMatches = false;
+
             if (state.userRole === 'admin') {
-                const teamToCheck = state.activeMatchView || state.userTeam;
-                activeFixtureForTeam = state.allFixtures.find(f => f.status === 'live' && f.team === teamToCheck);
+                // Find all active fixtures
+                const teamAFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'A');
+                const teamBFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'B');
+
+                bothTeamsHaveMatches = teamAFixture && teamBFixture;
+
+                if (bothTeamsHaveMatches) {
+                    // Both teams have active matches - use the team switcher
+                    teamToShow = state.activeMatchView || 'A';
+                    activeFixtureForTeam = teamToShow === 'A' ? teamAFixture : teamBFixture;
+                } else if (teamAFixture) {
+                    // Only Team A has a match - show Team A
+                    teamToShow = 'A';
+                    activeFixtureForTeam = teamAFixture;
+                } else if (teamBFixture) {
+                    // Only Team B has a match - show Team B
+                    teamToShow = 'B';
+                    activeFixtureForTeam = teamBFixture;
+                }
             } else {
+                // For non-admins, use their assigned team's fixture
                 activeFixtureForTeam = state.fixture.id ? state.fixture : null;
+                teamToShow = state.userTeam;
             }
 
             const hasActiveFixture = activeFixtureForTeam !== null;
 
-            // Show/hide team switcher for admins
+            // Show/hide team switcher for admins (only when both teams have matches)
             const teamSwitcher = document.getElementById('setup-team-switcher');
             if (teamSwitcher) {
-                if (state.userRole === 'admin') {
+                if (state.userRole === 'admin' && bothTeamsHaveMatches) {
                     teamSwitcher.classList.remove('hidden');
                     teamSwitcher.classList.add('flex');
                     updateTeamSwitcherStyles('setup');
@@ -1881,18 +1937,17 @@
                 }
             }
 
-            // For admins viewing a team without an active match, show info message
+            // Show info message if neither team has a match
             if (state.userRole === 'admin' && !hasActiveFixture) {
                 const existingNoMatchWarning = document.getElementById('admin-no-match-warning');
                 if (existingNoMatchWarning) existingNoMatchWarning.remove();
 
-                const teamToCheck = state.activeMatchView || state.userTeam;
                 const warningDiv = document.createElement('div');
                 warningDiv.id = 'admin-no-match-warning';
                 warningDiv.className = 'col-span-2 p-4 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-center mb-4';
                 warningDiv.innerHTML = `
-                    <p class="font-semibold text-blue-900 dark:text-blue-100">No Active Match for Team ${teamToCheck}</p>
-                    <p class="text-sm text-blue-800 dark:text-blue-200">Switch teams using the buttons above to manage an active match.</p>
+                    <p class="font-semibold text-blue-900 dark:text-blue-100">No Active Matches</p>
+                    <p class="text-sm text-blue-800 dark:text-blue-200">Create a match in the Match tab to set up teams.</p>
                 `;
                 if (ui.fixtureForm.parentElement) {
                     ui.fixtureForm.parentElement.insertBefore(warningDiv, ui.fixtureForm);
@@ -5135,11 +5190,21 @@
 
             // Add the update teams function
             window.updateTeamSelections = async function() {
-                // For admins, get the active fixture for the team they're viewing
-                let fixtureToUpdate;
+                // Determine which fixture to update (same logic as renderFixtureSetup)
+                let fixtureToUpdate = null;
+
                 if (state.userRole === 'admin') {
-                    const teamToCheck = state.activeMatchView || state.userTeam;
-                    fixtureToUpdate = state.allFixtures.find(f => f.status === 'live' && f.team === teamToCheck);
+                    const teamAFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'A');
+                    const teamBFixture = state.allFixtures.find(f => f.status === 'live' && f.team === 'B');
+
+                    if (teamAFixture && teamBFixture) {
+                        const teamToCheck = state.activeMatchView || 'A';
+                        fixtureToUpdate = teamToCheck === 'A' ? teamAFixture : teamBFixture;
+                    } else if (teamAFixture) {
+                        fixtureToUpdate = teamAFixture;
+                    } else if (teamBFixture) {
+                        fixtureToUpdate = teamBFixture;
+                    }
                 } else {
                     fixtureToUpdate = state.fixture.id ? state.fixture : null;
                 }
