@@ -2270,7 +2270,7 @@
             }
             
             // Filter fixtures by active match view team
-            const teamFixtures = state.previousFixtures.filter(f => f.team === state.activeMatchView);
+            const teamFixtures = state.allFixtures.filter(f => f.team === state.activeMatchView);
             const activeFixture = teamFixtures.find(f => f.status === 'live');
 
             if (!activeFixture && !state.fixture.id) {
