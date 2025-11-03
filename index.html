@@ -2235,13 +2235,13 @@
                 }
             });
         }
-        function renderOverallScore(container) {
+        function renderOverallScore(container, fixture = state.fixture) {
             container.innerHTML = '';
-            if (!state.fixture.id) return;
+            if (!fixture.id) return;
 
             let burnabyLegs = 0;
             let oppositionLegs = 0;
-            state.fixture.games.forEach(game => {
+            fixture.games.forEach(game => {
                 burnabyLegs += game.legsWon || 0;
                 oppositionLegs += game.legsLost || 0;
             });
@@ -2341,7 +2341,7 @@
                     ui.currentMatchOpponent.textContent = `vs ${displayFixture.oppositionName}`;
                     ui.currentMatchResults.innerHTML = '';
 
-                    renderOverallScore(ui.currentMatchScoreContainer);
+                    renderOverallScore(ui.currentMatchScoreContainer, displayFixture);
 
                 displayFixture.games.forEach((game, index) => {
                 const gameEl = document.createElement('div');
