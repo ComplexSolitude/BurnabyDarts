@@ -595,7 +595,7 @@
                 <!-- Head-to-Head Tab Content -->
                 <div id="tab-content-h2h" class="hidden">
                     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">Head-to-Head</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                         <div>
                             <label for="h2h-player1-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Player 1</label>
                             <select id="h2h-player1-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
@@ -603,6 +603,10 @@
                         <div>
                             <label for="h2h-player2-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Player 2</label>
                             <select id="h2h-player2-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
+                        </div>
+                        <div>
+                            <label for="h2h-season-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Season</label>
+                            <select id="h2h-season-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
                         </div>
                     </div>
                     <div id="h2h-results-container" class="mt-6">
@@ -853,6 +857,7 @@
             h2h: {
                 player1: null,
                 player2: null,
+                selectedSeason: 'all-time',
             },
             myProfile: {
                 selectedPlayerId: null,
@@ -1058,6 +1063,7 @@
             h2h: {
                 player1Select: document.getElementById('h2h-player1-select'),
                 player2Select: document.getElementById('h2h-player2-select'),
+                seasonSelect: document.getElementById('h2h-season-select'),
                 resultsContainer: document.getElementById('h2h-results-container'),
             },
             myProfile: {
@@ -4686,8 +4692,15 @@
             ui.h2h.player1Select.innerHTML = `<option value="">Select Player 1</option>${playerOptions}`;
             ui.h2h.player2Select.innerHTML = `<option value="">Select Player 2</option>${playerOptions}`;
 
+            // Populate season selector
+            ui.h2h.seasonSelect.innerHTML = `<option value="all-time">All-Time</option>`;
+            state.seasons.forEach(s => {
+                ui.h2h.seasonSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+            });
+
             if(state.h2h.player1) ui.h2h.player1Select.value = state.h2h.player1;
             if(state.h2h.player2) ui.h2h.player2Select.value = state.h2h.player2;
+            ui.h2h.seasonSelect.value = state.h2h.selectedSeason;
         }
 
         function calculateAndRenderH2H() {
@@ -4703,8 +4716,8 @@
             const player1 = state.players.find(p => p.id === p1Id);
             const player2 = state.players.find(p => p.id === p2Id);
 
-            const p1Stats = getPlayerStats(player1, 'all-time', 'combined');
-            const p2Stats = getPlayerStats(player2, 'all-time', 'combined');
+            const p1Stats = getPlayerStats(player1, state.h2h.selectedSeason, 'combined');
+            const p2Stats = getPlayerStats(player2, state.h2h.selectedSeason, 'combined');
 
             const renderStatRow = (label, val1, val2) => {
                 const isP1Winner = val1 > val2;
@@ -5548,6 +5561,10 @@
             });
             ui.h2h.player2Select.addEventListener('change', (e) => {
                 state.h2h.player2 = e.target.value;
+                calculateAndRenderH2H();
+            });
+            ui.h2h.seasonSelect.addEventListener('change', (e) => {
+                state.h2h.selectedSeason = e.target.value;
                 calculateAndRenderH2H();
             });
 
