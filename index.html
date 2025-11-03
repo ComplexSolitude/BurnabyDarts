@@ -700,6 +700,17 @@
         </div>
     </div>
 
+    <div id="fine-player-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 class="text-xl font-semibold mb-4 dark:text-white">Select Player</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Which player should this fine be assigned to?</p>
+            <div id="fine-player-list" class="space-y-2 mb-4">
+                <!-- Player buttons will be populated here -->
+            </div>
+            <button id="fine-player-cancel" class="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
+        </div>
+    </div>
+
     <div id="dotd-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md relative">
             <button id="dotd-close-btn" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-3xl leading-none">&times;</button>
@@ -861,6 +872,10 @@
             },
             myProfile: {
                 selectedPlayerId: null,
+            },
+            pendingFine: {
+                amount: null,
+                reason: null
             },
             leaderboardSort: { // New state for sorting
                 column: 'gamesWon',
@@ -1055,6 +1070,7 @@
             doublesScoringPanel: document.getElementById('doubles-scoring-panel'),
             playerCardModal: { overlay: document.getElementById('player-card-modal'), content: document.getElementById('player-card-content'), closeBtn: document.getElementById('player-card-close-btn') },
             lowScoreModal: { overlay: document.getElementById('low-score-modal'), input: document.getElementById('low-score-input'), cancel: document.getElementById('low-score-cancel'), submit: document.getElementById('low-score-submit') },
+            finePlayerModal: { overlay: document.getElementById('fine-player-modal'), list: document.getElementById('fine-player-list'), cancel: document.getElementById('fine-player-cancel') },
             dotdModal: { overlay: document.getElementById('dotd-modal'), list: document.getElementById('dotd-vote-list'), finish: document.getElementById('dotd-finish-btn') },
             confirmModal: { overlay: document.getElementById('confirm-modal'), title: document.getElementById('confirm-modal-title'), text: document.getElementById('confirm-modal-text'), cancel: document.getElementById('confirm-modal-cancel'), confirm: document.getElementById('confirm-modal-confirm') },
             fineBtn26: document.getElementById('fine-btn-26'),
@@ -2539,7 +2555,8 @@
             const isDoubles = game.playerIds.length > 1;
             ui.singlesScoringPanel.classList.toggle('hidden', isDoubles);
             ui.doublesScoringPanel.classList.toggle('hidden', !isDoubles);
-            ui.finesPanel.classList.toggle('hidden', isDoubles);
+            // Fines panel is now shown for both singles and doubles
+            ui.finesPanel.classList.remove('hidden');
 
             const playerNames = game.playerIds.map(id => {
                 const player = state.players.find(p => p.id === id);
@@ -2758,8 +2775,17 @@
                         displayText = `${groupName}`; // Just "Score of 26" or "Missed Board"
                     }
 
+                    // Add player name if playerId exists
+                    let playerName = '';
+                    if (fine.playerId) {
+                        const player = state.players.find(p => p.id === fine.playerId);
+                        if (player) {
+                            playerName = ` - ${player.name}`;
+                        }
+                    }
+
                     fineEl.innerHTML = `
-                        <span class="text-red-700 dark:text-red-300">${displayText}</span>
+                        <span class="text-red-700 dark:text-red-300">${displayText}${playerName}</span>
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-red-600 dark:text-red-400">£${(fine.amount/100).toFixed(2)}</span>
                             ${state.userRole !== 'viewer' ? `<button data-fine-id="${fine.id}" class="remove-fine-btn text-red-500 hover:text-red-700 text-xs bg-white dark:bg-gray-700 px-2 py-1 rounded border">✕</button>` : ''}
@@ -4293,7 +4319,7 @@
             updateGameData();
         }
 
-        async function addFine(amount, reason) {
+        async function addFine(amount, reason, playerId = null) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game) return;
 
@@ -4303,6 +4329,7 @@
                 id: fineId,
                 amount: amount,
                 reason: reason,
+                playerId: playerId, // Add playerId to fine object
                 timestamp: new Date().toISOString(),
                 addedBy: state.userId || 'anonymous'
             };
@@ -4627,11 +4654,60 @@
         function submitLowScoreFine() {
             const score = parseInt(ui.lowScoreModal.input.value);
             if (score >= 1 && score <= 9) {
-                addFine((10 - score) * 10, `Score of ${score}`);
-                closeLowScoreModal();
+                const game = state.fixture.games[state.currentGameIndex];
+                const isDoubles = game && game.playerIds.length > 1;
+
+                if (isDoubles) {
+                    // For doubles, show player selection modal
+                    closeLowScoreModal();
+                    openFinePlayerModal((10 - score) * 10, `Score of ${score}`);
+                } else {
+                    // For singles, add fine directly with the player's ID
+                    addFine((10 - score) * 10, `Score of ${score}`, game.playerIds[0]);
+                    closeLowScoreModal();
+                }
             } else {
                 showToast("Please enter a score between 1 and 9.", 'warning');
             }
+        }
+
+        function openFinePlayerModal(amount, reason) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) return;
+
+            // Store the pending fine
+            state.pendingFine.amount = amount;
+            state.pendingFine.reason = reason;
+
+            // Populate player buttons
+            ui.finePlayerModal.list.innerHTML = '';
+            game.playerIds.forEach(playerId => {
+                const player = state.players.find(p => p.id === playerId);
+                if (!player) return;
+
+                const btn = document.createElement('button');
+                btn.className = 'w-full bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition-colors font-semibold';
+                btn.textContent = player.name;
+                btn.dataset.playerId = playerId;
+                btn.addEventListener('click', () => {
+                    addFine(state.pendingFine.amount, state.pendingFine.reason, playerId);
+                    closeFinePlayerModal();
+                });
+                ui.finePlayerModal.list.appendChild(btn);
+            });
+
+            // Show modal
+            ui.finePlayerModal.overlay.classList.remove('hidden');
+            ui.finePlayerModal.overlay.classList.add('flex');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeFinePlayerModal() {
+            ui.finePlayerModal.overlay.classList.add('hidden');
+            ui.finePlayerModal.overlay.classList.remove('flex');
+            state.pendingFine.amount = null;
+            state.pendingFine.reason = null;
+            document.body.classList.remove('modal-open');
         }
 
         function removeFine(fineId) {
@@ -5496,7 +5572,15 @@
                 setTimeout(() => delete fineDebounce[key], 2000); // 2 second cooldown
 
                 triggerHaptic('medium');
-                addFine(26, 'Score of 26');
+
+                const game = state.fixture.games[state.currentGameIndex];
+                const isDoubles = game && game.playerIds.length > 1;
+
+                if (isDoubles) {
+                    openFinePlayerModal(26, 'Score of 26');
+                } else {
+                    addFine(26, 'Score of 26', game.playerIds[0]);
+                }
             });
             ui.fineBtnMiss.addEventListener('click', () => {
                 const key = 'fine-miss';
@@ -5506,7 +5590,15 @@
                 setTimeout(() => delete fineDebounce[key], 2000); // 2 second cooldown
 
                 triggerHaptic('medium');
-                addFine(50, 'Missed Board');
+
+                const game = state.fixture.games[state.currentGameIndex];
+                const isDoubles = game && game.playerIds.length > 1;
+
+                if (isDoubles) {
+                    openFinePlayerModal(50, 'Missed Board');
+                } else {
+                    addFine(50, 'Missed Board', game.playerIds[0]);
+                }
             });
             ui.fineBtnLowScore.addEventListener('click', () => {
                 triggerHaptic('light');
@@ -5515,6 +5607,7 @@
             ui.lowScoreModal.cancel.addEventListener('click', closeLowScoreModal);
             ui.lowScoreModal.submit.addEventListener('click', submitLowScoreFine);
             ui.lowScoreModal.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitLowScoreFine(); });
+            ui.finePlayerModal.cancel.addEventListener('click', closeFinePlayerModal);
             ui.finesPanel.addEventListener('click', (e) => {
                 const removeBtn = e.target.closest('.remove-fine-btn');
                 if (removeBtn) {
