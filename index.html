@@ -4566,6 +4566,19 @@
                                 if (playerHighCheckout > (seasonStats.highCheckout || 0)) {
                                     seasonStats.highCheckout = playerHighCheckout;
                                 }
+
+                                // For doubles, calculate fines per player from finesList
+                                const singlesSeasonStats = newStats[seasonId].singles;
+                                let playerFines = 0;
+                                if (game.finesList && Array.isArray(game.finesList)) {
+                                    game.finesList.forEach(fine => {
+                                        if (fine.playerId === playerId) {
+                                            playerFines += fine.amount || 0;
+                                        }
+                                    });
+                                }
+                                singlesSeasonStats.outstandingFines = (singlesSeasonStats.outstandingFines || 0) + playerFines;
+                                singlesSeasonStats.totalFines = (singlesSeasonStats.totalFines || 0) + playerFines;
                             }
                         });
 
