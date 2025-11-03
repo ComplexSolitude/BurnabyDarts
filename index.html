@@ -4476,9 +4476,13 @@
                         allPlayerIds.push(dotdPlayerId);
                     }
 
+                    console.log('[finishMatch] All player IDs:', allPlayerIds);
+
                     // 1. READS: Get all player documents first.
                     const playerRefs = allPlayerIds.map(id => doc(state.db, PLAYERS_COLLECTION, id));
                     const playerDocs = await Promise.all(playerRefs.map(ref => transaction.get(ref)));
+
+                    console.log('[finishMatch] Player docs fetched:', playerDocs.map(d => d.exists()));
 
                     // Create enhanced audit log for match completion
                     const matchAuditData = {
@@ -4520,12 +4524,20 @@
 
                     const playerUpdates = {};
 
+                    console.log('[finishMatch] Processing players:', allPlayerIds);
+                    console.log('[finishMatch] Total players to process:', allPlayerIds.length);
+
                     // 2. CALCULATIONS: Prepare updates in memory.
                     for (let i = 0; i < allPlayerIds.length; i++) {
                         const playerId = allPlayerIds[i];
                         const playerDoc = playerDocs[i];
 
-                        if (!playerDoc.exists()) continue;
+                        console.log(`[finishMatch] Processing player ${i}:`, playerId);
+
+                        if (!playerDoc.exists()) {
+                            console.log(`[finishMatch] Player doc does not exist for ${playerId}, skipping`);
+                            continue;
+                        }
 
                         const playerData = playerDoc.data();
                         const newStats = JSON.parse(JSON.stringify(playerData.stats || {}));
@@ -4570,15 +4582,21 @@
                                 // For doubles, calculate fines per player from finesList
                                 const singlesSeasonStats = newStats[seasonId].singles;
                                 let playerFines = 0;
+                                console.log(`[finishMatch] Doubles game ${game.title}, checking fines for player:`, playerId);
+                                console.log(`[finishMatch] Game finesList:`, game.finesList);
                                 if (game.finesList && Array.isArray(game.finesList)) {
                                     game.finesList.forEach(fine => {
+                                        console.log(`[finishMatch] Checking fine:`, fine.playerId, '===', playerId, '?', fine.playerId === playerId);
                                         if (fine.playerId === playerId) {
                                             playerFines += fine.amount || 0;
+                                            console.log(`[finishMatch] Adding fine ${fine.amount}, total now:`, playerFines);
                                         }
                                     });
                                 }
+                                console.log(`[finishMatch] Total fines for player ${playerId}:`, playerFines);
                                 singlesSeasonStats.outstandingFines = (singlesSeasonStats.outstandingFines || 0) + playerFines;
                                 singlesSeasonStats.totalFines = (singlesSeasonStats.totalFines || 0) + playerFines;
+                                console.log(`[finishMatch] Updated singles stats for ${playerId}:`, singlesSeasonStats);
                             }
                         });
 
@@ -4588,14 +4606,24 @@
                             singlesSeasonStats.totalFines = (singlesSeasonStats.totalFines || 0) + 250;
                         }
 
+                        console.log(`[finishMatch] Storing updates for player ${playerId}:`, { stats: newStats });
                         playerUpdates[playerId] = { stats: newStats };
                     }
 
+                    console.log('[finishMatch] All player updates:', Object.keys(playerUpdates));
+
                     // 3. WRITES: Perform all writes at the end.
                     transaction.update(fixtureRef, { status: 'finished' });
-                    for (const playerId in playerUpdates) {
-                        const playerRef = doc(state.db, PLAYERS_COLLECTION, playerId);
-                        transaction.update(playerRef, playerUpdates[playerId]);
+
+                    // Use the SAME playerRefs that were used for reading
+                    for (let i = 0; i < allPlayerIds.length; i++) {
+                        const playerId = allPlayerIds[i];
+                        if (playerUpdates[playerId]) {
+                            console.log(`[finishMatch] Writing update for player ${i}:`, playerId);
+                            transaction.update(playerRefs[i], playerUpdates[playerId]);
+                        } else {
+                            console.log(`[finishMatch] No updates for player ${i}:`, playerId);
+                        }
                     }
                 });
 
