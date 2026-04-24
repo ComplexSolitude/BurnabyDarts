@@ -1,10 +1,10 @@
-import { doc, updateDoc, runTransaction, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db } from '../firebase-config.js';
-import { state, FIXTURES_COLLECTION } from '../state.js';
+import { doc, updateDoc, addDoc, collection, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { state } from '../state.js';
 import { ui } from '../ui-elements.js';
-import { showToast, safeFirebaseCall } from '../utils.js';
-import { render } from '../app.js'; 
-import { getPlayerStats, updateGameData } from './scoring.js'; 
+import { showToast, safeFirebaseCall, FIXTURES_COLLECTION } from '../utils.js';
+import { getPlayerStats } from './stats.js'; // We will build this in the next step!
+import { render, updateGameData } from '../app.js'; // We will build this at the very end
 
 export function renderFines() {
     ui.finesList.innerHTML = '';
@@ -115,20 +115,18 @@ export async function addFine(amount, reason, playerId = null) {
         id: fineId,
         amount: amount,
         reason: reason,
-        playerId: playerId, 
+        playerId: playerId,
         timestamp: new Date().toISOString(),
         addedBy: state.userId || 'anonymous'
     };
 
     try {
-        const fixtureRef = doc(db, FIXTURES_COLLECTION, state.fixture.id);
+        const fixtureRef = doc(state.db, FIXTURES_COLLECTION, state.fixture.id);
 
         await safeFirebaseCall('addFine', async () => {
-            return await runTransaction(db, async (transaction) => {
+            return await runTransaction(state.db, async (transaction) => {
                 const fixtureDoc = await transaction.get(fixtureRef);
-                if (!fixtureDoc.exists()) {
-                    throw new Error("Fixture document does not exist!");
-                }
+                if (!fixtureDoc.exists()) throw new Error("Fixture document does not exist!");
 
                 const serverData = fixtureDoc.data();
                 const currentGame = serverData.games[state.currentGameIndex];
@@ -140,9 +138,7 @@ export async function addFine(amount, reason, playerId = null) {
                     Math.abs(new Date(f.timestamp).getTime() - new Date(newFine.timestamp).getTime()) < 5000 
                 );
 
-                if (duplicateFine) {
-                    throw new Error('DUPLICATE_FINE');
-                }
+                if (duplicateFine) throw new Error('DUPLICATE_FINE');
 
                 const updatedFinesList = [...existingFines, newFine];
                 const updatedFinesTotal = (currentGame.fines || 0) + amount;
@@ -154,9 +150,7 @@ export async function addFine(amount, reason, playerId = null) {
                     fines: updatedFinesTotal
                 };
 
-                return transaction.update(fixtureRef, {
-                    games: updatedGames
-                });
+                return transaction.update(fixtureRef, { games: updatedGames });
             });
         });
 
@@ -175,7 +169,7 @@ export async function addFine(amount, reason, playerId = null) {
 }
 
 export async function markFinesAsPaid(playerId) {
-    const playerRef = doc(db, "players", playerId);
+    const playerRef = doc(state.db, "players", playerId);
     try {
         const player = state.players.find(p => p.id === playerId);
         if (!player || !player.stats) {
@@ -187,7 +181,7 @@ export async function markFinesAsPaid(playerId) {
         const totalOutstandingFines = allTimeStats.outstandingFines;
 
         await safeFirebaseCall('auditLog', async () => {
-            return await addDoc(collection(db, 'audit_logs'), {
+            return await addDoc(collection(state.db, 'audit_logs'), {
                 action: 'fines_cleared',
                 targetPlayerId: playerId,
                 targetPlayerName: player.name,

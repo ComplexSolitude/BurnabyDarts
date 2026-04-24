@@ -1,5 +1,4 @@
- <!DOCTYPE html>
-<!--suppress ALL -->
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -25,83 +24,9 @@
     <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-       #toast-notification {
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
-
-        .toast-hidden {
-            transform: translateX(-50%) translateY(-100%) !important;
-            opacity: 0 !important;
-        }
-
-        .toast-visible {
-            transform: translateX(-50%) translateY(1.25rem) !important;
-            opacity: 1 !important;
-        }
-         .modal-overlay {
-            transition: opacity 0.3s ease;
-        }
-        .spinner {
-            width: 60px;
-            height: 60px;
-            animation: pulse-effect 0.25s ease-in-out infinite;
-        }
-        @keyframes pulse-effect {
-            0%, 100% {
-             transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);  
-            }
-        }
-        .tab-enter {
-            animation: tabEnter 0.3s ease forwards;
-        }
-        .tab-leave {
-            animation: tabLeave 0.3s ease forwards;
-        }
-        @keyframes tabEnter {
-            from { opacity: 0; transform: translateY(0.5rem); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes tabLeave {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(-0.5rem); }
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); color: inherit; }
-            50% { transform: scale(1.05); color: #fbbf24; }
-        }
-        #current-player-names.animate-pulse {
-            animation: pulse 0.6s ease;
-        }
-        #main-app {
-          position: relative;
-          z-index: 1;
-          min-height: 100vh;
-        }
-        
-        body::before {
-          content: '';
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-image: url('burnaby-logo.png');
-          background-repeat: no-repeat;
-          background-position: center 65%;
-          background-size: 350px;
-          opacity: 0.05;
-          z-index: -1;
-        }
-        body.modal-open {
-          overflow: hidden;
-        }
-    </style>
-    <!-- HTTPS Redirect -->
+    
+    <link rel="stylesheet" href="css/styles.css">
+    
     <script>
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
         location.replace('https:' + window.location.href.substring(window.location.protocol.length));
@@ -110,7 +35,6 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
-    <!-- Dev Environment Indicator -->
     <div id="dev-indicator" class="fixed top-4 right-1/4 z-[9998] bg-orange-500 text-white px-3 py-2 rounded-lg shadow-lg text-xs font-bold hidden">
         <div class="flex items-center gap-2">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -130,7 +54,7 @@
             <p class="text-sm text-gray-600 dark:text-gray-400">Please wait a moment</p>
         </div>
     </div>
-    <!-- Role Selection Overlay -->
+
     <div id="role-selection-overlay" class="fixed inset-0 bg-gray-800/70 z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm text-center">
             <img src="burnaby-logo.png" alt="Burnaby Arms Logo" class="h-32 w-32 mx-auto mb-4">
@@ -167,37 +91,31 @@
         </div>
     </div>
 
-    <!-- Main App Container (Initially Hidden) -->
     <div id="main-app" class="hidden max-w-4xl mx-auto p-2 sm:p-4 lg:p-8">
 
-            <!-- App Header -->
-    <header class="relative flex justify-between items-center mb-4 px-2 h-16">
-        <div>
-            <button id="header-signout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200">
-                Sign Out
-            </button>
-        </div>
-    
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center whitespace-nowrap">
-            <img src="burnaby-logo.png" alt="Logo" class="h-12 w-12 mr-1">
-            <h1 class="text-l font-semibold text-gray-900 dark:text-white">Darts Scorer</h1>
-            <img src="burnaby-logo.png" alt="Logo" class="h-12 w-12 ml-1">
-        </div>
-    
-        <div class="md:hidden">
-            <button id="hamburger-btn" class="p-2">
-                <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-        </div>
-    </header>
+        <header class="relative flex justify-between items-center mb-4 px-2 h-16">
+            <div>
+                <button id="header-signout-btn" class="hidden bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200">
+                    Sign Out
+                </button>
+            </div>
+        
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center whitespace-nowrap">
+                <img src="burnaby-logo.png" alt="Logo" class="h-12 w-12 mr-1">
+                <h1 class="text-l font-semibold text-gray-900 dark:text-white">Darts Scorer</h1>
+                <img src="burnaby-logo.png" alt="Logo" class="h-12 w-12 ml-1">
+            </div>
+        
+            <div class="md:hidden">
+                <button id="hamburger-btn" class="p-2">
+                    <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+        </header>
 
-
-        <!-- Connection Status -->
         <div id="connection-status" class="text-center p-4 mb-4 bg-yellow-100 text-yellow-800 rounded-xl hidden">Connecting to database...</div>
 
-        <!-- Main Content Area with Border -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <!-- Desktop Tabs Navigation -->
             <div id="desktop-nav" class="hidden md:block">
                 <div class="border-b border-gray-200 dark:border-gray-700">
                     <nav class="-mb-px flex justify-center flex-wrap p-4" aria-label="Tabs">
@@ -214,9 +132,7 @@
                 </div>
             </div>
 
-            <!-- Tab Content Area -->
             <div class="relative p-4 sm:p-6">
-                <!-- Current Match Tab -->
                 <div id="tab-content-match">
                     <div class="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
                         <div class="flex justify-between items-center mb-4">
@@ -232,9 +148,7 @@
                     </div>
                 </div>
 
-                <!-- Fixtures Tab -->
                 <div id="tab-content-fixtures" class="hidden">
-                    <!-- Fixtures Sub-tabs -->
                     <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 mb-6">
                         <nav class="-mb-px flex space-x-8" aria-label="Fixture Tabs">
                             <button id="fixtures-tab-upcoming" class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-emerald-600 border-emerald-500">Upcoming</button>
@@ -246,7 +160,6 @@
                         </div>
                     </div>
 
-                    <!-- Upcoming Fixtures Panel -->
                     <div id="fixtures-content-upcoming">
                         <p class="text-center text-gray-500 dark:text-gray-400 mb-4">Click on a match to see details</p>
                         <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -258,7 +171,6 @@
                         </div>
                     </div>
 
-                    <!-- Previous Fixtures Panel -->
                     <div id="fixtures-content-previous" class="hidden">
                         <p class="text-center text-gray-500 dark:text-gray-400 mb-4">Click on a match to see details</p>
                         <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -268,7 +180,6 @@
                     </div>
                 </div>
 
-                <!-- Fines Tab -->
                 <div id="tab-content-fines" class="hidden">
                      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                           <div class="p-4 sm:p-6">
@@ -276,7 +187,6 @@
                                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Track and clear player fines that are yet to be paid.</p>
                           </div>
                           <div id="fines-list" class="divide-y divide-gray-200 dark:divide-gray-700"></div>
-                          <!-- Pay Fine Button Container -->
                           <div id="pay-fine-container" class="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 hidden">
                                <a href="https://monzo.me/jacobrobertfordham?h=8XgSRd" target="_blank" class="block w-full text-center bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-semibold">
                                     Pay My Fine
@@ -285,7 +195,6 @@
                      </div>
                 </div>
 
-                <!-- Match Setup Tab -->
                 <div id="tab-content-setup" class="hidden">
                     <div class="max-w-2xl mx-auto">
                         <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -318,7 +227,6 @@
                     </div>
                 </div>
 
-                <!-- Live Scoring Tab -->
                 <div id="tab-content-live" class="hidden">
                     <div id="live-match-content">
                         <div class="flex justify-between items-center mb-4">
@@ -330,7 +238,6 @@
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
                             <h3 id="current-player-names" class="text-2xl sm:text-3xl font-bold text-center text-emerald-600 dark:text-emerald-400 mb-6"></h3>
 
-                            <!-- Shared Stats -->
                             <div class="grid grid-cols-2 gap-4 mb-6 text-center">
                                 <div class="bg-gray-100 dark:bg-gray-700 p-3 sm:p-4 rounded-2xl">
                                     <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Legs Won</label>
@@ -350,7 +257,6 @@
                                 </div>
                             </div>
 
-                            <!-- Singles Scoring -->
                             <div id="singles-scoring-panel" class="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6">
                                 <div class="bg-gray-100 dark:bg-gray-700 p-2 sm:p-4 rounded-2xl flex-1 text-center min-w-[140px]">
                                     <label class="text-sm font-medium text-gray-600 dark:text-gray-300">100+</label>
@@ -386,10 +292,8 @@
                                 </div>
                             </div>
 
-                            <!-- Doubles Scoring -->
                             <div id="doubles-scoring-panel" class="hidden mb-6">
                                 <div class="grid grid-cols-1 gap-4">
-                                    <!-- Player 1 -->
                                     <div class="border border-gray-200 dark:border-gray-700 p-3 sm:p-4 rounded-2xl">
                                         <h4 id="doubles-p1-name" class="text-lg font-semibold text-center mb-3 dark:text-white"></h4>
                                         <div class="flex flex-wrap justify-center gap-2">
@@ -427,7 +331,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- Player 2 -->
                                     <div class="border border-gray-200 dark:border-gray-700 p-3 sm:p-4 rounded-2xl">
                                         <h4 id="doubles-p2-name" class="text-lg font-semibold text-center mb-3 dark:text-white"></h4>
                                         <div class="flex flex-wrap justify-center gap-2">
@@ -480,7 +383,6 @@
                                     <button id="fine-btn-low-score" class="bg-red-500 text-white py-2 px-3 rounded-xl hover:bg-red-600 transition-colors duration-200 text-sm">Score &lt; 10</button>
                                 </div>
                                 <div id="fines-list-current-game" class="mb-4">
-                                    <!-- Individual fines will be populated here -->
                                 </div>
                                 <p class="text-center text-gray-600 dark:text-gray-400">Total Fines: <span id="stat-fines" class="font-bold">£0.00</span></p>
                             </div>
@@ -494,8 +396,7 @@
                     </div>
                 </div>
 
-                <!-- League Stats Tab -->
-                 <div id="tab-content-stats" class="hidden">
+                <div id="tab-content-stats" class="hidden">
                     <div class="px-4 sm:px-6 py-4 space-y-4">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                             <h2 class="text-xl font-semibold dark:text-white">Season Leaderboard</h2>
@@ -512,7 +413,6 @@
                             </div>
                         </div>
                         
-                        <!-- Column Visibility Controls -->
                         <div id="column-controls" class="hidden bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Choose Columns to Display</h3>
@@ -592,7 +492,6 @@
                     </div>
                 </div>
 
-                <!-- Head-to-Head Tab Content -->
                 <div id="tab-content-h2h" class="hidden">
                     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">Head-to-Head</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
@@ -614,7 +513,6 @@
                     </div>
                 </div>
 
-                <!-- My Profile Tab -->
                 <div id="tab-content-my-profile" class="hidden">
                     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">My Profile</h2>
                     <div class="space-y-6">
@@ -638,12 +536,10 @@
                              </div>
                         </div>
                          <div id="my-profile-stats-area" class="hidden">
-                             <!-- Player card content will be injected here -->
-                         </div>
+                             </div>
                     </div>
                 </div>
 
-                <!-- Admin Tab -->
                 <div id="tab-content-admin" class="hidden">
                     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h2>
                     <div id="admin-content-area" class="mt-4"></div>
@@ -653,7 +549,6 @@
         </div>
     </div>
 
-    <!-- Mobile Menu Overlay -->
     <div id="mobile-menu-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 hidden opacity-0 transition-opacity duration-300 ease-in-out">
         <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg p-6 flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out">
             <div class="flex justify-between items-center mb-6">
@@ -663,9 +558,7 @@
                 </button>
             </div>
             <nav id="mobile-nav-links" class="flex flex-col space-y-4 flex-grow">
-                <!-- Links will be dynamically inserted here by JS -->
-            </nav>
-            <!-- Theme Toggle in Menu -->
+                </nav>
             <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button id="theme-toggle-btn-mobile" class="w-full flex items-center justify-between text-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md">
                     <span>Switch Theme</span>
@@ -705,8 +598,7 @@
             <h3 class="text-xl font-semibold mb-4 dark:text-white">Select Player</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Which player should this fine be assigned to?</p>
             <div id="fine-player-list" class="space-y-2 mb-4">
-                <!-- Player buttons will be populated here -->
-            </div>
+                </div>
             <button id="fine-player-cancel" class="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
         </div>
     </div>
@@ -732,8 +624,7 @@
         </div>
     </div>
 
-    <!-- Create Account Modal -->
-        <div id="signup-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
+    <div id="signup-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-semibold dark:text-white">Create Account</h3>
@@ -764,8 +655,7 @@
         </div>
     </div>
 
-        <!-- Profile Management Modal -->
-    <div id="profile-management-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
+        <div id="profile-management-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-semibold dark:text-white">Manage Player Profiles</h3>
@@ -804,7 +694,6 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
     <div id="toast-notification" class="fixed top-0 left-1/2 text-white py-3 px-5 rounded-xl shadow-lg z-50 toast-hidden text-center w-11/12 max-w-md flex items-center gap-2" role="alert">
         <svg id="toast-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"></svg>
         <span id="toast-message"></span>

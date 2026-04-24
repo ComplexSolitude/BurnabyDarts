@@ -2,10 +2,12 @@ body { font-family: 'Inter', sans-serif; }
 #toast-notification {
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
+
 .toast-hidden {
     transform: translateX(-50%) translateY(-100%) !important;
     opacity: 0 !important;
 }
+
 .toast-visible {
     transform: translateX(-50%) translateY(1.25rem) !important;
     opacity: 1 !important;
@@ -19,8 +21,12 @@ body { font-family: 'Inter', sans-serif; }
     animation: pulse-effect 0.25s ease-in-out infinite;
 }
 @keyframes pulse-effect {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);  
+    }
 }
 .tab-enter {
     animation: tabEnter 0.3s ease forwards;
@@ -48,6 +54,7 @@ body { font-family: 'Inter', sans-serif; }
     z-index: 1;
     min-height: 100vh;
 }
+
 body::before {
     content: '';
     position: fixed;

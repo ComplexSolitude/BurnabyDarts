@@ -1,5 +1,11 @@
-import { state, SESSION_DURATION_MS } from './state.js';
+import { state } from './state.js';
 import { ui } from './ui-elements.js';
+
+export const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; 
+export const GAME_TITLES = ["Singles 1", "Singles 2", "Singles 3", "Singles 4", "Singles 5", "Doubles 1", "Doubles 2"];
+export const PLAYERS_COLLECTION = 'players';
+export const FIXTURES_COLLECTION = 'fixtures';
+export const SEASONS_COLLECTION = 'seasons';
 
 export const rateLimiter = {
     requests: new Map(),
@@ -59,66 +65,11 @@ export function validateInput(input, maxLength = 100) {
     return input.trim();
 }
 
-export function resetSignInButtonState() {
-    const signInBtn = document.getElementById('google-signin-btn');
-    const signInText = document.getElementById('signin-btn-text');
-    const emailSignInBtn = document.getElementById('email-signin-btn');
-    const loadingOverlay = document.getElementById('loading-overlay');
-
-    if (signInBtn && signInText) {
-        signInBtn.disabled = false;
-        signInText.textContent = 'Sign in with Google';
-        signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-    }
-
-    if (emailSignInBtn) {
-        emailSignInBtn.disabled = false;
-        emailSignInBtn.textContent = 'Sign In with Email';
-    }
-
-    if (loadingOverlay) {
-        loadingOverlay.classList.remove('opacity-100');
-        loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-    }
-
-    state.signingIn = false;
-}
-
-export function validateStoredData() {
-    const allowedRoles = ['viewer', 'scorer', 'member', 'admin'];
-    const storedRole = localStorage.getItem('userRole');
-
-    if (storedRole && !allowedRoles.includes(storedRole)) {
-        console.warn('Invalid role in storage, clearing...');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('loginTimestamp');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userId');
-        resetSignInButtonState();
-        return false;
-    }
-
-    const loginTimestamp = Number(localStorage.getItem('loginTimestamp'));
-    if (loginTimestamp && (Date.now() - loginTimestamp > SESSION_DURATION_MS)) {
-        console.warn('Session expired, clearing storage...');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('loginTimestamp');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userId');
-        resetSignInButtonState();
-        return false;
-    }
-
-    return true;
-}
-
 export function triggerHaptic(pattern = 'light') {
     if (!('vibrate' in navigator)) return;
 
     const patterns = {
-        light: 10,      
+        light: 10,     
         medium: 25,     
         heavy: 50,      
         double: [20, 50, 20], 

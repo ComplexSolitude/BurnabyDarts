@@ -1,16 +1,119 @@
-import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { auth, db } from './firebase-config.js';
+import { state } from './state.js';
+import { ui } from './ui-elements.js';
+import { showToast, SESSION_DURATION_MS } from './utils.js';
+import { render } from './app.js'; // We will build app.js at the very end
+
 import {
     signInWithPopup,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
+    GoogleAuthProvider,
     signOut as firebaseSignOut,
     updateProfile
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { auth, db, provider } from './firebase-config.js';
-import { state, SESSION_DURATION_MS } from './state.js';
-import { ui } from './ui-elements.js';
-import { showToast, resetSignInButtonState } from './utils.js';
-import { render } from './app.js'; // We will create this file shortly!
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+const provider = new GoogleAuthProvider();
+provider.addScope('email');
+provider.addScope('profile');
+
+export function resetSignInButtonState() {
+    const signInBtn = document.getElementById('google-signin-btn');
+    const signInText = document.getElementById('signin-btn-text');
+    const emailSignInBtn = document.getElementById('email-signin-btn');
+    const loadingOverlay = document.getElementById('loading-overlay');
+
+    if (signInBtn && signInText) {
+        signInBtn.disabled = false;
+        signInText.textContent = 'Sign in with Google';
+        signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+    }
+
+    if (emailSignInBtn) {
+        emailSignInBtn.disabled = false;
+        emailSignInBtn.textContent = 'Sign In with Email';
+    }
+
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('opacity-100');
+        loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    state.signingIn = false;
+}
+
+export function startLogoutTimer(duration = SESSION_DURATION_MS) {
+    if (state.logoutTimer) {
+        clearTimeout(state.logoutTimer);
+    }
+    state.logoutTimer = setTimeout(handleLogout, duration);
+}
+
+export function resetEmailSignInState() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const signInBtn = document.getElementById('email-signin-btn');
+
+    loadingOverlay.classList.remove('opacity-100');
+    loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+    signInBtn.disabled = false;
+    signInBtn.textContent = 'Sign In with Email';
+    state.signingIn = false;
+}
+
+export function resetEmailSignUpState() {
+    const signUpBtn = document.getElementById('signup-modal-submit');
+    signUpBtn.disabled = false;
+    signUpBtn.textContent = 'Create Account';
+    state.signingIn = false;
+}
+
+export async function handleSuccessfulSignIn(user) {
+    const email = user.email;
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+
+    if (userDoc.exists()) {
+        const userData = userDoc.data();
+        state.userRole = userData.role || 'viewer';
+        state.userPlayerId = userData.playerId || null;
+        state.userTeam = userData.team || null;
+        state.activeMatchView = userData.team || null;
+        state.userName = userData.name;
+    } else {
+        state.userRole = 'viewer';
+        state.userPlayerId = null;
+        state.userName = user.displayName || 'New User';
+        await setDoc(doc(db, 'users', user.uid), {
+            email: email,
+            name: state.userName,
+            role: 'viewer',
+            playerId: null,
+            createdAt: serverTimestamp()
+        });
+    }
+
+    state.isLoggedIn = true;
+    state.userEmail = email;
+    state.userId = user.uid;
+
+    localStorage.setItem('userRole', state.userRole);
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('loginTimestamp', Date.now().toString());
+    localStorage.setItem('userEmail', email);
+    localStorage.setItem('userId', user.uid);
+
+    startLogoutTimer();
+
+    setTimeout(() => {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        loadingOverlay.classList.remove('opacity-100');
+        loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
+        ui.roleSelectionOverlay.classList.add('hidden');
+        ui.mainApp.classList.remove('hidden');
+        showToast(`Welcome ${state.userName}!`);
+        render();
+    }, 500);
+}
 
 export async function handleGoogleSignIn() {
     if (state.signingIn) return;
@@ -60,7 +163,6 @@ export async function handleGoogleSignIn() {
         signInBtn.disabled = false;
         signInText.textContent = 'Sign in with Google';
         signInBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-        
         if (error.code === 'auth/popup-closed-by-user') {
             showToast('Sign-in cancelled.', 'warning');
         } else if (error.code === 'auth/cancelled-popup-request') {
@@ -71,51 +173,6 @@ export async function handleGoogleSignIn() {
     } finally {
         state.signingIn = false;
     }
-}
-
-export async function handleHeaderButtonClick() {
-    if (state.isLoggedIn) {
-        try {
-            await firebaseSignOut(auth);
-        } catch (error) {
-            console.error('Sign-out error:', error);
-        }
-
-        if (state.logoutTimer) {
-            clearTimeout(state.logoutTimer);
-            state.logoutTimer = null;
-        }
-
-        state.isLoggedIn = false;
-        state.userRole = null;
-        state.userEmail = null;
-        state.userName = null;
-        state.userPlayerId = null;
-        state.signingIn = false; 
-
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('loginTimestamp');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userId');
-        resetSignInButtonState();
-        showToast('You have been logged out.');
-        ui.mainApp.classList.add('hidden');
-        ui.roleSelectionOverlay.classList.remove('hidden');
-        render();
-    } else if (state.userRole === 'viewer') {
-        state.userRole = null;
-        state.signingIn = false; 
-        localStorage.removeItem('userRole');
-        resetSignInButtonState();
-        ui.mainApp.classList.add('hidden');
-        ui.roleSelectionOverlay.classList.remove('hidden');
-        render();
-    }
-}
-
-export async function handleLogout() {
-    return handleHeaderButtonClick();
 }
 
 export async function handleEmailSignIn() {
@@ -235,74 +292,47 @@ export async function handleEmailSignUp() {
     }
 }
 
-export async function handleSuccessfulSignIn(user) {
-    const email = user.email;
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
+export async function handleHeaderButtonClick() {
+    if (state.isLoggedIn) {
+        try {
+            await firebaseSignOut(auth);
+        } catch (error) {
+            console.error('Sign-out error:', error);
+        }
 
-    if (userDoc.exists()) {
-        const userData = userDoc.data();
-        state.userRole = userData.role || 'viewer';
-        state.userPlayerId = userData.playerId || null;
-        state.userTeam = userData.team || null;
-        state.activeMatchView = userData.team || null;
-        state.userName = userData.name; 
-    } else {
-        state.userRole = 'viewer';
+        if (state.logoutTimer) {
+            clearTimeout(state.logoutTimer);
+            state.logoutTimer = null;
+        }
+
+        state.isLoggedIn = false;
+        state.userRole = null;
+        state.userEmail = null;
+        state.userName = null;
         state.userPlayerId = null;
-        state.userName = user.displayName || 'New User';
-        await setDoc(doc(db, 'users', user.uid), {
-            email: email,
-            name: state.userName,
-            role: 'viewer',
-            playerId: null,
-            createdAt: serverTimestamp()
-        });
-    }
+        state.signingIn = false;
 
-    state.isLoggedIn = true;
-    state.userEmail = email;
-    state.userId = user.uid;
-
-    localStorage.setItem('userRole', state.userRole);
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('loginTimestamp', Date.now().toString());
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userId', user.uid);
-
-    startLogoutTimer();
-
-    setTimeout(() => {
-        const loadingOverlay = document.getElementById('loading-overlay');
-        loadingOverlay.classList.remove('opacity-100');
-        loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-        ui.roleSelectionOverlay.classList.add('hidden');
-        ui.mainApp.classList.remove('hidden');
-        showToast(`Welcome ${state.userName}!`);
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('loginTimestamp');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userId');
+        resetSignInButtonState();
+        showToast('You have been logged out.');
+        ui.mainApp.classList.add('hidden');
+        ui.roleSelectionOverlay.classList.remove('hidden');
         render();
-    }, 500);
-}
-
-export function resetEmailSignInState() {
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const signInBtn = document.getElementById('email-signin-btn');
-
-    loadingOverlay.classList.remove('opacity-100');
-    loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
-    signInBtn.disabled = false;
-    signInBtn.textContent = 'Sign In with Email';
-    state.signingIn = false;
-}
-
-export function resetEmailSignUpState() {
-    const signUpBtn = document.getElementById('signup-modal-submit');
-    signUpBtn.disabled = false;
-    signUpBtn.textContent = 'Create Account';
-    state.signingIn = false;
-}
-
-export function startLogoutTimer(duration = SESSION_DURATION_MS) {
-    if (state.logoutTimer) {
-        clearTimeout(state.logoutTimer);
+    } else if (state.userRole === 'viewer') {
+        state.userRole = null;
+        state.signingIn = false;
+        localStorage.removeItem('userRole');
+        resetSignInButtonState();
+        ui.mainApp.classList.add('hidden');
+        ui.roleSelectionOverlay.classList.remove('hidden');
+        render();
     }
-    state.logoutTimer = setTimeout(handleLogout, duration);
+}
+
+export async function handleLogout() {
+    return handleHeaderButtonClick();
 }
