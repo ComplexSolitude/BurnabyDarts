@@ -894,6 +894,7 @@ function handleAppReturn() {
 }
 
 function init() {
+  console.log("init started")
   if (
     localStorage.theme === "dark" ||
     (!("theme" in localStorage) &&
@@ -908,7 +909,18 @@ function init() {
     ui.themeIconsMobile.moon.classList.add("hidden");
   }
 
-  ui.connectionStatus.classList.remove("hidden");
+  const connStatus = document.getElementById('connection-status');
+  if (connStatus) connStatus.classList.remove("hidden");
+  console.log('init reached connection status', location.hostname);
+
+  console.log('hostname:', location.hostname);
+  const isDevelopment = location.hostname.includes('localhost') || location.hostname.includes('github.dev') || location.hostname.includes('codespaces');
+  if (isDevelopment) {
+      const devIndicator = document.getElementById('dev-indicator');
+      const dbInfo = document.getElementById('dev-db-info');
+      if (devIndicator) devIndicator.classList.remove('hidden');
+      if (dbInfo) dbInfo.textContent = 'DB: burnabydartsdev';
+  }
 
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) handleAppReturn();

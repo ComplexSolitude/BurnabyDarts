@@ -700,6 +700,10 @@
         <span id="toast-message"></span>
     </div>
 
-    <script type="module" src="js/app.js"></script>
+    <script type="module">
+    import('./js/app.js').then(module => {
+        console.log('app.js loaded');
+    });
+    </script>
 </body>
 </html>
