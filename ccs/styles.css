@@ -1,4 +1,46 @@
-body { font-family: 'Inter', sans-serif; }
+/* Body and Background Watermark */
+body { 
+    font-family: 'Inter', sans-serif; 
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Updated path to reach the assets folder correctly */
+    background-image: url('../assets/burnaby-logo.png');
+    background-repeat: no-repeat;
+    background-position: center 65%;
+    background-size: 350px;
+    opacity: 0.05;
+    z-index: -1;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Loading Spinner and Pulsate Animation */
+.spinner {
+    width: 60px;
+    height: 60px;
+    /* Slowed down from 0.25s to 2s for a smoother breathing effect */
+    animation: pulse-effect 2s ease-in-out infinite;
+}
+
+@keyframes pulse-effect {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);  
+    }
+}
+
+/* Toast Notifications */
 #toast-notification {
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
@@ -12,63 +54,43 @@ body { font-family: 'Inter', sans-serif; }
     transform: translateX(-50%) translateY(1.25rem) !important;
     opacity: 1 !important;
 }
+
+/* Modals and Tabs */
 .modal-overlay {
     transition: opacity 0.3s ease;
 }
-.spinner {
-    width: 60px;
-    height: 60px;
-    animation: pulse-effect 0.25s ease-in-out infinite;
-}
-@keyframes pulse-effect {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.1);  
-    }
-}
+
 .tab-enter {
     animation: tabEnter 0.3s ease forwards;
 }
+
 .tab-leave {
     animation: tabLeave 0.3s ease forwards;
 }
+
 @keyframes tabEnter {
     from { opacity: 0; transform: translateY(0.5rem); }
     to { opacity: 1; transform: translateY(0); }
 }
+
 @keyframes tabLeave {
     from { opacity: 1; transform: translateY(0); }
     to { opacity: 0; transform: translateY(-0.5rem); }
 }
+
+/* Player Name Animations */
 @keyframes pulse {
     0%, 100% { transform: scale(1); color: inherit; }
     50% { transform: scale(1.05); color: #fbbf24; }
 }
+
 #current-player-names.animate-pulse {
     animation: pulse 0.6s ease;
 }
+
+/* Layout */
 #main-app {
     position: relative;
     z-index: 1;
     min-height: 100vh;
-}
-
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url('../assets/burnaby-logo.png');
-    background-repeat: no-repeat;
-    background-position: center 65%;
-    background-size: 350px;
-    opacity: 0.05;
-    z-index: -1;
-}
-body.modal-open {
-    overflow: hidden;
 }
