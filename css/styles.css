@@ -28,7 +28,7 @@ body.modal-open {
     width: 60px;
     height: 60px;
     /* Slowed down from 0.25s to 2s for a smoother breathing effect */
-    animation: pulse-effect 2s ease-in-out infinite;
+    animation: pulse-effect 1s ease-in-out infinite;
 }
 
 @keyframes pulse-effect {
