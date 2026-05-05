@@ -463,8 +463,16 @@
                                     <span class="dark:text-gray-300">Leg Win %</span>
                                 </label>
                                 <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="scores80" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                    <span class="dark:text-gray-300">80+ Scores</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
                                     <input type="checkbox" data-column="scores100" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
                                     <span class="dark:text-gray-300">100+ Scores</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" data-column="scores120" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                    <span class="dark:text-gray-300">120+ Scores</span>
                                 </label>
                                 <label class="flex items-center space-x-2 text-sm">
                                     <input type="checkbox" data-column="scores140" class="column-checkbox rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
@@ -496,7 +504,9 @@
                                     <th scope="col" data-sort="legsWon" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Won">LW</th>
                                     <th scope="col" data-sort="legsLost" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Legs Lost">LL</th>
                                     <th scope="col" data-sort="legWinPercent" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Leg Win Percentage">Leg %</th>
+                                    <th scope="col" data-sort="scores80" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">80+</th>
                                     <th scope="col" data-sort="scores100" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">100+</th>
+                                    <th scope="col" data-sort="scores120" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">120+</th>
                                     <th scope="col" data-sort="scores140" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">140+</th>
                                     <th scope="col" data-sort="scores180" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">180</th>
                                     <th scope="col" data-sort="highCheckout" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">H/C</th>
@@ -635,6 +645,17 @@
             <button id="hc-player-cancel" class="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
         </div>
     </div>
+    <div id="change-players-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 id="change-players-modal-title" class="text-xl font-semibold mb-4 dark:text-white">Change Player</h3>
+            <div id="change-players-modal-inputs" class="space-y-3 mb-4"></div>
+            <div class="flex gap-2">
+                <button id="change-players-cancel" class="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
+                <button id="change-players-save" class="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-xl font-semibold">Save</button>
+            </div>
+        </div>
+    </div>
+
     <div id="dotd-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md relative">
             <button id="dotd-close-btn" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-3xl leading-none">&times;</button>
@@ -813,7 +834,9 @@
                 legsWon: true,
                 legsLost: false,
                 legWinPercent: true,
+                scores80: false,
                 scores100: true,
+                scores120: false,
                 scores140: false,
                 scores180: true,
                 highCheckout: true,
@@ -985,6 +1008,7 @@
             lowScoreModal: { overlay: document.getElementById('low-score-modal'), input: document.getElementById('low-score-input'), cancel: document.getElementById('low-score-cancel'), submit: document.getElementById('low-score-submit') },
             finePlayerModal: { overlay: document.getElementById('fine-player-modal'), list: document.getElementById('fine-player-list'), cancel: document.getElementById('fine-player-cancel') },
             hcPlayerModal: { overlay: document.getElementById('hc-player-modal'), list: document.getElementById('hc-player-list'), cancel: document.getElementById('hc-player-cancel'), valueDisplay: document.getElementById('hc-player-modal-value') },
+            changePlayersModal: { overlay: document.getElementById('change-players-modal'), title: document.getElementById('change-players-modal-title'), inputs: document.getElementById('change-players-modal-inputs') },
             dotdModal: { overlay: document.getElementById('dotd-modal'), list: document.getElementById('dotd-vote-list'), finish: document.getElementById('dotd-finish-btn') },
             confirmModal: { overlay: document.getElementById('confirm-modal'), title: document.getElementById('confirm-modal-title'), text: document.getElementById('confirm-modal-text'), cancel: document.getElementById('confirm-modal-cancel'), confirm: document.getElementById('confirm-modal-confirm') },
             fineBtn26: document.getElementById('fine-btn-26'),
@@ -2082,7 +2106,9 @@
                     legsWon: singlesStats.legsWon,
                     legsLost: singlesStats.legsLost,
                     legWinPercent: legWinPercent,
+                    scores80: combinedStats.scores80,
                     scores100: combinedStats.scores100,
+                    scores120: combinedStats.scores120,
                     scores140: combinedStats.scores140,
                     scores180: combinedStats.scores180,
                     highCheckout: combinedStats.highCheckout,
@@ -2137,7 +2163,9 @@
                     legsWon: stats.legsWon,
                     legsLost: stats.legsLost,
                     legWinPercent: `${stats.legWinPercent.toFixed(0)}%`,
+                    scores80: stats.scores80,
                     scores100: stats.scores100,
+                    scores120: stats.scores120,
                     scores140: stats.scores140,
                     scores180: stats.scores180,
                     highCheckout: stats.highCheckout,
@@ -2478,6 +2506,11 @@
             });
             const namesText = playerNames.join(' & ');
             ui.currentPlayerNames.textContent = namesText;
+            const canEditPlayers = (state.userRole === 'member' || state.userRole === 'admin') && state.fixture.team === state.userTeam;
+            ui.gameNavTitle.classList.toggle('cursor-pointer', canEditPlayers);
+            ui.gameNavTitle.classList.toggle('hover:opacity-75', canEditPlayers);
+            ui.gameNavTitle.classList.toggle('underline', canEditPlayers);
+            ui.gameNavTitle.title = canEditPlayers ? 'Tap to change players' : '';
             const turnSeq = game.turnSeq || 0;
             if (state.lastTurnSeq !== turnSeq) {
                 triggerPlayerChangeAnimation();
@@ -4856,6 +4889,100 @@ function closeFinePlayerModal() {
             document.body.classList.remove('modal-open');
         }
 
+        function openChangePlayersModal() {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) return;
+            const isDoubles = game.type === 'doubles';
+            const teamPlayers = state.players.filter(p => p.team === state.fixture.team && !p.archived);
+
+            ui.changePlayersModal.title.textContent = isDoubles ? 'Change Players' : 'Change Player';
+            ui.changePlayersModal.inputs.innerHTML = '';
+
+            const slots = isDoubles ? ['p1', 'p2'] : ['p1'];
+            slots.forEach((slot, index) => {
+                const currentPlayer = state.players.find(p => p.id === game.playerIds[index]);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'relative';
+                wrapper.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${isDoubles ? (index === 0 ? 'Player 1' : 'Player 2') : 'Player'}</label>
+                    <input type="text" id="change-player-${slot}-input" data-player-index="${index}"
+                        class="change-player-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="Select or type player name" value="${currentPlayer?.name || ''}" autocomplete="off">
+                    <div id="change-player-${slot}-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto"></div>
+                `;
+                ui.changePlayersModal.inputs.appendChild(wrapper);
+
+                const input = wrapper.querySelector('input');
+                const dropdown = wrapper.querySelector('div');
+                const showDropdown = (term) => {
+                    const filtered = teamPlayers.filter(p => p.name.toLowerCase().includes(term.toLowerCase()));
+                    dropdown.innerHTML = '';
+                    if (filtered.length === 0) {
+                        dropdown.innerHTML = '<div class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No players found</div>';
+                    } else {
+                        filtered.forEach(player => {
+                            const opt = document.createElement('div');
+                            opt.className = 'px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-white';
+                            opt.textContent = player.name;
+                            opt.addEventListener('click', () => { input.value = player.name; dropdown.classList.add('hidden'); });
+                            dropdown.appendChild(opt);
+                        });
+                    }
+                    dropdown.classList.remove('hidden');
+                };
+                input.addEventListener('focus', () => showDropdown(input.value));
+                input.addEventListener('input', () => showDropdown(input.value));
+                document.addEventListener('click', (e) => {
+                    if (!wrapper.contains(e.target)) dropdown.classList.add('hidden');
+                }, { capture: false });
+            });
+
+            ui.changePlayersModal.overlay.classList.remove('hidden');
+            ui.changePlayersModal.overlay.classList.add('flex');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeChangePlayersModal() {
+            ui.changePlayersModal.overlay.classList.add('hidden');
+            ui.changePlayersModal.overlay.classList.remove('flex');
+            document.body.classList.remove('modal-open');
+        }
+
+        async function saveChangedPlayers() {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) return;
+            const isDoubles = game.type === 'doubles';
+            const slots = isDoubles ? ['p1', 'p2'] : ['p1'];
+            const teamPlayers = state.players.filter(p => p.team === state.fixture.team && !p.archived);
+            const newPlayerIds = [];
+
+            for (let i = 0; i < slots.length; i++) {
+                const input = document.getElementById(`change-player-${slots[i]}-input`);
+                const name = input.value.trim();
+                if (!name) { showToast('Please select a player for each slot.', 'warning'); return; }
+                const player = teamPlayers.find(p => p.name.toLowerCase() === name.toLowerCase());
+                if (!player) { showToast(`"${name}" is not in this team's player list.`, 'warning'); return; }
+                newPlayerIds.push(player.id);
+            }
+
+            if (isDoubles && newPlayerIds[0] === newPlayerIds[1]) {
+                showToast('A player cannot play with themselves.', 'error');
+                return;
+            }
+
+            if (JSON.stringify(game.playerIds) !== JSON.stringify(newPlayerIds)) {
+                game.playerScores = newPlayerIds.map(() => ({
+                    scores80: 0, scores100: 0, scores120: 0, scores140: 0, scores180: 0, sillyThings: 0
+                }));
+                game.playerIds = newPlayerIds;
+            }
+
+            closeChangePlayersModal();
+            render();
+            await updateGameData();
+            showToast('Players updated!');
+        }
+
         function removeFine(fineId) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game || !game.finesList) return;
@@ -5770,6 +5897,13 @@ function closeFinePlayerModal() {
             ui.lowScoreModal.submit.addEventListener('click', submitLowScoreFine);
             ui.lowScoreModal.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitLowScoreFine(); });
             ui.finePlayerModal.cancel.addEventListener('click', closeFinePlayerModal);
+            document.getElementById('change-players-cancel').addEventListener('click', closeChangePlayersModal);
+            document.getElementById('change-players-save').addEventListener('click', saveChangedPlayers);
+            ui.gameNavTitle.addEventListener('click', () => {
+                const canEdit = (state.userRole === 'member' || state.userRole === 'admin') && state.fixture.team === state.userTeam;
+                if (!canEdit) return;
+                openChangePlayersModal();
+            });
             ui.hcPlayerModal.cancel.addEventListener('click', closeHCPlayerModal);
             ui.finesPanel.addEventListener('click', (e) => {
                 const removeBtn = e.target.closest('.remove-fine-btn');
