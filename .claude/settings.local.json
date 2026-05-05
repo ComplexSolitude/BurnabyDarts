@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix admin team switching in setup tab and add CLAUDE.md\n\n- Added state.allFixtures to track all fixtures regardless of status\n- Fixed setup tab visibility: admins now see it when ANY team has active match\n- Fixed renderFixtureSetup to correctly find active fixture for viewed team\n- Fixed renderFixturePlayerSelectors to show correct team''s players for admins\n- Fixed setupPlayerSelectors to use activeMatchView for admins\n- Fixed updateTeamSelections to update correct fixture when admin switches teams\n- Added helpful message when admin views team without active match\n- Added CLAUDE.md documentation for future Claude Code instances\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git log:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
