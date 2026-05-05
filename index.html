@@ -470,7 +470,11 @@
 
                             <div class="mb-6 max-w-xs mx-auto">
                                 <label for="high-checkout-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-center">High Checkout (H/C)</label>
-                                <input type="number" id="high-checkout-input" class="mt-1 block w-full text-center text-xl p-2 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <div class="flex gap-2 mt-1">
+                                    <input type="number" id="high-checkout-input" class="block w-full text-center text-xl p-2 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <button id="log-hc-btn" class="bg-emerald-600 text-white px-4 rounded-xl hover:bg-emerald-700 transition-colors font-semibold text-sm whitespace-nowrap">Log H/C</button>
+                                </div>
+                                <div id="doubles-hc-display" class="mt-1 min-h-[1.25rem]"></div>
                             </div>
                             <div id="fines-panel" class="mb-8 border-t dark:border-gray-700 pt-6">
                                 <h4 class="text-lg font-semibold text-center mb-3 dark:text-white">Game Incidents</h4>
@@ -710,7 +714,15 @@
             <button id="fine-player-cancel" class="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
         </div>
     </div>
-
+    <div id="hc-player-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 class="text-xl font-semibold mb-2 dark:text-white text-center">High Checkout</h3>
+            <p id="hc-player-modal-value" class="text-center text-4xl font-bold text-emerald-500 mb-3"></p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center">Who scored this high checkout?</p>
+            <div id="hc-player-list" class="space-y-2 mb-4"></div>
+            <button id="hc-player-cancel" class="w-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-xl">Cancel</button>
+        </div>
+    </div>
     <div id="dotd-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 modal-overlay p-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md relative">
             <button id="dotd-close-btn" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white text-3xl leading-none">&times;</button>
@@ -877,6 +889,7 @@
                 amount: null,
                 reason: null
             },
+            pendingHC: null,
             leaderboardSort: { // New state for sorting
                 column: 'gamesWon',
                 direction: 'desc' // 'asc' or 'desc'
@@ -1071,6 +1084,7 @@
             playerCardModal: { overlay: document.getElementById('player-card-modal'), content: document.getElementById('player-card-content'), closeBtn: document.getElementById('player-card-close-btn') },
             lowScoreModal: { overlay: document.getElementById('low-score-modal'), input: document.getElementById('low-score-input'), cancel: document.getElementById('low-score-cancel'), submit: document.getElementById('low-score-submit') },
             finePlayerModal: { overlay: document.getElementById('fine-player-modal'), list: document.getElementById('fine-player-list'), cancel: document.getElementById('fine-player-cancel') },
+            hcPlayerModal: { overlay: document.getElementById('hc-player-modal'), list: document.getElementById('hc-player-list'), cancel: document.getElementById('hc-player-cancel'), valueDisplay: document.getElementById('hc-player-modal-value') },
             dotdModal: { overlay: document.getElementById('dotd-modal'), list: document.getElementById('dotd-vote-list'), finish: document.getElementById('dotd-finish-btn') },
             confirmModal: { overlay: document.getElementById('confirm-modal'), title: document.getElementById('confirm-modal-title'), text: document.getElementById('confirm-modal-text'), cancel: document.getElementById('confirm-modal-cancel'), confirm: document.getElementById('confirm-modal-confirm') },
             fineBtn26: document.getElementById('fine-btn-26'),
@@ -2106,7 +2120,6 @@
                 }
                 aggregated.singles.highCheckout = Math.max(aggregated.singles.highCheckout, singlesData.highCheckout || 0);
                 aggregated.doubles.highCheckout = Math.max(aggregated.doubles.highCheckout, doublesData.highCheckout || 0);
-                // Doubles doesn't have a high checkout in this app's logic, so we don't need to calculate it.
             }
 
             if (type === 'singles') return aggregated.singles;
@@ -2122,7 +2135,7 @@
                     scores100: aggregated.singles.scores100 + aggregated.doubles.scores100,
                     scores140: aggregated.singles.scores140 + aggregated.doubles.scores140,
                     scores180: aggregated.singles.scores180 + aggregated.doubles.scores180,
-                    highCheckout: aggregated.singles.highCheckout, // H/C is only from singles
+                    highCheckout: Math.max(aggregated.singles.highCheckout, aggregated.doubles.highCheckout), // H/C from both singles and doubles
                     outstandingFines: aggregated.singles.outstandingFines,
                     totalFines: aggregated.singles.totalFines,
                 };
@@ -2581,12 +2594,24 @@
             ui.statValueSpans.fines.textContent = `£${((game.fines || 0) / 100).toFixed(2)}`;
             // Render individual fines list
             renderCurrentGameFines(game);
-            ui.highCheckoutInput.value = game.highCheckout || '';
-            if(isDoubles) {
-                const p1Input = document.getElementById('p1-high-checkout-input');
-                const p2Input = document.getElementById('p2-high-checkout-input');
-                if (p1Input) p1Input.value = p1Scores.highCheckout || '';
-                if (p2Input) p2Input.value = p2Scores.highCheckout || '';
+            const hcDisplay = document.getElementById('doubles-hc-display');
+            if (isDoubles) {
+                ui.highCheckoutInput.value = '';
+                if (hcDisplay) {
+                    const p1HC = game.playerScores?.[0]?.highCheckout || 0;
+                    const p2HC = game.playerScores?.[1]?.highCheckout || 0;
+                    hcDisplay.innerHTML = (p1HC || p2HC)
+                        ? `<p class="text-xs text-gray-500 dark:text-gray-400 text-center">${playerNames[0]}: <strong>${p1HC || '-'}</strong> &nbsp;|&nbsp; ${playerNames[1]}: <strong>${p2HC || '-'}</strong></p>`
+                        : '';
+                }
+            } else {
+                ui.highCheckoutInput.value = '';
+                if (hcDisplay) {
+                    const currentHC = game.highCheckout || 0;
+                    hcDisplay.innerHTML = currentHC
+                        ? `<p class="text-xs text-gray-500 dark:text-gray-400 text-center">Current best: <strong>${currentHC}</strong></p>`
+                        : '';
+                }
             }
 
             const p1Scores = game.playerScores?.[0] || {};
@@ -2696,7 +2721,7 @@
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">100+</p><p class="text-2xl font-bold dark:text-white">${combinedScores.scores100}</p></div>
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">140+</p><p class="text-2xl font-bold dark:text-white">${combinedScores.scores140}</p></div>
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">180s</p><p class="text-2xl font-bold dark:text-white">${combinedScores.scores180}</p></div>
-                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">High Checkout</p><p class="text-2xl font-bold dark:text-white">${singlesStats.highCheckout}</p></div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">High Checkout</p><p class="text-2xl font-bold dark:text-white">${combinedScores.highCheckout}</p></div>
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Outstanding Fines</p><p class="text-2xl font-bold text-red-600 dark:text-red-400">£${(singlesStats.outstandingFines / 100).toFixed(2)}</p></div>
                         <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl text-center flex flex-col justify-center"><p class="text-sm text-gray-600 dark:text-gray-300">Total Fines</p><p class="text-2xl font-bold text-red-600 dark:text-red-400">£${(singlesStats.totalFines / 100).toFixed(2)}</p></div>
                     </div>
@@ -4751,6 +4776,39 @@
             document.body.classList.remove('modal-open');
         }
 
+                function openHCPlayerModal(value) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) return;
+            state.pendingHC = value;
+            ui.hcPlayerModal.valueDisplay.textContent = value;
+            ui.hcPlayerModal.list.innerHTML = '';
+            game.playerIds.forEach((playerId, index) => {
+                const player = state.players.find(p => p.id === playerId);
+                if (!player) return;
+                const btn = document.createElement('button');
+                btn.className = 'w-full bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition-colors font-semibold';
+                btn.textContent = player.name;
+                btn.addEventListener('click', () => {
+                    if (!game.playerScores[index]) game.playerScores[index] = {};
+                    game.playerScores[index].highCheckout = state.pendingHC;
+                    updateGameData();
+                    closeHCPlayerModal();
+                    showToast(`High checkout of ${state.pendingHC} recorded for ${player.name}!`);
+                });
+                ui.hcPlayerModal.list.appendChild(btn);
+            });
+            ui.hcPlayerModal.overlay.classList.remove('hidden');
+            ui.hcPlayerModal.overlay.classList.add('flex');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeHCPlayerModal() {
+            ui.hcPlayerModal.overlay.classList.add('hidden');
+            ui.hcPlayerModal.overlay.classList.remove('flex');
+            state.pendingHC = null;
+            document.body.classList.remove('modal-open');
+        }
+
         function removeFine(fineId) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game || !game.finesList) return;
@@ -5585,24 +5643,24 @@
                     }
                 }
             });
-
-            ui.highCheckoutInput.addEventListener('input', (e) => {
+            document.getElementById('log-hc-btn').addEventListener('click', () => {
                 const game = state.fixture.games[state.currentGameIndex];
-                if (game) {
-                    game.highCheckout = parseInt(e.target.value) || 0;
+                if (!game) return;
+                const value = parseInt(ui.highCheckoutInput.value) || 0;
+                if (!value) { showToast('Please enter a high checkout value.', 'warning'); return; }
+                const isDoubles = game.playerIds.length > 1;
+                if (isDoubles) {
+                    openHCPlayerModal(value);
+                    ui.highCheckoutInput.value = '';
+                } else {
+                    game.highCheckout = value;
+                    ui.highCheckoutInput.value = '';
                     updateGameData();
+                    showToast(`High checkout of ${value} recorded!`);
                 }
             });
-            ui.liveMatchContent.addEventListener('input', (e) => {
-                if (e.target.classList.contains('player-high-checkout-input')) {
-                    const game = state.fixture.games[state.currentGameIndex];
-                    if (game && game.playerScores) {
-                        const playerIndex = parseInt(e.target.dataset.playerIndex);
-                        if (!game.playerScores[playerIndex]) game.playerScores[playerIndex] = {};
-                        game.playerScores[playerIndex].highCheckout = parseInt(e.target.value) || 0;
-                        updateGameData();
-                    }
-                }
+            ui.highCheckoutInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') document.getElementById('log-hc-btn').click();
             });
             let fineDebounce = {};
             ui.fineBtn26.addEventListener('click', () => {
@@ -5649,6 +5707,7 @@
             ui.lowScoreModal.submit.addEventListener('click', submitLowScoreFine);
             ui.lowScoreModal.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitLowScoreFine(); });
             ui.finePlayerModal.cancel.addEventListener('click', closeFinePlayerModal);
+            ui.hcPlayerModal.cancel.addEventListener('click', closeHCPlayerModal);
             ui.finesPanel.addEventListener('click', (e) => {
                 const removeBtn = e.target.closest('.remove-fine-btn');
                 if (removeBtn) {
