@@ -5093,7 +5093,9 @@ function closeFinePlayerModal() {
                     ${renderStatRow('Games Won', p1Stats.gamesWon, p2Stats.gamesWon)}
                     ${renderStatRow('Legs Won', p1Stats.legsWon, p2Stats.legsWon)}
                     ${renderStatRow('Leg Win %', parseFloat(((p1Stats.legsWon + p1Stats.legsLost > 0) ? (p1Stats.legsWon / (p1Stats.legsWon + p1Stats.legsLost) * 100) : 0).toFixed(1)), parseFloat(((p2Stats.legsWon + p2Stats.legsLost > 0) ? (p2Stats.legsWon / (p2Stats.legsWon + p2Stats.legsLost) * 100) : 0).toFixed(1)))}
+                    ${renderStatRow('80+', p1Stats.scores80, p2Stats.scores80)}
                     ${renderStatRow('100+', p1Stats.scores100, p2Stats.scores100)}
+                    ${renderStatRow('120+', p1Stats.scores120, p2Stats.scores120)}
                     ${renderStatRow('140+', p1Stats.scores140, p2Stats.scores140)}
                     ${renderStatRow('180s', p1Stats.scores180, p2Stats.scores180)}
                     ${renderStatRow('High Checkout', p1Stats.highCheckout, p2Stats.highCheckout)}
