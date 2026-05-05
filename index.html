@@ -349,125 +349,37 @@
                                     </div>
                                 </div>
                             </div>
-
                             <!-- Singles Scoring -->
-                            <div id="singles-scoring-panel" class="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6">
-                                <div class="bg-gray-100 dark:bg-gray-700 p-2 sm:p-4 rounded-2xl flex-1 text-center min-w-[140px]">
-                                    <label class="text-sm font-medium text-gray-600 dark:text-gray-300">100+</label>
-                                    <div class="flex items-center justify-center space-x-3 mt-2">
-                                        <button data-stat="scores100" data-op="-1" class="stat-btn w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xl font-bold">-</button>
-                                        <span id="stat-scores100" class="text-3xl font-bold dark:text-white">0</span>
-                                        <button data-stat="scores100" data-op="1" class="stat-btn w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xl font-bold">+</button>
-                                    </div>
+                            <div id="singles-scoring-panel" class="mb-6">
+                                <div class="flex flex-wrap justify-center gap-2 mb-3">
+                                    <button data-stat="scores80" data-player-index="0" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">80+</button>
+                                    <button data-stat="scores100" data-player-index="0" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">100+</button>
+                                    <button data-stat="scores120" data-player-index="0" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">120+</button>
+                                    <button data-stat="scores140" data-player-index="0" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">140+</button>
+                                    <button data-stat="scores180" data-player-index="0" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">180</button>
                                 </div>
-                                <div class="bg-gray-100 dark:bg-gray-700 p-2 sm:p-4 rounded-2xl flex-1 text-center min-w-[140px]">
-                                    <label class="text-sm font-medium text-gray-600 dark:text-gray-300">140+</label>
-                                    <div class="flex items-center justify-center space-x-3 mt-2">
-                                        <button data-stat="scores140" data-op="-1" class="stat-btn w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xl font-bold">-</button>
-                                        <span id="stat-scores140" class="text-3xl font-bold dark:text-white">0</span>
-                                        <button data-stat="scores140" data-op="1" class="stat-btn w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xl font-bold">+</button>
-                                    </div>
-                                </div>
-                                <div class="bg-gray-100 dark:bg-gray-700 p-2 sm:p-4 rounded-2xl flex-1 text-center min-w-[140px]">
-                                    <label class="text-sm font-medium text-gray-600 dark:text-gray-300">180s</label>
-                                    <div class="flex items-center justify-center space-x-3 mt-2">
-                                        <button data-stat="scores180" data-op="-1" class="stat-btn w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xl font-bold">-</button>
-                                        <span id="stat-scores180" class="text-3xl font-bold dark:text-white">0</span>
-                                        <button data-stat="scores180" data-op="1" class="stat-btn w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xl font-bold">+</button>
-                                    </div>
-                                </div>
-                                <div class="bg-gray-100 dark:bg-gray-700 p-2 sm:p-4 rounded-2xl flex-1 text-center min-w-[140px]">
-                                    <label class="text-sm font-medium text-gray-600 dark:text-gray-300">?</label>
-                                    <div class="flex items-center justify-center space-x-3 mt-2">
-                                        <button data-stat="sillyThings" data-op="-1" class="stat-btn w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xl font-bold">-</button>
-                                        <span id="stat-sillyThings" class="text-3xl font-bold dark:text-white">0</span>
-                                        <button data-stat="sillyThings" data-op="1" class="stat-btn w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xl font-bold">+</button>
-                                    </div>
-                                </div>
+                                <div id="singles-scores-list" class="flex flex-wrap gap-1 min-h-[1.5rem]"></div>
                             </div>
-
                             <!-- Doubles Scoring -->
                             <div id="doubles-scoring-panel" class="hidden mb-6">
-                                <div class="grid grid-cols-1 gap-4">
-                                    <!-- Player 1 -->
-                                    <div class="border border-gray-200 dark:border-gray-700 p-3 sm:p-4 rounded-2xl">
-                                        <h4 id="doubles-p1-name" class="text-lg font-semibold text-center mb-3 dark:text-white"></h4>
-                                        <div class="flex flex-wrap justify-center gap-2">
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">100+</label>
-                                                <div class="flex items-center justify-center space-x-2 mt-1">
-                                                    <button data-stat="scores100" data-op="-1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
-                                                    <span id="stat-p1-scores100" class="text-2xl font-bold dark:text-white">0</span>
-                                                    <button data-stat="scores100" data-op="1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">140+</label>
-                                                <div class="flex items-center justify-center space-x-2 mt-1">
-                                                    <button data-stat="scores140" data-op="-1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
-                                                    <span id="stat-p1-scores140" class="text-2xl font-bold dark:text-white">0</span>
-                                                    <button data-stat="scores140" data-op="1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">180s</label>
-                                                <div class="flex items-center justify-center space-x-2 mt-1">
-                                                    <button data-stat="scores180" data-op="-1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
-                                                    <span id="stat-p1-scores180" class="text-2xl font-bold dark:text-white">0</span>
-                                                    <button data-stat="scores180" data-op="1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">?</label>
-                                                <div class="flex items-center justify-center space-x-2 mt-1">
-                                                    <button data-stat="sillyThings" data-op="-1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
-                                                    <span id="stat-p1-sillyThings" class="text-2xl font-bold dark:text-white">0</span>
-                                                    <button data-stat="sillyThings" data-op="1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                <div class="flex flex-wrap justify-center gap-2 mb-4">
+                                    <button data-stat="scores80" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">80+</button>
+                                    <button data-stat="scores100" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">100+</button>
+                                    <button data-stat="scores120" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">120+</button>
+                                    <button data-stat="scores140" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">140+</button>
+                                    <button data-stat="scores180" class="score-entry-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 text-sm font-semibold">180</button>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 mb-3">
+                                    <div class="border border-gray-200 dark:border-gray-700 p-2 rounded-xl">
+                                        <h4 id="doubles-p1-name" class="text-sm font-semibold text-center mb-2 dark:text-white"></h4>
+                                        <div id="doubles-p1-scores-list"></div>
                                     </div>
-                                    <!-- Player 2 -->
-                                    <div class="border border-gray-200 dark:border-gray-700 p-3 sm:p-4 rounded-2xl">
-                                        <h4 id="doubles-p2-name" class="text-lg font-semibold text-center mb-3 dark:text-white"></h4>
-                                        <div class="flex flex-wrap justify-center gap-2">
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">100+</label>
-                                                <div class="flex items-center justify-center space-x-2 mt-1">
-                                                    <button data-stat="scores100" data-op="-1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
-                                                    <span id="stat-p2-scores100" class="text-2xl font-bold dark:text-white">0</span>
-                                                    <button data-stat="scores100" data-op="1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">140+</label>
-                                                <div class="flex items-center justify-center space-x-2 mt-1">
-                                                    <button data-stat="scores140" data-op="-1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
-                                                    <span id="stat-p2-scores140" class="text-2xl font-bold dark:text-white">0</span>
-                                                    <button data-stat="scores140" data-op="1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">180s</label>
-                                                <div class="flex items-center justify-center space-x-2 mt-1">
-                                                    <button data-stat="scores180" data-op="-1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
-                                                    <span id="stat-p2-scores180" class="text-2xl font-bold dark:text-white">0</span>
-                                                    <button data-stat="scores180" data-op="1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                            <div class="bg-gray-100 dark:bg-gray-600 p-2 rounded-xl flex-1 text-center min-w-[120px]">
-                                                <label class="text-xs font-medium text-gray-600 dark:text-gray-300">?</label>
-                                                <div class="flex items-center justify-center space-x-2 mt-1">
-                                                    <button data-stat="sillyThings" data-op="-1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">-</button>
-                                                    <span id="stat-p2-sillyThings" class="text-2xl font-bold dark:text-white">0</span>
-                                                    <button data-stat="sillyThings" data-op="1" data-player-index="1" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold">+</button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div class="border border-gray-200 dark:border-gray-700 p-2 rounded-xl">
+                                        <h4 id="doubles-p2-name" class="text-sm font-semibold text-center mb-2 dark:text-white"></h4>
+                                        <div id="doubles-p2-scores-list"></div>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="mb-6 max-w-xs mx-auto">
                                 <label for="high-checkout-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 text-center">High Checkout (H/C)</label>
                                 <div class="flex gap-2 mt-1">
@@ -586,7 +498,7 @@
                                     <th scope="col" data-sort="legWinPercent" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Leg Win Percentage">Leg %</th>
                                     <th scope="col" data-sort="scores100" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">100+</th>
                                     <th scope="col" data-sort="scores140" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">140+</th>
-                                    <th scope="col" data-sort="scores180" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">180s</th>
+                                    <th scope="col" data-sort="scores180" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">180</th>
                                     <th scope="col" data-sort="highCheckout" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">H/C</th>
                                     <th scope="col" data-sort="totalFines" class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600" title="Total Fines Accrued">Fines</th>
                                 </tr>
@@ -1047,18 +959,6 @@
                 legsWon: document.getElementById('stat-legsWon'),
                 legsLost: document.getElementById('stat-legsLost'),
                 fines: document.getElementById('stat-fines'),
-                scores100: document.getElementById('stat-scores100'),
-                scores140: document.getElementById('stat-scores140'),
-                scores180: document.getElementById('stat-scores180'),
-                sillyThings: document.getElementById('stat-sillyThings'),
-                p1_scores100: document.getElementById('stat-p1-scores100'),
-                p1_scores140: document.getElementById('stat-p1-scores140'),
-                p1_scores180: document.getElementById('stat-p1-scores180'),
-                p1_sillyThings: document.getElementById('stat-p1-sillyThings'),
-                p2_scores100: document.getElementById('stat-p2-scores100'),
-                p2_scores140: document.getElementById('stat-p2-scores140'),
-                p2_scores180: document.getElementById('stat-p2-scores180'),
-                p2_sillyThings: document.getElementById('stat-p2-sillyThings'),
             },
             doublesPlayerNames: { p1: document.getElementById('doubles-p1-name'), p2: document.getElementById('doubles-p2-name') },
             highCheckoutInput: document.getElementById('high-checkout-input'),
@@ -2094,8 +1994,7 @@
         }
 
         function getPlayerStats(player, seasonId, type = 'singles') {
-            const defaultStats = { gamesWon: 0, gamesLost: 0, legsWon: 0, legsLost: 0, scores100: 0, scores140: 0, scores180: 0, highCheckout: 0, outstandingFines: 0, totalFines: 0 };
-            if (!player || !player.stats) return defaultStats;
+            const defaultStats = { gamesWon: 0, gamesLost: 0, legsWon: 0, legsLost: 0, scores80: 0, scores100: 0, scores120: 0, scores140: 0, scores180: 0, highCheckout: 0, outstandingFines: 0, totalFines: 0 };            if (!player || !player.stats) return defaultStats;
 
             const seasonsToAggregate = seasonId === 'all-time'
                 ? Object.values(player.stats)
@@ -2132,7 +2031,9 @@
                     gamesLost: aggregated.singles.gamesLost,
                     legsWon: aggregated.singles.legsWon,
                     legsLost: aggregated.singles.legsLost,
+                    scores80: aggregated.singles.scores80 + aggregated.doubles.scores80,
                     scores100: aggregated.singles.scores100 + aggregated.doubles.scores100,
+                    scores120: aggregated.singles.scores120 + aggregated.doubles.scores120,
                     scores140: aggregated.singles.scores140 + aggregated.doubles.scores140,
                     scores180: aggregated.singles.scores180 + aggregated.doubles.scores180,
                     highCheckout: Math.max(aggregated.singles.highCheckout, aggregated.doubles.highCheckout), // H/C from both singles and doubles
@@ -2614,24 +2515,7 @@
                 }
             }
 
-            const p1Scores = game.playerScores?.[0] || {};
-            const p2Scores = game.playerScores?.[1] || {};
-
-            if (isDoubles) {
-                ui.statValueSpans.p1_scores100.textContent = p1Scores.scores100 || 0;
-                ui.statValueSpans.p1_scores140.textContent = p1Scores.scores140 || 0;
-                ui.statValueSpans.p1_scores180.textContent = p1Scores.scores180 || 0;
-                ui.statValueSpans.p1_sillyThings.textContent = p1Scores.sillyThings || 0;
-                ui.statValueSpans.p2_scores100.textContent = p2Scores.scores100 || 0;
-                ui.statValueSpans.p2_scores140.textContent = p2Scores.scores140 || 0;
-                ui.statValueSpans.p2_scores180.textContent = p2Scores.scores180 || 0;
-                ui.statValueSpans.p2_sillyThings.textContent = p2Scores.sillyThings || 0;
-            } else {
-                ui.statValueSpans.scores100.textContent = p1Scores.scores100 || 0;
-                ui.statValueSpans.scores140.textContent = p1Scores.scores140 || 0;
-                ui.statValueSpans.scores180.textContent = p1Scores.scores180 || 0;
-                ui.statValueSpans.sillyThings.textContent = p1Scores.sillyThings || 0;
-            }
+            renderScoreLists(game);
 
             ui.prevGameBtn.disabled = state.currentGameIndex === 0;
             ui.nextGameBtn.disabled = state.currentGameIndex === state.fixture.games.length - 1;
@@ -2751,12 +2635,51 @@
 
             ui.finesListCurrentGame.innerHTML = '';
 
+            // Always render the ? tally at the top
+            const isDoubles = game.playerIds && game.playerIds.length > 1;
+            const sillyDiv = document.createElement('div');
+            sillyDiv.className = 'mb-3 pb-3 border-b border-gray-200 dark:border-gray-700';
+
+            if (isDoubles) {
+                let sillyHtml = '<p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center mb-2">? Count</p><div class="flex justify-center gap-6">';
+                game.playerIds.forEach((playerId, index) => {
+                    const player = state.players.find(p => p.id === playerId);
+                    const count = game.playerScores?.[index]?.sillyThings || 0;
+                    sillyHtml += `
+                        <div class="text-center">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">${player?.name || 'P' + (index + 1)}</p>
+                            <div class="flex items-center gap-2">
+                                <button data-stat="sillyThings" data-op="-1" data-player-index="${index}" class="stat-btn w-7 h-7 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-sm leading-none">-</button>
+                                <span class="text-xl font-bold dark:text-white w-6 text-center">${count}</span>
+                                <button data-stat="sillyThings" data-op="1" data-player-index="${index}" class="stat-btn w-7 h-7 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-sm leading-none">+</button>
+                            </div>
+                        </div>`;
+                });
+                sillyHtml += '</div>';
+                sillyDiv.innerHTML = sillyHtml;
+            } else {
+                const count = game.playerScores?.[0]?.sillyThings || 0;
+                sillyDiv.innerHTML = `
+                    <div class="flex items-center justify-between px-1">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">? Count</span>
+                        <div class="flex items-center gap-3">
+                            <button data-stat="sillyThings" data-op="-1" data-player-index="0" class="stat-btn w-7 h-7 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-sm leading-none">-</button>
+                            <span class="text-xl font-bold dark:text-white w-6 text-center">${count}</span>
+                            <button data-stat="sillyThings" data-op="1" data-player-index="0" class="stat-btn w-7 h-7 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-sm leading-none">+</button>
+                        </div>
+                    </div>`;
+            }
+            ui.finesListCurrentGame.appendChild(sillyDiv);
+
             if (!game.finesList || game.finesList.length === 0) {
-                ui.finesListCurrentGame.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400">No fines this game</p>';
+                const emptyP = document.createElement('p');
+                emptyP.className = 'text-center text-sm text-gray-500 dark:text-gray-400';
+                emptyP.textContent = 'No fines this game';
+                ui.finesListCurrentGame.appendChild(emptyP);
                 return;
             }
 
-            // Group fines by category
+            // Group fines by
             const fineGroups = {
                 'Score of 26': [],
                 'Missed Board': [],
@@ -4586,7 +4509,9 @@
                             seasonStats.gamesLost = (seasonStats.gamesLost || 0) + (!gameWon ? 1 : 0);
                             seasonStats.legsWon = (seasonStats.legsWon || 0) + (game.legsWon || 0);
                             seasonStats.legsLost = (seasonStats.legsLost || 0) + (game.legsLost || 0);
+                            seasonStats.scores80 = (seasonStats.scores80 || 0) + (pScores.scores80 || 0);
                             seasonStats.scores100 = (seasonStats.scores100 || 0) + (pScores.scores100 || 0);
+                            seasonStats.scores120 = (seasonStats.scores120 || 0) + (pScores.scores120 || 0);
                             seasonStats.scores140 = (seasonStats.scores140 || 0) + (pScores.scores140 || 0);
                             seasonStats.scores180 = (seasonStats.scores180 || 0) + (pScores.scores180 || 0);
 
@@ -4768,7 +4693,7 @@
             document.body.classList.add('modal-open');
         }
 
-        function closeFinePlayerModal() {
+function closeFinePlayerModal() {
             ui.finePlayerModal.overlay.classList.add('hidden');
             ui.finePlayerModal.overlay.classList.remove('flex');
             state.pendingFine.amount = null;
@@ -4776,7 +4701,129 @@
             document.body.classList.remove('modal-open');
         }
 
-                function openHCPlayerModal(value) {
+        function addScoreEntry(statType, playerIndex = 0) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) return;
+            if (!game.playerScores) game.playerScores = [{}, {}];
+            if (!game.playerScores[playerIndex]) game.playerScores[playerIndex] = {};
+            const listKey = statType + 'List';
+            if (!game.playerScores[playerIndex][listKey]) game.playerScores[playerIndex][listKey] = [];
+            const entryId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            game.playerScores[playerIndex][listKey].push({ id: entryId, timestamp: new Date().toISOString() });
+            game.playerScores[playerIndex][statType] = (game.playerScores[playerIndex][statType] || 0) + 1;
+            if (!state.scoreHistory) state.scoreHistory = [];
+            state.scoreHistory.push({ statType, playerIndex, entryId });
+            const labels = { scores80: '80+', scores100: '100+', scores120: '120+', scores140: '140+', scores180: '180', sillyThings: '?' };
+            render();
+            updateGameData();
+        }
+
+        function removeScoreEntry(entryId, statType, playerIndex = 0) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game || !game.playerScores?.[playerIndex]) return;
+            const listKey = statType + 'List';
+            const list = game.playerScores[playerIndex][listKey];
+            if (!list) return;
+            const idx = list.findIndex(e => e.id === entryId);
+            if (idx === -1) return;
+            list.splice(idx, 1);
+            game.playerScores[playerIndex][statType] = list.length;
+            render();
+            updateGameData();
+        }
+
+        function renderScoreLists(game) {
+            const isDoubles = game.playerIds.length > 1;
+            const scoreTypes = [
+                { stat: 'scores80',  label: '80+',  cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' },
+                { stat: 'scores100', label: '100+', cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' },
+                { stat: 'scores120', label: '120+', cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' },
+                { stat: 'scores140', label: '140+', cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' },
+                { stat: 'scores180', label: '180',  cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' },
+            ];
+            const renderList = (containerId, playerIndex) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                const pScores = game.playerScores?.[playerIndex] || {};
+                let html = '';
+                scoreTypes.forEach(({ stat, label, cls }) => {
+                    const list = pScores[stat + 'List'] || [];
+                    const count = pScores[stat] || 0;
+                    if (list.length > 0) {
+                        list.forEach(entry => {
+                            html += `<span class="inline-flex items-center gap-0.5 ${cls} text-xs px-2 py-0.5 rounded-full mr-1 mb-1">${label} <button class="remove-score-btn ml-0.5 hover:text-red-600 font-bold leading-none" data-entry-id="${entry.id}" data-stat="${stat}" data-player-index="${playerIndex}" title="Remove">×</button></span>`;
+                        });
+                    } else if (count > 0) {
+                        // Legacy data without lists — show count as read-only pill
+                        html += `<span class="inline-flex items-center ${cls} text-xs px-2 py-0.5 rounded-full mr-1 mb-1">${label} ×${count}</span>`;
+                    }
+                });
+                container.innerHTML = html;
+            };
+            if (isDoubles) {
+                [0, 1].forEach(playerIndex => {
+                    const containerId = playerIndex === 0 ? 'doubles-p1-scores-list' : 'doubles-p2-scores-list';
+                    const container = document.getElementById(containerId);
+                    if (!container) return;
+                    const pScores = game.playerScores?.[playerIndex] || {};
+                    let html = '<div class="space-y-1">';
+                    scoreTypes.forEach(({ stat, label }) => {
+                        const count = pScores[stat] || 0;
+                        html += `
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">${label}</span>
+                                <div class="flex items-center gap-2">
+                                    <button data-stat="${stat}" data-op="-1" data-player-index="${playerIndex}" class="stat-btn w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-xs leading-none">-</button>
+                                    <span class="text-sm font-bold dark:text-white w-5 text-center">${count}</span>
+                                </div>
+                            </div>`;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                });
+            } else {
+                const container = document.getElementById('singles-scores-list');
+                if (container) {
+                    const pScores = game.playerScores?.[0] || {};
+                    let html = '<div class="bg-gray-100 dark:bg-gray-700 rounded-xl p-2 space-y-2 max-w-xs mx-auto">';                    scoreTypes.forEach(({ stat, label }) => {
+                        const count = pScores[stat] || 0;
+                        html += `
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">${label}</span>
+                                <div class="flex items-center gap-2">
+                                    <button data-stat="${stat}" data-op="-1" data-player-index="0" class="stat-btn w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-xs leading-none">-</button>
+                                    <span class="text-sm font-bold dark:text-white w-5 text-center">${count}</span>
+                                </div>
+                            </div>`;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                }
+            }
+        }
+
+        function openPlayerSelectForScore(statType) {
+            const game = state.fixture.games[state.currentGameIndex];
+            if (!game) return;
+            ui.finePlayerModal.list.innerHTML = '';
+            game.playerIds.forEach((playerId, index) => {
+                const player = state.players.find(p => p.id === playerId);
+                if (!player) return;
+                const btn = document.createElement('button');
+                btn.className = 'w-full bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition-colors font-semibold';
+                btn.textContent = player.name;
+                btn.addEventListener('click', () => {
+                    addScoreEntry(statType, index);
+                    closeFinePlayerModal();
+                });
+                ui.finePlayerModal.list.appendChild(btn);
+            });
+            ui.finePlayerModal.overlay.classList.remove('hidden');
+            ui.finePlayerModal.overlay.classList.add('flex');
+            document.body.classList.add('modal-open');
+        }
+
+        function openHCPlayerModal(value) {
             const game = state.fixture.games[state.currentGameIndex];
             if (!game) return;
             state.pendingHC = value;
@@ -5487,6 +5534,7 @@
                     state.fixture.activeGameIndex = state.currentGameIndex;
                     const game = state.fixture.games[state.currentGameIndex];
                     game.turnSeq = (game.turnSeq || 0) + 1;
+                    state.scoreHistory = [];
                     render();
                     updateGameData();
                 }
@@ -5498,6 +5546,7 @@
                     state.fixture.activeGameIndex = state.currentGameIndex;
                     const game = state.fixture.games[state.currentGameIndex];
                     game.turnSeq = (game.turnSeq || 0) + 1;
+                    state.scoreHistory = [];
                     render();
                     updateGameData();
                 }
@@ -5507,8 +5556,22 @@
                 const statBtn = e.target.closest('.stat-btn');
                 if (statBtn) {
                      triggerHaptic('light');
-                     const playerIndex = statBtn.hasAttribute('data-player-index') ? parseInt(statBtn.dataset.playerIndex) : 0;
+                     const playerIndex = statBtn.hasAttribute('data-player-index') ?
+                     parseInt(statBtn.dataset.playerIndex) : 0;
                      updateStat(statBtn.dataset.stat, parseInt(statBtn.dataset.op), playerIndex);
+                     return;
+                }
+                const scoreEntryBtn = e.target.closest('.score-entry-btn');
+                if (scoreEntryBtn) {
+                    triggerHaptic('light');
+                    const game = state.fixture.games[state.currentGameIndex];
+                    const isDoubles = game && game.playerIds.length > 1;
+                    if (isDoubles) {
+                        openPlayerSelectForScore(scoreEntryBtn.dataset.stat);
+                    } else {
+                        addScoreEntry(scoreEntryBtn.dataset.stat, 0);
+                    }
+                    return;
                 }
             });
 
