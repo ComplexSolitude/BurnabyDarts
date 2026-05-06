@@ -26,9 +26,10 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        html { overflow-x: hidden; max-width: 100%; }
         input[type="date"]::-webkit-date-and-time-value { text-align: left; }
-        input[type="date"] { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; width: 100% !important; display: block !important; }
+        input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; width: 100% !important; display: block !important; }
        #toast-notification {
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
@@ -306,7 +307,7 @@
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Opposition Name</label>
                                 <input type="text" id="opposition-name-input" aria-label="Opposition Name" placeholder="e.g., The King's Arms" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             </div>
-                            <div class="mb-4">
+                            <div class="mb-4 min-w-0">
                                 <label for="match-date-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Match Date (optional)</label>
                                 <input type="date" id="match-date-input" class="mt-1 w-full px-3 py-2 text-left border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to use today's date.</p>
