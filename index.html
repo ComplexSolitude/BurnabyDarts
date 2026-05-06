@@ -27,7 +27,7 @@
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        input[type="date"] { min-width: 0; max-width: 100%; box-sizing: border-box; }
+        input[type="date"] { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; width: 100% !important; display: block !important; }
        #toast-notification {
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
@@ -2829,9 +2829,9 @@
                             <label for="edit-fixture-opposition" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opposition</label>
                             <input type="text" id="edit-fixture-opposition" value="${fixture.oppositionName}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
-                        <div>
+                        <div class="min-w-0 overflow-hidden">
                             <label for="edit-fixture-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Match Date</label>
-                            <input type="date" id="edit-fixture-date" value="${scheduledDate.toISOString().split('T')[0]}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <input type="date" id="edit-fixture-date" value="${scheduledDate.toISOString().split('T')[0]}" class="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                         <div>
                             <label for="edit-fixture-location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
@@ -3991,9 +3991,9 @@
                             <label for="fixture-opposition" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opposition</label>
                             <input type="text" id="fixture-opposition" placeholder="e.g., The King's Arms" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
-                        <div>
+                        <div class="min-w-0 overflow-hidden">
                             <label for="fixture-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Match Date</label>
-                            <input type="date" id="fixture-date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <input type="date" id="fixture-date" class="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         </div>
                         <div>
                             <label for="fixture-venue" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Venue (optional)</label>
@@ -4800,16 +4800,14 @@ function closeFinePlayerModal() {
                     const container = document.getElementById(containerId);
                     if (!container) return;
                     const pScores = game.playerScores?.[playerIndex] || {};
-                    let html = '<div class="space-y-1">';
+                    let html = '<div class="bg-gray-100 dark:bg-gray-700 rounded-xl p-2 space-y-2">';
                     scoreTypes.forEach(({ stat, label }) => {
                         const count = pScores[stat] || 0;
                         html += `
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs text-gray-500 dark:text-gray-400">${label}</span>
-                                <div class="flex items-center gap-2">
-                                    <button data-stat="${stat}" data-op="-1" data-player-index="${playerIndex}" class="stat-btn w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-xs leading-none">-</button>
-                                    <span class="text-sm font-bold dark:text-white w-5 text-center">${count}</span>
-                                </div>
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="text-sm font-medium text-gray-600 dark:text-gray-300 w-10 text-right">${label}</span>
+                                <button data-stat="${stat}" data-op="-1" data-player-index="${playerIndex}" class="stat-btn w-7 h-7 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-sm leading-none">-</button>
+                                <span class="text-base font-bold dark:text-white w-6 text-center">${count}</span>
                             </div>`;
                     });
                     html += '</div>';
@@ -4819,14 +4817,15 @@ function closeFinePlayerModal() {
                 const container = document.getElementById('singles-scores-list');
                 if (container) {
                     const pScores = game.playerScores?.[0] || {};
-                    let html = '<div class="bg-gray-100 dark:bg-gray-700 rounded-xl p-2 space-y-2 max-w-xs mx-auto">';                    scoreTypes.forEach(({ stat, label }) => {
+                    let html = '<div class="bg-gray-100 dark:bg-gray-700 rounded-xl p-3 space-y-2 max-w-sm mx-auto">';
+                    scoreTypes.forEach(({ stat, label }) => {
                         const count = pScores[stat] || 0;
                         html += `
                             <div class="flex items-center justify-between">
-                                <span class="text-xs text-gray-500 dark:text-gray-400">${label}</span>
-                                <div class="flex items-center gap-2">
-                                    <button data-stat="${stat}" data-op="-1" data-player-index="0" class="stat-btn w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-xs leading-none">-</button>
-                                    <span class="text-sm font-bold dark:text-white w-5 text-center">${count}</span>
+                                <span class="text-sm font-medium text-gray-600 dark:text-gray-300 w-14">${label}</span>
+                                <div class="flex items-center gap-3">
+                                    <button data-stat="${stat}" data-op="-1" data-player-index="0" class="stat-btn w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-200 font-bold text-base leading-none">-</button>
+                                    <span class="text-base font-bold dark:text-white w-6 text-center">${count}</span>
                                 </div>
                             </div>`;
                     });
@@ -4931,7 +4930,7 @@ function closeFinePlayerModal() {
                     }
                     dropdown.classList.remove('hidden');
                 };
-                input.addEventListener('focus', () => showDropdown(input.value));
+                input.addEventListener('focus', () => { input.select(); showDropdown(''); });
                 input.addEventListener('input', () => showDropdown(input.value));
                 document.addEventListener('click', (e) => {
                     if (!wrapper.contains(e.target)) dropdown.classList.add('hidden');
