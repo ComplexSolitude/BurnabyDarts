@@ -2450,7 +2450,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <button data-player-id="${player.id}" class="pay-fine-online-btn bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700">Pay Fine</button>
-                        ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="pay-fines-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700">Mark as Paid</button>` : ''}
+                        ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="pay-fines-btn bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 py-2 px-4 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 text-sm">Mark Paid</button>` : ''}
                     </div>
                 `;
                 ui.finesList.appendChild(fineEl);
