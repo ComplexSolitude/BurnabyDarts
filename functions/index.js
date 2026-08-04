@@ -8,7 +8,7 @@ const db = admin.firestore();
 
 const SUMUP_API_KEY = defineSecret("SUMUP_API_KEY");
 const MERCHANT_CODE = "MWPF6QTA";
-const FINES_RETURN_URL = "https://burnabydarts.co.uk/?paid=fines";
+const FINES_RETURN_URL = "https://burnabydarts.co.uk/payment-complete.html";
 
 // --- Create a Hosted Checkout for a player's outstanding fine ---
 exports.createFineCheckout = onCall(

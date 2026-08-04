@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#10b981">
+    <title>Payment Complete — Burnaby Darts</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #111827;
+            color: #f9fafb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+        }
+        .card {
+            max-width: 420px;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 24px;
+            padding: 40px 28px;
+        }
+        .tick {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            background: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tick svg { width: 40px; height: 40px; stroke: #ffffff; }
+        h1 { font-size: 1.5rem; margin-bottom: 12px; }
+        p { color: #9ca3af; line-height: 1.6; margin-bottom: 8px; }
+        .highlight { color: #10b981; font-weight: 600; }
+        .hint {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #374151;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="tick">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5"></path>
+            </svg>
+        </div>
+        <h1>Payment Complete</h1>
+        <p>Thanks — your fine has been paid.</p>
+        <p>It will clear on your account <span class="highlight">within a few seconds</span>.</p>
+        <div class="hint">
+            <p>You can now close this tab and reopen the <span class="highlight">Burnaby Darts</span> app from your home screen.</p>
+        </div>
+    </div>
+</body>
+</html>
