@@ -280,11 +280,7 @@
                           </div>
                           <div id="fines-list" class="divide-y divide-gray-200 dark:divide-gray-700"></div>
                           <!-- Pay Fine Button Container -->
-                          <div id="pay-fine-container" class="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 hidden">
-                               <a href="https://monzo.me/jacobrobertfordham?h=8XgSRd" target="_blank" class="block w-full text-center bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition-colors duration-200 font-semibold">
-                                    Pay My Fine
-                               </a>
-                          </div>
+                          <div id="pay-fine-container" class="hidden"></div>
                      </div>
                 </div>
 
@@ -764,6 +760,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         // noinspection JSFileReferences
         import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, runTransaction, query, updateDoc, serverTimestamp, increment, writeBatch, Timestamp, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
         import {
             getAuth,
             signInAnonymously,
@@ -2451,7 +2448,10 @@
                         <p class="font-semibold dark:text-white">${player.name}</p>
                         <p class="text-lg font-bold text-red-600 dark:text-red-400">£${(player.outstandingFines / 100).toFixed(2)}</p>
                     </div>
-                    ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="pay-fines-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700">Mark as Paid</button>` : ''}
+                    <div class="flex items-center gap-2">
+                        <button data-player-id="${player.id}" class="pay-fine-online-btn bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700">Pay Fine</button>
+                        ${state.userRole === 'admin' ? `<button data-player-id="${player.id}" class="pay-fines-btn bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700">Mark as Paid</button>` : ''}
+                    </div>
                 `;
                 ui.finesList.appendChild(fineEl);
             });
@@ -5283,6 +5283,7 @@ function closeFinePlayerModal() {
             const app = initializeApp(firebaseConfig);
             state.db = getFirestore(app);
             state.auth = getAuth(app);
+            state.functions = getFunctions(app, 'us-central1');
 
             ui.connectionStatus.classList.remove('hidden');
 
@@ -5425,6 +5426,17 @@ function closeFinePlayerModal() {
 
                 setupFirestoreListeners();
                 render();
+
+                // If returning from a SumUp fine payment, open the fines tab
+                if ((state.isLoggedIn || state.userRole === 'viewer')) {
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('paid') === 'fines') {
+                        switchTab('fines');
+                        showToast('Thanks — your payment is being processed. Fines update shortly.', 'success');
+                        // Clean the URL so a refresh doesn't re-trigger this
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                }
 
                 // Hide loading overlay once auth state is resolved
                 const loadingOverlay = document.getElementById('loading-overlay');
@@ -5774,6 +5786,34 @@ function closeFinePlayerModal() {
                         'clearPlayerFines',
                         payBtn.dataset.playerId
                     );
+                    return;
+                }
+
+                const onlineBtn = e.target.closest('.pay-fine-online-btn');
+                if (onlineBtn) {
+                    const playerId = onlineBtn.dataset.playerId;
+                    const originalText = onlineBtn.textContent;
+                    onlineBtn.disabled = true;
+                    onlineBtn.textContent = 'Loading…';
+
+                    const createCheckout = httpsCallable(state.functions, 'createFineCheckout');
+                    createCheckout({ playerId })
+                        .then((result) => {
+                            const url = result.data?.hostedCheckoutUrl;
+                            if (url) {
+                                window.location.href = url;
+                            } else {
+                                showToast('Could not start payment. Please try again.', 'error');
+                                onlineBtn.disabled = false;
+                                onlineBtn.textContent = originalText;
+                            }
+                        })
+                        .catch((err) => {
+                            console.error('createFineCheckout failed:', err);
+                            showToast(err.message || 'Payment could not be started.', 'error');
+                            onlineBtn.disabled = false;
+                            onlineBtn.textContent = originalText;
+                        });
                 }
             });
 
