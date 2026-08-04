@@ -79,8 +79,10 @@ exports.sumupWebhook = onRequest(
   { secrets: [SUMUP_API_KEY] },
   async (req, res) => {
     try {
-      const checkoutId = req.body?.id;
+      console.log("Webhook received. Body:", JSON.stringify(req.body));
+      const checkoutId = req.body?.id || req.body?.checkout_id;
       if (!checkoutId) {
+        console.log("No checkout id found in body.");
         res.status(400).send("No checkout id.");
         return;
       }
@@ -91,8 +93,10 @@ exports.sumupWebhook = onRequest(
         { headers: { Authorization: `Bearer ${SUMUP_API_KEY.value()}` } }
       );
       const checkout = await verify.json();
+      console.log("Verified checkout status:", checkout.status, "id:", checkoutId);
 
       if (checkout.status !== "PAID") {
+        console.log("Status not PAID; ignoring.");
         res.status(200).send("Not paid; ignoring.");
         return;
       }
@@ -100,6 +104,7 @@ exports.sumupWebhook = onRequest(
       const pendingRef = db.collection("pending_fine_payments").doc(checkoutId);
       const pendingSnap = await pendingRef.get();
       if (!pendingSnap.exists) {
+        console.log("No pending_fine_payments doc for checkout:", checkoutId);
         res.status(200).send("Unknown checkout; ignoring.");
         return;
       }
